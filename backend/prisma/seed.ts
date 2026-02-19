@@ -328,11 +328,11 @@ async function main() {
   // Assign student roles
   for (const student of students) {
     await prisma.userRole.upsert({
-      where: { userId_roleId: { userId: student.id, roleId: roles[4].id } },
+      where: { userId_roleId: { userId: student.id, roleId: roles[5].id } },
       update: {},
       create: {
         userId: student.id,
-        roleId: roles[5]!.id // STUDENT role
+        roleId: roles[5].id // STUDENT role
       }
     });
   }

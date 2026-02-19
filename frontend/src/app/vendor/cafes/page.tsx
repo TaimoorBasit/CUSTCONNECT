@@ -16,18 +16,18 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 // Helper function to construct image URL - SIMPLIFIED
 const getImageUrl = (imagePath: string | undefined | null): string | null => {
   if (!imagePath) return null;
-  
+
   // If already a full URL, return as is
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
-  
+
   // Get base URL (remove /api from API_URL)
   const baseUrl = API_URL.replace('/api', '').replace(/\/$/, '');
-  
+
   // Ensure path starts with /
   const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-  
+
   // Construct full URL
   return `${baseUrl}${cleanPath}`;
 };
@@ -62,6 +62,11 @@ interface Cafe {
     validUntil: string;
     isActive: boolean;
   }>;
+  university?: {
+    id: string;
+    name: string;
+    city: string;
+  };
 }
 
 export default function VendorCafesPage() {
@@ -133,20 +138,20 @@ export default function VendorCafesPage() {
               <div className="flex items-center gap-4 mb-4">
                 {cafe.imageUrl && (
                   <div className="w-24 h-24 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100">
-                    <img 
+                    <img
                       src={getImageUrl(cafe.imageUrl) || ''}
                       alt={cafe.name}
                       className="w-full h-full object-cover"
                       loading="lazy"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              console.error('❌ Image failed to load:', target.src);
-              // Hide broken image
-              target.style.display = 'none';
-            }}
-            onLoad={() => {
-              // Image loaded successfully
-            }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        console.error('❌ Image failed to load:', target.src);
+                        // Hide broken image
+                        target.style.display = 'none';
+                      }}
+                      onLoad={() => {
+                        // Image loaded successfully
+                      }}
                     />
                   </div>
                 )}
@@ -164,11 +169,10 @@ export default function VendorCafesPage() {
                 </div>
               </div>
               <span
-                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-                  cafe.isActive
-                    ? 'bg-green-100 text-green-800'
-                    : 'bg-gray-100 text-gray-800'
-                }`}
+                className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${cafe.isActive
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-gray-100 text-gray-800'
+                  }`}
               >
                 {cafe.isActive ? 'Active' : 'Inactive'}
               </span>
@@ -307,8 +311,8 @@ function MenuManagementModal({
       );
 
       if (response.data.success) {
-        setMenus(menus.map(m => 
-          m.id === menuId 
+        setMenus(menus.map(m =>
+          m.id === menuId
             ? { ...m, imageUrl: response.data.menu.imageUrl }
             : m
         ));
@@ -397,8 +401,8 @@ function MenuManagementModal({
               <div key={menu.id} className="flex items-center gap-3 p-3 border-b">
                 {menu.imageUrl && (
                   <div className="flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden bg-gray-100">
-                    <img 
-                      src={`${API_URL.replace('/api', '')}${menu.imageUrl}`} 
+                    <img
+                      src={`${API_URL.replace('/api', '')}${menu.imageUrl}`}
                       alt={menu.name}
                       className="w-full h-full object-cover"
                     />
@@ -419,8 +423,8 @@ function MenuManagementModal({
                         type="checkbox"
                         checked={menu.isFeatured || false}
                         onChange={(e) => {
-                          setMenus(menus.map(m => 
-                            m.id === menu.id 
+                          setMenus(menus.map(m =>
+                            m.id === menu.id
                               ? { ...m, isFeatured: e.target.checked }
                               : m
                           ));
@@ -434,8 +438,8 @@ function MenuManagementModal({
                         type="checkbox"
                         checked={menu.isAvailable}
                         onChange={(e) => {
-                          setMenus(menus.map(m => 
-                            m.id === menu.id 
+                          setMenus(menus.map(m =>
+                            m.id === menu.id
                               ? { ...m, isAvailable: e.target.checked }
                               : m
                           ));
@@ -453,7 +457,7 @@ function MenuManagementModal({
                           handleMenuImageUpload(menu.id, file);
                         } else if (file && menu.id.startsWith('temp-')) {
                           // For new items, we'll upload after saving
-                          toast.info('Please save the menu first, then upload images');
+                          toast('Please save the menu first, then upload images');
                         }
                         e.target.value = '';
                       }}
@@ -517,6 +521,7 @@ function DealManagementModal({
     discount: '',
     validFrom: '',
     validUntil: '',
+    menuItemIds: [] as string[],
     isActive: true,
   });
 
@@ -542,9 +547,9 @@ function DealManagementModal({
       title: '',
       description: '',
       discount: '',
-      menuItemIds: [],
       validFrom: '',
       validUntil: '',
+      menuItemIds: [] as string[],
       isActive: true,
     });
   };
@@ -636,7 +641,7 @@ function DealManagementModal({
                           if (e.target.checked) {
                             setNewDeal({ ...newDeal, menuItemIds: [...newDeal.menuItemIds, menu.id] });
                           } else {
-                            setNewDeal({ ...newDeal, menuItemIds: newDeal.menuItemIds.filter(id => id !== menu.id) });
+                            setNewDeal({ ...newDeal, menuItemIds: newDeal.menuItemIds.filter((id: string) => id !== menu.id) });
                           }
                         }}
                         className="h-4 w-4 text-purple-600 rounded"
@@ -711,13 +716,13 @@ function DealManagementModal({
 }
 
 // Cafe Image Upload Component
-function CafeImageUpload({ 
-  cafeId, 
-  currentImageUrl, 
-  onSuccess 
-}: { 
-  cafeId: string; 
-  currentImageUrl?: string; 
+function CafeImageUpload({
+  cafeId,
+  currentImageUrl,
+  onSuccess
+}: {
+  cafeId: string;
+  currentImageUrl?: string;
   onSuccess: () => void;
 }) {
   const [uploading, setUploading] = useState(false);
@@ -761,7 +766,7 @@ function CafeImageUpload({
       if (imageUrl) {
         setLocalImageUrl(imageUrl);
       }
-      
+
       toast.success('Cafe image uploaded successfully');
       // Call onSuccess to refresh the cafe data
       onSuccess();
@@ -780,7 +785,7 @@ function CafeImageUpload({
     <div className="space-y-2">
       {(localImageUrl || currentImageUrl) && (
         <div className="w-32 h-32 rounded-lg overflow-hidden border border-gray-300 bg-gray-100">
-          <img 
+          <img
             src={getImageUrl(localImageUrl || currentImageUrl) || ''}
             alt="Cafe"
             className="w-full h-full object-cover"

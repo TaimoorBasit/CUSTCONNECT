@@ -9,13 +9,12 @@ if ! command -v node &> /dev/null; then
     exit 1
 fi
 
-# Check if PostgreSQL is installed
-if ! command -v psql &> /dev/null; then
-    echo "❌ PostgreSQL is not installed. Please install PostgreSQL 14+ first."
-    exit 1
+# Check if MySQL is installed (optional check, mysql client might not be in path)
+if ! command -v mysql &> /dev/null; then
+    echo "⚠️  MySQL client not found in PATH. Please ensure MySQL is running."
 fi
 
-echo "✅ Prerequisites check passed"
+echo "✅ Environment check done"
 
 # Install dependencies
 echo "📦 Installing dependencies..."
@@ -33,7 +32,7 @@ echo "⚙️ Setting up environment files..."
 if [ ! -f "backend/.env" ]; then
     cp backend/env.example backend/.env
     echo "📝 Created backend/.env from template"
-    echo "⚠️  Please edit backend/.env with your database credentials"
+    echo "⚠️  Please edit backend/.env with your MySQL credentials"
 fi
 
 if [ ! -f "frontend/.env.local" ]; then
@@ -45,19 +44,13 @@ fi
 echo "🗄️ Setting up database..."
 cd backend
 
-# Check if database exists
-DB_NAME="custconnect"
-if ! psql -lqt | cut -d \| -f 1 | grep -qw $DB_NAME; then
-    echo "📊 Creating database..."
-    createdb $DB_NAME
-fi
-
-# Run migrations
-echo "🔄 Running database migrations..."
-npx prisma migrate dev
+# Run migrations/push for MySQL
+echo "🔄 Syncing database schema..."
+npx prisma generate
+npx prisma db push --accept-data-loss
 
 if [ $? -ne 0 ]; then
-    echo "❌ Database migration failed"
+    echo "❌ Database sync failed"
     exit 1
 fi
 

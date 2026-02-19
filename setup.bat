@@ -17,12 +17,12 @@ if not exist frontend\.env.local (
     echo Created frontend/.env.local file
 )
 
-echo.
 echo Step 3: Database setup...
-echo Please make sure PostgreSQL is running and update the DATABASE_URL in backend/.env
+echo Please make sure MySQL (XAMPP) is running and update the DATABASE_URL in backend/.env
 echo Then run the following commands:
 echo   cd backend
-echo   npx prisma migrate dev
+echo   npx prisma generate
+echo   npx prisma db push
 echo   npx prisma db seed
 
 echo.

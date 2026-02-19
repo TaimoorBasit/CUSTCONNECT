@@ -23,6 +23,9 @@ export interface User {
     name: string;
   }>;
   createdAt: string;
+  isActive?: boolean;
+  universityId?: string;
+  departmentId?: string;
 }
 
 export interface University {
@@ -118,8 +121,9 @@ export interface Cafe {
   phone?: string;
   email?: string;
   openingHours?: string;
+  imageUrl?: string;
   isActive: boolean;
-  university: {
+  university?: {
     id: string;
     name: string;
     city: string;
@@ -135,6 +139,7 @@ export interface Cafe {
     description?: string;
     price: number;
     category: string;
+    imageUrl?: string;
     isAvailable: boolean;
   }>;
   deals: Array<{
@@ -142,6 +147,7 @@ export interface Cafe {
     title: string;
     description?: string;
     discount?: number;
+    menuItemIds?: string;
     validFrom: string;
     validUntil: string;
     isActive: boolean;

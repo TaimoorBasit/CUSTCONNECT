@@ -1,4 +1,9 @@
+'use client';
+
 import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/AuthContext';
 import HomeIcon from '@heroicons/react/24/outline/HomeIcon';
 import UserGroupIcon from '@heroicons/react/24/outline/UserGroupIcon';
 import BuildingStorefrontIcon from '@heroicons/react/24/outline/BuildingStorefrontIcon';

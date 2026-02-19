@@ -1,0 +1,7 @@
+{
+    "version": 2,
+    "buildCommand": "npm run build --workspace=frontend",
+    "installCommand": "npm install",
+    "devCommand": "npm run dev --workspace=frontend",
+    "framework": "nextjs"
+}
