@@ -193,14 +193,10 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  // Send OTP email
-  try {
-    await emailService.sendOTP(finalEmail, otp);
-  } catch (emailError: any) {
+  // Send OTP email (Non-blocking: don't await)
+  emailService.sendOTP(finalEmail, otp).catch((emailError: any) => {
     console.warn('Failed to send OTP email:', emailError.message);
-    // You might want to throw an error here if email is critical, 
-    // or just let the user request a resend later.
-  }
+  });
 
   res.status(201).json({
     success: true,
