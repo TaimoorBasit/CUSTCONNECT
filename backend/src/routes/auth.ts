@@ -554,8 +554,12 @@ router.post('/forgot-password', asyncHandler(async (req: Request, res: Response)
     { expiresIn: '1h' }
   );
 
-  // Send reset email
-  await emailService.sendPasswordResetEmail(email, resetToken);
+  // Send reset email (Non-blocking)
+  setTimeout(() => {
+    emailService.sendPasswordResetEmail(email, resetToken).catch((error) => {
+      console.error('Failed to send reset email:', error);
+    });
+  }, 0);
 
   return res.json({
     success: true,
