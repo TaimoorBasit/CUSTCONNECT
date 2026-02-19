@@ -15,7 +15,8 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://custconnect-backend-production.up.railway.app';
+    const socketUrl = 'https://custconnect-backend-production.up.railway.app';
+    console.log('Connecting to Socket URL:', socketUrl);
     const newSocket = io(socketUrl, {
       autoConnect: true,
     });
