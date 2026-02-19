@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
+
+:root {
+  /* High Contrast Zinc Theme */
+  --background: #f4f4f5;
+  /* Zinc 100 - Distinct off-white to let cards pop */
+  --foreground: #09090b;
+  /* Zinc 950 */
+
+  --card: #ffffff;
+  --card-foreground: #09090b;
+
+  --popover: #ffffff;
+  --popover-foreground: #09090b;
+
+  /* Bold Accent - Indigo/Violet */
+  --primary: #4f46e5;
+  /* Indigo 600 - Slightly deeper for better contrast */
+  --primary-foreground: #ffffff;
+
+  /* Distinct Secondary */
+  --secondary: #e4e4e7;
+  /* Zinc 200 */
+  --secondary-foreground: #18181b;
+  /* Zinc 900 */
+
+  --muted: #f4f4f5;
+  --muted-foreground: #71717a;
+  /* Zinc 500 */
+
+  --accent: #e4e4e7;
+  --accent-foreground: #18181b;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --border: #d4d4d8;
+  /* Zinc 300 - Visible borders */
+  --input: #d4d4d8;
+  --ring: #4f46e5;
+
+  --radius: 0.75rem;
+}
+
+/* Dark mode removed by user request */
+/* @media (prefers-color-scheme: dark) { ... } */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.dark .glass {
+  background: rgba(28, 25, 23, 0.7);
+  /* Darker glass for dark mode */
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--muted-foreground);
+  border-radius: 4px;
+  opacity: 0.5;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--foreground);
+}
+
+/* Ensure select dropdowns are readable and match theme */
+select {
+  color: var(--foreground) !important;
+  background-color: var(--background) !important;
+  border-color: var(--border) !important;
+  border-radius: var(--radius);
+  padding: 0.5rem;
+}
+
+select option {
+  color: var(--foreground) !important;
+  background-color: var(--background) !important;
+}
+
+select option:disabled {
+  color: var(--muted-foreground) !important;
+}
