@@ -144,7 +144,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const { id } = req.params;
 
   const resource = await prisma.academicResource.findUnique({
-    where: { id },
+    where: { id: id as string },
     include: {
       uploader: {
         select: {
@@ -188,7 +188,7 @@ router.get('/:id/download', asyncHandler(async (req: AuthRequest, res) => {
   const { id } = req.params;
 
   const resource = await prisma.academicResource.findUnique({
-    where: { id },
+    where: { id: id as string },
     select: {
       id: true,
       title: true,
@@ -217,7 +217,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const { id } = req.params;
 
   const resource = await prisma.academicResource.findUnique({
-    where: { id },
+    where: { id: id as string },
     select: { uploaderId: true }
   });
 
@@ -230,7 +230,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   await prisma.academicResource.update({
-    where: { id },
+    where: { id: id as string },
     data: { isActive: false }
   });
 

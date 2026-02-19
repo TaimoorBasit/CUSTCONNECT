@@ -189,7 +189,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const { id } = req.params;
 
   const user = await prisma.user.findUnique({
-    where: { id },
+    where: { id: id as string },
     select: {
       id: true,
       firstName: true,
@@ -245,7 +245,7 @@ router.post('/follow', asyncHandler(async (req: AuthRequest, res) => {
 
   // Check if user exists
   const targetUser = await prisma.user.findUnique({
-    where: { id: userId }
+    where: { id: userId as string }
   });
 
   if (!targetUser) {

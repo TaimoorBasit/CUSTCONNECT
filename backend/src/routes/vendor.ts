@@ -316,7 +316,7 @@ router.put('/buses/:id/schedule', authenticateToken, requireRole(['BUS_OPERATOR'
   // Create new schedules
   const createdSchedules = await prisma.busSchedule.createMany({
     data: schedules.map((schedule: any) => ({
-      routeId: id,
+      routeId: id as string,
       dayOfWeek: schedule.dayOfWeek,
       startTime: schedule.startTime,
       endTime: schedule.endTime,
