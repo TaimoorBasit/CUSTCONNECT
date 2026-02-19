@@ -61,41 +61,26 @@ prisma.$connect()
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
+
+// Request logger for debugging
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  console.log('Origin:', req.headers.origin);
+  next();
+});
+
 app.use(cors({
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    // TEMPORARY: Allow all origins to debug connection
-    callback(null, true);
-    return;
-
-    /* 
-    const allowedOrigins = [
-      process.env.FRONTEND_URL || "http://localhost:3000",
-      "http://localhost:5000",
-      // Add wildcard for Vercel preview deployments if needed
-    ];
-
-    // Check if the origin matches any of the allowed origins or if it's a Vercel deployment
-    if (
-      allowedOrigins.indexOf(origin) !== -1 ||
-      process.env.NODE_ENV === 'development' ||
-      origin.endsWith('.vercel.app')
-    ) {
-      callback(null, true);
-    } else {
-      console.warn('Blocked by CORS:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-    */
-  },
+  origin: ["https://custconnect.vercel.app", "http://localhost:3000", "http://localhost:5000"],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   exposedHeaders: ['Authorization'],
   optionsSuccessStatus: 200
 }));
+
+// Explicitly handle options for all routes
+app.options('*', cors());
+
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -106,7 +91,7 @@ ensureDirectories();
 // Image serving route (before API routes for better performance)
 app.use('/uploads', imageRoutes);
 console.log('✅ Image serving route enabled at /uploads');
-console.log('   Images accessible at: http://localhost:5000/uploads/cafes/[filename]');
+console.log('   Images accessible at: https://custconnect-backend-production.up.railway.app/uploads/cafes/[filename]');
 
 // Health check endpoints
 app.get('/health', async (req, res) => {
