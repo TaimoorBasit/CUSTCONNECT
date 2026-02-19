@@ -62,7 +62,7 @@ router.get('/conversations', authenticateToken, asyncHandler(async (req: AuthReq
 // Get messages with a specific user
 router.get('/:userId', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
     const currentUserId = req.user!.id;
-    const otherUserId = req.params.userId;
+    const otherUserId = req.params.userId as any;
 
     const messages = await prisma.message.findMany({
         where: {

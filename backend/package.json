@@ -28,7 +28,7 @@
   "author": "CustConnect Team",
   "license": "MIT",
   "dependencies": {
-    "@prisma/client": "^6.17.1",
+    "@prisma/client": "6.19.2",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
@@ -38,7 +38,7 @@
     "morgan": "^1.10.1",
     "multer": "^2.0.2",
     "nodemailer": "^7.0.9",
-    "prisma": "^6.17.1",
+    "prisma": "6.19.2",
     "resend": "^6.9.2",
     "socket.io": "^4.8.1",
     "uuid": "^13.0.0"
@@ -60,6 +60,6 @@
     "supertest": "^7.1.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.20.6",
-    "typescript": "^5.9.3"
+    "typescript": "^5.7.3"
   }
 }
