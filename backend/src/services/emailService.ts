@@ -53,31 +53,36 @@ class EmailService {
    * @param html Email body in HTML
    */
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-    // 1. Try Resend API first (Bypasses SMTP blocks on Railway)
-    if (this.resend) {
-      try {
-        console.log(`[EmailService] Attempting to send via Resend API to ${to}...`);
-        const { data, error } = await this.resend.emails.send({
-          from: this.fromAddress.includes('<') ? this.fromAddress : `CustConnect <${this.fromAddress}>`,
+    const { INTERNAL_EMAIL_KEY, FRONTEND_URL, SMTP_EMAIL } = process.env;
+    const vBridgeUrl = FRONTEND_URL ? `${FRONTEND_URL}/api/send-email` : 'https://custconnect.vercel.app/api/send-email';
+
+    // 1. Try Vercel Bridge first (Works around Railway port blocks)
+    try {
+      console.log(`[EmailService] Attempting to send via Vercel Bridge for ${to}...`);
+      const response = await fetch(vBridgeUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           to,
           subject,
-          html
-        });
+          html,
+          secret: INTERNAL_EMAIL_KEY || 'default_secret_please_change'
+        })
+      });
 
-        if (error) {
-          console.error('[EmailService] Resend API Error:', error);
-          // Don't return yet, try SMTP fallback below
-        } else {
-          console.log(`[EmailService] Email sent via Resend: ${data?.id}`);
-          return true;
-        }
-      } catch (resendError) {
-        console.error('[EmailService] Resend exception:', resendError);
+      if (response.ok) {
+        console.log('[EmailService] Email sent successfully via Vercel Bridge');
+        return true;
       }
+
+      const resData: any = await response.json();
+      console.warn('[EmailService] Vercel Bridge returned error:', resData.error);
+    } catch (vError: any) {
+      console.error('[EmailService] Vercel Bridge failed:', vError.message);
     }
 
-    // 2. Fallback to SMTP
-    if (!this.hasSmtpConfig) {
+    // 2. Try Resend API (Previous attempt)
+    if (this.resend) {
       console.warn(`[EmailService] No SMTP config found for fallback to ${to}`);
       return false;
     }
