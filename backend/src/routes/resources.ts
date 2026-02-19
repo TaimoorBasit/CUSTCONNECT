@@ -141,7 +141,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get resource by ID
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const resource = await prisma.academicResource.findUnique({
     where: { id: id as string },
@@ -185,7 +185,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Download resource
 router.get('/:id/download', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const resource = await prisma.academicResource.findUnique({
     where: { id: id as string },
@@ -214,7 +214,7 @@ router.get('/:id/download', asyncHandler(async (req: AuthRequest, res) => {
 
 // Delete resource
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const resource = await prisma.academicResource.findUnique({
     where: { id: id as string },

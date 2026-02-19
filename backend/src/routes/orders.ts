@@ -17,7 +17,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
 
   // Verify cafe exists
   const cafe = await prisma.cafe.findUnique({
-    where: { id: cafeId },
+    where: { id: cafeId as string },
     include: { owner: true }
   });
 
@@ -36,7 +36,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
 
   for (const item of items) {
     const menuItem = await prisma.cafeMenu.findUnique({
-      where: { id: item.menuId }
+      where: { id: item.menuId as string }
     });
 
     if (!menuItem || !menuItem.isAvailable || menuItem.cafeId !== cafeId) {
@@ -56,14 +56,14 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
 
   // Create order - use raw SQL directly (more reliable than Prisma if client not regenerated)
   let order: any;
-  
+
   // Generate order ID (CUID format)
   const orderId = `cl${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
   const escapedNotes = (notes || '').replace(/'/g, "''").replace(/\\/g, '\\\\');
-  const totalAmountNum = typeof totalAmount === 'object' && 'toNumber' in totalAmount 
-    ? totalAmount.toNumber() 
+  const totalAmountNum = typeof totalAmount === 'object' && 'toNumber' in totalAmount
+    ? totalAmount.toNumber()
     : Number(totalAmount);
-  
+
   try {
     // Check if tables exist first
     const tableCheck = await prisma.$queryRawUnsafe<any[]>(`
@@ -72,33 +72,33 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
       WHERE TABLE_SCHEMA = DATABASE() 
       AND TABLE_NAME IN ('cafe_orders', 'cafe_order_items')
     `);
-    
+
     if (!tableCheck || tableCheck.length < 2) {
       throw createError('Order tables do not exist. Please run database migration.', 500);
     }
-    
+
     // Create order using raw SQL with proper escaping
     const notesValue = escapedNotes ? `'${escapedNotes}'` : 'NULL';
     await prisma.$executeRawUnsafe(`
       INSERT INTO cafe_orders (id, cafeId, userId, totalAmount, notes, status, createdAt, updatedAt)
       VALUES ('${orderId}', '${cafeId}', '${req.user!.id}', ${totalAmountNum}, ${notesValue}, 'PENDING', NOW(), NOW())
     `);
-    
+
     // Create order items
     for (const item of orderItems) {
       const itemId = `cl${Date.now()}${Math.random().toString(36).substr(2, 9)}`;
       const escapedItemNotes = (item.notes || '').replace(/'/g, "''").replace(/\\/g, '\\\\');
-      const itemPrice = typeof item.price === 'object' && 'toNumber' in item.price 
-        ? item.price.toNumber() 
+      const itemPrice = typeof item.price === 'object' && 'toNumber' in item.price
+        ? item.price.toNumber()
         : Number(item.price);
       const itemNotesValue = escapedItemNotes ? `'${escapedItemNotes}'` : 'NULL';
-      
+
       await prisma.$executeRawUnsafe(`
         INSERT INTO cafe_order_items (id, orderId, menuId, quantity, price, notes, createdAt)
         VALUES ('${itemId}', '${orderId}', '${item.menuId}', ${item.quantity}, ${itemPrice}, ${itemNotesValue}, NOW())
       `);
     }
-    
+
     // Fetch created order with all details
     const orderData = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
@@ -126,13 +126,13 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
       LEFT JOIN users u ON co.userId = u.id
       WHERE co.id = '${orderId}'
     `);
-    
+
     if (!orderData || orderData.length === 0) {
       throw createError('Failed to fetch created order', 500);
     }
-    
+
     const orderRow = orderData[0];
-    
+
     // Fetch order items
     const itemsData = await prisma.$queryRawUnsafe<any[]>(`
       SELECT 
@@ -150,7 +150,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
       LEFT JOIN cafe_menus cm ON coi.menuId = cm.id
       WHERE coi.orderId = '${orderId}'
     `);
-    
+
     order = {
       id: orderRow.id,
       status: orderRow.status,
@@ -179,7 +179,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
       sqlState: error.sqlState,
       sqlMessage: error.sqlMessage
     });
-    
+
     // Provide more specific error messages
     if (error.message?.includes('does not exist') || error.message?.includes('Unknown table')) {
       throw createError('Database tables not found. Please run: npx prisma db push', 500);
@@ -190,7 +190,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
     if (error.code === 'ER_NO_SUCH_TABLE') {
       throw createError('Order tables do not exist. Please run database migration.', 500);
     }
-    
+
     throw createError(error.message || 'Failed to create order. Please try again.', 500);
   }
 
@@ -199,7 +199,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
     const customerName = order.user ? `${order.user.firstName} ${order.user.lastName}` : 'Customer';
     const totalAmountStr = order.totalAmount?.toString() || totalAmount.toString();
     const itemCount = order.items?.length || orderItems.length;
-    
+
     io.to(cafe.ownerId).emit('new-order', {
       orderId: order.id,
       cafeId: cafe.id,
@@ -255,7 +255,7 @@ router.get('/my-orders', asyncHandler(async (req: AuthRequest, res) => {
     whereClause.status = status;
   }
 
-    const orders = await (prisma as any).cafeOrder.findMany({
+  const orders = await (prisma as any).cafeOrder.findMany({
     where: whereClause,
     include: {
       cafe: {
@@ -311,7 +311,7 @@ router.get('/vendor', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandler(a
     try {
       // Get cafe IDs owned by this user
       let cafeIds: string[] = [];
-      
+
       if (isSuperAdmin) {
         // Super admin can see all orders
         const allCafes = await prisma.$queryRawUnsafe<any[]>(`SELECT id FROM cafes`);
@@ -333,8 +333,8 @@ router.get('/vendor', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandler(a
       }
 
       // Build status filter
-      const statusFilter = status && status !== 'all' && status !== '' 
-        ? `AND co.status = '${status}'` 
+      const statusFilter = status && status !== 'all' && status !== ''
+        ? `AND co.status = '${status}'`
         : '';
 
       // Fetch orders for all cafes owned by this vendor
@@ -442,7 +442,7 @@ router.get('/cafe/:cafeId', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHan
     // Verify cafe ownership using raw SQL (more reliable)
     const userRoles = req.user!.roles || [];
     const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
-    
+
     let cafe: any;
     try {
       const cafeData = await prisma.$queryRawUnsafe<any[]>(`
@@ -451,13 +451,13 @@ router.get('/cafe/:cafeId', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHan
         WHERE id = '${cafeId}'
         LIMIT 1
       `);
-      
+
       if (!cafeData || cafeData.length === 0) {
         throw createError('Cafe not found', 404);
       }
-      
+
       cafe = cafeData[0];
-      
+
       // Check authorization
       if (cafe.ownerId !== req.user!.id && !isSuperAdmin) {
         throw createError('Not authorized to view orders for this cafe', 403);
@@ -488,7 +488,7 @@ router.get('/cafe/:cafeId', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHan
         WHERE TABLE_SCHEMA = DATABASE() 
         AND TABLE_NAME = 'cafe_orders'
       `);
-      
+
       if (!tableCheck || tableCheck.length === 0) {
         console.warn('⚠️  cafe_orders table does not exist');
         orders = [];
@@ -541,17 +541,17 @@ router.get('/cafe/:cafeId', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHan
             WHERE coi.orderId = '${order.id}'
           `);
 
-          order.items = itemsQuery.map((item: any) => ({
-            ...item,
-            menu: typeof item.menu === 'string' ? JSON.parse(item.menu) : item.menu
-          }));
-        } catch (itemError) {
-          order.items = [];
-        }
+            order.items = itemsQuery.map((item: any) => ({
+              ...item,
+              menu: typeof item.menu === 'string' ? JSON.parse(item.menu) : item.menu
+            }));
+          } catch (itemError) {
+            order.items = [];
+          }
 
-        // Parse user JSON
-        order.user = typeof order.user === 'string' ? JSON.parse(order.user) : order.user;
-      }
+          // Parse user JSON
+          order.user = typeof order.user === 'string' ? JSON.parse(order.user) : order.user;
+        }
 
         orders = ordersQuery;
 
@@ -589,7 +589,7 @@ router.get('/cafe/:cafeId', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHan
 
 // Update order status (Cafe Owner)
 router.put('/:id/status', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { status } = req.body;
 
   if (!status || !['PENDING', 'CONFIRMED', 'PREPARING', 'READY', 'COMPLETED', 'CANCELLED'].includes(status)) {
@@ -674,7 +674,7 @@ router.put('/:id/status', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandl
 
 // Get single order
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const order = await (prisma as any).cafeOrder.findUnique({
     where: { id },
@@ -738,7 +738,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Cancel order (Student)
 router.put('/:id/cancel', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const order = await (prisma as any).cafeOrder.findUnique({
     where: { id },

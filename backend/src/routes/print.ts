@@ -125,11 +125,11 @@ router.post('/request', printUpload.single('file'), asyncHandler(async (req: Aut
 
   // Verify printer shop exists
   const shop = await prisma.printerShop.findUnique({
-    where: { id: printerShopId }
+    where: { id: printerShopId as string }
   }).catch(() => {
     // Try raw SQL
     return prisma.$queryRawUnsafe(`
-      SELECT * FROM printer_shops WHERE id = '${printerShopId.replace(/'/g, "''")}' AND isActive = true
+      SELECT * FROM printer_shops WHERE id = '${String(printerShopId).replace(/'/g, "''")}' AND isActive = true
     `).then((results: any) => results[0] || null);
   });
 
@@ -203,9 +203,9 @@ router.post('/request', printUpload.single('file'), asyncHandler(async (req: Aut
         INSERT INTO print_requests (id, userId, printerShopId, fileName, fileUrl, printType, copies, notes, price, status, createdAt, updatedAt)
         VALUES (
           '${requestId}',
-          '${req.user!.id.replace(/'/g, "''")}',
-          '${printerShopId.replace(/'/g, "''")}',
-          '${file.originalname.replace(/'/g, "''")}',
+          '${(req.user!.id as string).replace(/'/g, "''")}',
+          '${String(printerShopId).replace(/'/g, "''")}',
+          '${String(file.originalname).replace(/'/g, "''")}',
           '${fileUrl.replace(/'/g, "''")}',
           '${(printType || 'BLACK_WHITE').replace(/'/g, "''")}',
           ${copiesNum},
@@ -406,7 +406,7 @@ router.get('/requests', asyncHandler(async (req: AuthRequest, res) => {
 
 // Update print request status (printer shop owner)
 router.put('/requests/:id/status', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { status } = req.body;
 
   if (!status) {
@@ -422,7 +422,7 @@ router.put('/requests/:id/status', asyncHandler(async (req: AuthRequest, res) =>
     // Verify the request belongs to a shop owned by this user
     try {
       requestCheck = await prisma.printRequest.findUnique({
-        where: { id },
+        where: { id: id as string },
         include: {
           printerShop: {
             select: { ownerId: true }
@@ -436,7 +436,7 @@ router.put('/requests/:id/status', asyncHandler(async (req: AuthRequest, res) =>
           SELECT pr.*, ps.ownerId
           FROM print_requests pr
           LEFT JOIN printer_shops ps ON pr.printerShopId = ps.id
-          WHERE pr.id = '${id.replace(/'/g, "''")}'
+          WHERE pr.id = '${String(id).replace(/'/g, "''")}'
         `);
         requestCheck = results[0] || null;
       } catch {
@@ -456,7 +456,7 @@ router.put('/requests/:id/status', asyncHandler(async (req: AuthRequest, res) =>
 
   try {
     const request = await prisma.printRequest.update({
-      where: { id },
+      where: { id: id as string },
       data: {
         status: status as any,
         printedAt: status === 'COMPLETED' ? new Date() : null,
@@ -506,7 +506,7 @@ router.put('/requests/:id/status', asyncHandler(async (req: AuthRequest, res) =>
       await prisma.$executeRawUnsafe(`
         UPDATE print_requests
         SET ${updateData.join(', ')}
-        WHERE id = '${id.replace(/'/g, "''")}'
+        WHERE id = '${String(id).replace(/'/g, "''")}'
       `);
 
       res.json({

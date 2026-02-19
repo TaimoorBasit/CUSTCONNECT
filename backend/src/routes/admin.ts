@@ -77,7 +77,7 @@ router.post('/users', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async
 
 // Get all users (Admin only)
 router.get('/users', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
-  const { page = 1, limit = 100, search, universityId, role } = req.query; // Increased limit to 100
+  const { page = 1, limit = 100, search, universityId, role } = req.query as any; // Increased limit to 100
   const offset = (Number(page) - 1) * Number(limit);
 
   const whereClause: any = {};
@@ -181,7 +181,7 @@ router.get('/users', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']), asyncHand
 
 // Suspend/Unsuspend user
 router.put('/users/:id/suspend', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { suspend = true } = req.body;
 
   const user = await prisma.user.findUnique({
@@ -211,7 +211,7 @@ router.put('/users/:id/suspend', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']
 
 // Delete user
 router.delete('/users/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const user = await prisma.user.findUnique({
     where: { id },
@@ -311,7 +311,7 @@ router.delete('/users/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler
 
 // Reset user password
 router.post('/users/:id/reset-password', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const user = await prisma.user.findUnique({
     where: { id }
@@ -492,7 +492,7 @@ router.get('/posts', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']), asyncHand
 
 // Remove post
 router.delete('/posts/:id', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const post = await prisma.post.findUnique({
     where: { id },
@@ -552,7 +552,7 @@ router.delete('/posts/:id', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']), au
 
 // Send warning to user
 router.post('/users/:id/warning', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { message } = req.body;
 
   if (!message || !message.trim()) {
@@ -769,7 +769,7 @@ router.post('/universities', requireRole(['SUPER_ADMIN']), auditLog, asyncHandle
 
 // Assign role to user
 router.post('/users/:id/roles', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { roleId } = req.body;
 
   if (!roleId) {
@@ -1081,7 +1081,7 @@ router.post('/vendors/create', requireRole(['SUPER_ADMIN']), auditLog, asyncHand
 
 // Approve vendor
 router.post('/vendors/:id/approve', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   await prisma.user.update({
     where: { id },
@@ -1149,7 +1149,7 @@ router.post('/cafes', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async
 
 // Update cafe
 router.put('/cafes/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { name, description, location, phone, email, openingHours, isActive, ownerId } = req.body;
 
   const cafe = await prisma.cafe.update({
@@ -1179,7 +1179,7 @@ router.put('/cafes/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(as
 
 // Delete cafe
 router.delete('/cafes/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   // Check if cafe exists
   const cafe = await prisma.cafe.findUnique({
@@ -1261,7 +1261,7 @@ router.delete('/cafes/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler
 
 // Assign cafe to owner
 router.post('/cafes/:id/assign', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { ownerId } = req.body;
 
   if (!ownerId) {
@@ -1330,7 +1330,7 @@ router.post('/buses', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async
 
 // Update bus route
 router.put('/buses/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { name, number, description, isActive } = req.body;
 
   const route = await prisma.busRoute.update({
@@ -1355,7 +1355,7 @@ router.put('/buses/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(as
 
 // Delete bus route
 router.delete('/buses/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   await prisma.busRoute.delete({
     where: { id }
@@ -1478,7 +1478,7 @@ router.get('/analytics', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: 
 
 // Get grading system for university
 router.get('/grading/:universityId', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
-  const { universityId } = req.params;
+  const { universityId } = req.params as any;
 
   // For now, return empty array - we'll implement grading scale storage later
   // This would require adding a GradingScale model to the schema
@@ -1490,7 +1490,7 @@ router.get('/grading/:universityId', requireRole(['SUPER_ADMIN']), asyncHandler(
 
 // Update grading system for university
 router.put('/grading/:universityId', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { universityId } = req.params;
+  const { universityId } = req.params as any;
   const { scales } = req.body;
 
   // For now, just return success - we'll implement grading scale storage later
@@ -1565,7 +1565,7 @@ router.get('/resources', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: 
 
 // Delete resource (admin)
 router.delete('/resources/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const resource = await prisma.academicResource.findUnique({
     where: { id }
@@ -1647,7 +1647,7 @@ router.get('/events', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: Aut
 
 // Delete event (admin)
 router.delete('/events/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const event = await prisma.event.findUnique({
     where: { id }
@@ -1777,7 +1777,7 @@ router.post('/notifications', requireRole(['SUPER_ADMIN']), auditLog, asyncHandl
 
 // Delete notification (admin)
 router.delete('/notifications/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const notification = await prisma.notification.findUnique({
     where: { id }
@@ -2064,7 +2064,7 @@ router.post('/printer-shops', requireRole(['SUPER_ADMIN']), auditLog, asyncHandl
 
 // Update printer shop
 router.put('/printer-shops/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { name, description, location, phone, email, ownerId, isActive } = req.body;
 
   try {
@@ -2128,7 +2128,7 @@ router.put('/printer-shops/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHa
 
 // Delete printer shop
 router.delete('/printer-shops/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   try {
     // Delete all print requests first

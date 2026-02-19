@@ -184,7 +184,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get post by ID
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const post = await prisma.post.findUnique({
     where: { id },
@@ -251,7 +251,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Update post
 router.put('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { content, imageUrl, videoUrl, privacy } = req.body;
 
   const post = await prisma.post.findUnique({
@@ -335,7 +335,7 @@ router.put('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Delete post
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const post = await prisma.post.findUnique({
     where: { id },
@@ -377,7 +377,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Like/Unlike post
 router.post('/:id/like', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const post = await prisma.post.findUnique({
     where: { id },
@@ -449,7 +449,7 @@ router.post('/:id/like', asyncHandler(async (req: AuthRequest, res) => {
 
 // Add comment
 router.post('/:id/comment', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { content } = req.body;
 
   if (!content || content.trim().length === 0) {
@@ -514,7 +514,7 @@ router.post('/:id/comment', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get post comments
 router.get('/:id/comments', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { page = 1, limit = 20 } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
@@ -636,11 +636,11 @@ router.delete('/comments/:commentId', asyncHandler(async (req: AuthRequest, res)
 
 // Report post
 router.post('/:id/report', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { reason } = req.body;
 
-  const post = await prisma.post.findUnique({
-    where: { id },
+  const post: any = await prisma.post.findUnique({
+    where: { id: id as string },
     include: {
       author: {
         select: {
@@ -741,7 +741,7 @@ router.post('/:id/report', asyncHandler(async (req: AuthRequest, res) => {
         data: {
           userId: admin.id,
           title: 'Post Reported',
-          message: `Post by ${post.author.firstName} ${post.author.lastName} has been reported by ${req.user!.firstName} ${req.user!.lastName}. Reason: ${reason || 'No reason provided'}`,
+          message: `Post by ${(post as any).author.firstName} ${(post as any).author.lastName} has been reported by ${req.user!.firstName} ${req.user!.lastName}. Reason: ${reason || 'No reason provided'}`,
           type: 'WARNING'
         }
       })
@@ -753,7 +753,7 @@ router.post('/:id/report', asyncHandler(async (req: AuthRequest, res) => {
     superAdmins.forEach(admin => {
       io.to(admin.id).emit('notification', {
         title: 'Post Reported',
-        message: `Post by ${post.author.firstName} ${post.author.lastName} has been reported`,
+        message: `Post by ${(post as any).author.firstName} ${(post as any).author.lastName} has been reported`,
         type: 'WARNING'
       });
     });

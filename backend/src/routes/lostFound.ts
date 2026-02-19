@@ -10,7 +10,7 @@ const router = express.Router();
 // Get all lost & found items (Students)
 router.get('/', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
   const { category, status, universityId } = req.query;
-  
+
   // Get user's university
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
@@ -18,11 +18,11 @@ router.get('/', authenticateToken, asyncHandler(async (req: AuthRequest, res) =>
   });
 
   const whereClause: any = {};
-  
+
   if (category && (category === 'Lost' || category === 'Found')) {
     whereClause.category = category;
   }
-  
+
   if (status && (status === 'ACTIVE' || status === 'RESOLVED' || status === 'CLOSED')) {
     whereClause.status = status;
   } else {
@@ -70,7 +70,7 @@ router.get('/', authenticateToken, asyncHandler(async (req: AuthRequest, res) =>
 
 // Get single lost & found item
 router.get('/:id', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const item = await prisma.lostFound.findUnique({
     where: { id },
@@ -150,7 +150,7 @@ router.post('/', authenticateToken, asyncHandler(async (req: AuthRequest, res) =
 
 // Upload image for lost & found item
 router.post('/:id/image', authenticateToken, uploadLostFound.single('image'), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   if (!req.file) {
     throw createError('No image file provided', 400);
@@ -197,7 +197,7 @@ router.post('/:id/image', authenticateToken, uploadLostFound.single('image'), as
 
 // Mark item as resolved (Student who posted it or Super Admin)
 router.put('/:id/resolve', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { resolvedBy } = req.body;
 
   const item = await prisma.lostFound.findUnique({
@@ -246,7 +246,7 @@ router.put('/:id/resolve', authenticateToken, asyncHandler(async (req: AuthReque
 
 // Delete lost & found item (Owner or Super Admin)
 router.delete('/:id', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const item = await prisma.lostFound.findUnique({
     where: { id },
@@ -266,7 +266,7 @@ router.delete('/:id', authenticateToken, asyncHandler(async (req: AuthRequest, r
   }
 
   await prisma.lostFound.delete({
-    where: { id }
+    where: { id: id as string }
   });
 
   res.json({
