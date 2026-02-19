@@ -1,4 +1,6 @@
-import express, { Request, Response } from 'express';
+import express, { Request as ExpressRequest, Response as ExpressResponse } from 'express';
+type Request = ExpressRequest<any, any, any, any>;
+type Response = ExpressResponse;
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../index';
