@@ -282,7 +282,7 @@ router.put('/:id', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   const updatedPost = await prisma.post.update({
-    where: { id },
+    where: { id: id as string },
     data: {
       content,
       imageUrl,
@@ -365,7 +365,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
   }
 
   await prisma.post.update({
-    where: { id },
+    where: { id: id as string },
     data: { isActive: false }
   });
 
@@ -519,7 +519,7 @@ router.get('/:id/comments', asyncHandler(async (req: AuthRequest, res) => {
   const offset = (Number(page) - 1) * Number(limit);
 
   const comments = await prisma.comment.findMany({
-    where: { postId: id },
+    where: { postId: id as string },
     include: {
       author: {
         select: {
@@ -537,7 +537,7 @@ router.get('/:id/comments', asyncHandler(async (req: AuthRequest, res) => {
   });
 
   const total = await prisma.comment.count({
-    where: { postId: id }
+    where: { postId: id as string }
   });
 
   res.json({
@@ -583,7 +583,7 @@ router.put('/comments/:commentId', asyncHandler(async (req: AuthRequest, res) =>
   }
 
   const updatedComment = await prisma.comment.update({
-    where: { id: commentId },
+    where: { id: commentId as string },
     data: {
       content: content.trim()
     },
@@ -672,7 +672,7 @@ router.post('/:id/report', asyncHandler(async (req: AuthRequest, res) => {
     // Generate report ID
     const { randomBytes } = require('crypto');
     const reportId = `report_${Date.now()}_${randomBytes(4).toString('hex')}`;
-    
+
     // Create report - handle case where table might not exist yet
     const reasonValue = reason || null;
     try {
@@ -684,9 +684,9 @@ router.post('/:id/report', asyncHandler(async (req: AuthRequest, res) => {
       // Log the full error for debugging
       console.error('Database error when creating report:', dbError);
       // If table doesn't exist, provide helpful error message
-      if (dbError.message && (dbError.message.includes("doesn't exist") || 
-          dbError.message.includes("Unknown table") ||
-          dbError.message.includes("Table") && dbError.message.includes("doesn't exist"))) {
+      if (dbError.message && (dbError.message.includes("doesn't exist") ||
+        dbError.message.includes("Unknown table") ||
+        dbError.message.includes("Table") && dbError.message.includes("doesn't exist"))) {
         throw createError('Database table not found. Please run: npx prisma db push', 500);
       }
       // Check for column name errors
@@ -710,7 +710,7 @@ router.post('/:id/report', asyncHandler(async (req: AuthRequest, res) => {
         WHERE pr.id = ${reportId}
         LIMIT 1
       ` as any[];
-      
+
       reportData = report && report.length > 0 ? report[0] : null;
     } catch (queryError) {
       // If query fails, we still have the report created, just use basic data
@@ -719,44 +719,44 @@ router.post('/:id/report', asyncHandler(async (req: AuthRequest, res) => {
 
     // Find all super admins
     const superAdmins = await prisma.user.findMany({
-    where: {
-      roles: {
-        some: {
-          role: {
-            name: 'SUPER_ADMIN'
+      where: {
+        roles: {
+          some: {
+            role: {
+              name: 'SUPER_ADMIN'
+            }
           }
-        }
+        },
+        isActive: true
       },
-      isActive: true
-    },
-    select: {
-      id: true,
-      email: true
-    }
-  });
-
-  // Send notification to all super admins
-  const notificationPromises = superAdmins.map(admin =>
-    prisma.notification.create({
-      data: {
-        userId: admin.id,
-        title: 'Post Reported',
-        message: `Post by ${post.author.firstName} ${post.author.lastName} has been reported by ${req.user!.firstName} ${req.user!.lastName}. Reason: ${reason || 'No reason provided'}`,
-        type: 'WARNING'
+      select: {
+        id: true,
+        email: true
       }
-    })
-  );
-
-  await Promise.all(notificationPromises);
-
-  // Emit real-time notification to super admins
-  superAdmins.forEach(admin => {
-    io.to(admin.id).emit('notification', {
-      title: 'Post Reported',
-      message: `Post by ${post.author.firstName} ${post.author.lastName} has been reported`,
-      type: 'WARNING'
     });
-  });
+
+    // Send notification to all super admins
+    const notificationPromises = superAdmins.map(admin =>
+      prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: 'Post Reported',
+          message: `Post by ${post.author.firstName} ${post.author.lastName} has been reported by ${req.user!.firstName} ${req.user!.lastName}. Reason: ${reason || 'No reason provided'}`,
+          type: 'WARNING'
+        }
+      })
+    );
+
+    await Promise.all(notificationPromises);
+
+    // Emit real-time notification to super admins
+    superAdmins.forEach(admin => {
+      io.to(admin.id).emit('notification', {
+        title: 'Post Reported',
+        message: `Post by ${post.author.firstName} ${post.author.lastName} has been reported`,
+        type: 'WARNING'
+      });
+    });
 
     res.status(201).json({
       success: true,
