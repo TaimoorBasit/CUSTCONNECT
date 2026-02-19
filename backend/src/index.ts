@@ -113,7 +113,7 @@ app.get('/health', async (req, res) => {
 app.get('/api/ping', (req, res) => {
   res.json({
     success: true,
-    message: 'Backend server is running - v3-bridge-active',
+    message: 'Backend server is running - v4-final-fix',
     timestamp: new Date().toISOString()
   });
 });
