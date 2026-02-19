@@ -11,7 +11,7 @@ ensureDirectories();
 // Serve cafe images
 // Serve profile pictures (using lost-found directory for now)
 router.get('/profiles/:filename', (req, res) => {
-  const { filename } = req.params;
+  const { filename } = req.params as any;
 
   // Security: Prevent directory traversal
   if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
@@ -53,7 +53,7 @@ router.get('/profiles/:filename', (req, res) => {
 
 // Serve lost-found images
 router.get('/lost-found/:filename', (req, res) => {
-  const { filename } = req.params;
+  const { filename } = req.params as any;
 
   // Security: Prevent directory traversal
   if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
@@ -82,7 +82,7 @@ router.get('/lost-found/:filename', (req, res) => {
 });
 
 router.get('/cafes/:filename', (req, res) => {
-  const { filename } = req.params;
+  const { filename } = req.params as any;
 
   // Security: prevent directory traversal
   if (!filename || filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
@@ -160,7 +160,7 @@ router.get('/cafes/:filename', (req, res) => {
 
 // Serve print documents
 router.get('/prints/:filename', (req, res) => {
-  const { filename } = req.params;
+  const { filename } = req.params as any;
 
   // Security: Prevent directory traversal
   if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {

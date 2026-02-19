@@ -71,7 +71,7 @@ router.get('/routes', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get specific bus route
 router.get('/routes/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const route = await prisma.busRoute.findUnique({
     where: { id },
@@ -126,7 +126,7 @@ router.get('/routes/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Subscribe to bus route
 router.post('/routes/:id/subscribe', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const route = await prisma.busRoute.findUnique({
     where: { id }
@@ -165,7 +165,7 @@ router.post('/routes/:id/subscribe', asyncHandler(async (req: AuthRequest, res) 
 
 // Unsubscribe from bus route
 router.delete('/routes/:id/subscribe', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const subscription = await prisma.busSubscription.findUnique({
     where: {
@@ -496,7 +496,7 @@ router.get('/emergencies', requireRole(['SUPER_ADMIN', 'BUS_OPERATOR']), asyncHa
 
 // Update emergency status (for admins and bus operators)
 router.put('/emergencies/:id/status', requireRole(['SUPER_ADMIN', 'BUS_OPERATOR']), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { status, notes } = req.body;
 
   if (!status) {
@@ -566,7 +566,7 @@ router.put('/emergencies/:id/status', requireRole(['SUPER_ADMIN', 'BUS_OPERATOR'
 
 // Report bus issue (legacy endpoint - kept for backward compatibility)
 router.post('/routes/:id/report', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { issue, description } = req.body;
 
   if (!issue || !description) {
@@ -629,7 +629,7 @@ router.post('/routes/:id/report', asyncHandler(async (req: AuthRequest, res) => 
 
 // Update bus route status (Bus Operator only)
 router.put('/routes/:id/status', requireRole(['BUS_OPERATOR', 'SUPER_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { title, message, type = 'INFO' } = req.body;
 
   if (!title || !message) {

@@ -186,7 +186,7 @@ router.post('/profile/picture', uploadLostFound.single('image'), asyncHandler(as
 
 // Get user by ID
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const user = await prisma.user.findUnique({
     where: { id: id as string },
@@ -334,7 +334,7 @@ router.delete('/follow', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get followers
 router.get('/:id/followers', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { page = 1, limit = 20 } = req.query;
 
   const offset = (Number(page) - 1) * Number(limit);
@@ -375,7 +375,7 @@ router.get('/:id/followers', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get following
 router.get('/:id/following', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { page = 1, limit = 20 } = req.query;
 
   const offset = (Number(page) - 1) * Number(limit);

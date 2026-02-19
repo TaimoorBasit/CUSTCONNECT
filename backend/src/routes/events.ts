@@ -151,7 +151,7 @@ router.post('/', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get event by ID
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const event = await prisma.event.findUnique({
     where: { id },
@@ -209,7 +209,7 @@ router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Update event
 router.put('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { title, description, location, startDate, endDate } = req.body;
 
   const event = await prisma.event.findUnique({
@@ -272,7 +272,7 @@ router.put('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // Delete event
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const event = await prisma.event.findUnique({
     where: { id },
@@ -300,7 +300,7 @@ router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
 
 // RSVP to event
 router.post('/:id/rsvp', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { status = 'GOING' } = req.body;
 
   const event = await prisma.event.findUnique({

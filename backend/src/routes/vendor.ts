@@ -84,7 +84,7 @@ router.get('/cafe', authenticateToken, requireRole(['CAFE_OWNER', 'SUPER_ADMIN']
 
 // Update cafe menu (Cafe Owner only)
 router.put('/cafes/:id/menu', authenticateToken, requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { menus } = req.body;
 
   if (!menus || !Array.isArray(menus)) {
@@ -151,7 +151,7 @@ router.put('/cafes/:id/menu', authenticateToken, requireRole(['CAFE_OWNER', 'SUP
 
 // Update cafe deals (Cafe Owner only)
 router.put('/cafes/:id/deals', authenticateToken, requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { deals } = req.body;
 
   if (!deals || !Array.isArray(deals)) {
@@ -251,7 +251,7 @@ router.get('/buses', authenticateToken, requireRole(['BUS_OPERATOR', 'SUPER_ADMI
 
 // Update bus route details (Bus Operator only)
 router.put('/buses/:id', authenticateToken, requireRole(['BUS_OPERATOR', 'SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { busNumber, driverContactNumber, description } = req.body;
 
   const route = await prisma.busRoute.findUnique({
@@ -293,7 +293,7 @@ router.put('/buses/:id', authenticateToken, requireRole(['BUS_OPERATOR', 'SUPER_
 
 // Update bus route schedule (Bus Operator only)
 router.put('/buses/:id/schedule', authenticateToken, requireRole(['BUS_OPERATOR', 'SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { schedules } = req.body;
 
   if (!schedules || !Array.isArray(schedules)) {
@@ -332,7 +332,7 @@ router.put('/buses/:id/schedule', authenticateToken, requireRole(['BUS_OPERATOR'
 
 // Send bus notification (Bus Operator only)
 router.post('/buses/:id/notify', authenticateToken, requireRole(['BUS_OPERATOR', 'SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { title, message, type = 'INFO' } = req.body;
 
   if (!title || !message) {

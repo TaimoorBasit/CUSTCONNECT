@@ -320,7 +320,7 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get specific café
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const cafe = await prisma.cafe.findUnique({
     where: { id },
@@ -416,7 +416,7 @@ router.post('/:id/image', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), (req: Auth
     next();
   });
 }, asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   if (!req.file) {
     throw createError('Image file is required', 400);
@@ -516,7 +516,7 @@ router.post('/:id/image', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), (req: Auth
 
 // Update café menu (Café Owner only)
 router.put('/:id/menu', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { menus } = req.body;
 
   if (!menus || !Array.isArray(menus)) {
@@ -590,7 +590,7 @@ router.post('/menu/:menuId/image', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), (
     next();
   });
 }, asyncHandler(async (req: AuthRequest, res) => {
-  const { menuId } = req.params;
+  const { menuId } = req.params as any;
 
   if (!req.file) {
     throw createError('Image file is required', 400);
@@ -684,7 +684,7 @@ router.post('/menu/:menuId/image', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), (
 
 // Update café deals (Café Owner only)
 router.put('/:id/deals', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { deals } = req.body;
 
   if (!deals || !Array.isArray(deals)) {
@@ -732,7 +732,7 @@ router.put('/:id/deals', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandle
 
 // Get café menu
 router.get('/:id/menu', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { category } = req.query;
 
   const whereClause: any = {
@@ -764,7 +764,7 @@ router.get('/:id/menu', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get café deals
 router.get('/:id/deals', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const deals = await prisma.cafeDeal.findMany({
     where: {
@@ -851,7 +851,7 @@ router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
 
 // Add rating to cafe
 router.post('/:id/rating', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { rating, comment } = req.body;
 
   if (!rating || rating < 1 || rating > 5) {
@@ -905,7 +905,7 @@ router.post('/:id/rating', asyncHandler(async (req: AuthRequest, res) => {
 
 // Get cafe ratings
 router.get('/:id/ratings', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
   const { page = 1, limit = 20 } = req.query;
 
   const ratings = await prisma.$queryRaw<Array<any>>`

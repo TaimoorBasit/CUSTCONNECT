@@ -821,7 +821,7 @@ router.post('/users/:id/roles', requireRole(['SUPER_ADMIN']), auditLog, asyncHan
 
 // Remove role from user
 router.delete('/users/:id/roles/:roleId', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
-  const { id, roleId } = req.params;
+  const { id, roleId } = req.params as any;
 
   const user = await prisma.user.findUnique({
     where: { id },

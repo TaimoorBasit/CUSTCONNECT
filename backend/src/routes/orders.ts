@@ -435,7 +435,7 @@ router.get('/vendor', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandler(a
 
 // Get cafe orders (Cafe Owner)
 router.get('/cafe/:cafeId', requireRole(['CAFE_OWNER', 'SUPER_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
-  const { cafeId } = req.params;
+  const { cafeId } = req.params as any;
   const { status, page = 1, limit = 20 } = req.query;
 
   try {

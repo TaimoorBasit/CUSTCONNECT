@@ -153,7 +153,7 @@ router.get('/current', asyncHandler(async (req: AuthRequest, res) => {
 
 // Delete GPA record
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const record = await prisma.gPARecord.findUnique({
     where: { id },
