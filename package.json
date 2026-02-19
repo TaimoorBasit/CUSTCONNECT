@@ -9,14 +9,19 @@
     "dev:backend": "cd backend && npm run dev",
     "build": "cd frontend && npm run build",
     "start": "cd frontend && npm run start",
-    "install:all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "install:all": "npm install && cd frontend && npm install --legacy-peer-deps && cd ../backend && npm install",
     "test": "cd frontend && npm test && cd ../backend && npm test"
   },
-  "keywords": ["student", "university", "social", "campus", "services"],
+  "keywords": [
+    "student",
+    "university",
+    "social",
+    "campus",
+    "services"
+  ],
   "author": "CustConnect Team",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
 }
-
