@@ -510,12 +510,10 @@ router.post('/resend-otp', asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  // Send email
-  try {
-    await emailService.sendOTP(email, otp);
-  } catch (error) {
+  // Send email (Non-blocking)
+  emailService.sendOTP(email, otp).catch((error) => {
     console.error('Failed to send OTP:', error);
-  }
+  });
 
   return res.json({
     success: true,
