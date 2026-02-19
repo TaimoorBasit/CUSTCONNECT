@@ -1,50 +1,45 @@
 import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
 
 class EmailService {
   private transporter: nodemailer.Transporter;
+  private resend: Resend | null = null;
   private readonly hasSmtpConfig: boolean;
   private readonly fromAddress: string;
   private readonly frontendUrl: string;
 
   constructor() {
-    const { SMTP_EMAIL, SMTP_PASS, FRONTEND_URL } = process.env;
+    const { SMTP_EMAIL, SMTP_PASS, FRONTEND_URL, RESEND_API_KEY } = process.env;
 
-    // Validate required environment variables
+    // Initialize Resend if API key is provided (Best for Railway/Cloud)
+    if (RESEND_API_KEY) {
+      console.log('[EmailService] Initializing with Resend API (Recommended)...');
+      this.resend = new Resend(RESEND_API_KEY);
+    }
+
+    // Validate SMTP fallback
     this.hasSmtpConfig = Boolean(SMTP_EMAIL && SMTP_PASS);
-    this.fromAddress = SMTP_EMAIL || 'CustConnect <no-reply@custconnect.dev>';
+    this.fromAddress = SMTP_EMAIL || 'onboarding@resend.dev'; // Resend default for testing
     this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
 
     if (this.hasSmtpConfig) {
-      console.log(`[EmailService] Initializing SMTP for Gmail (${SMTP_EMAIL})...`);
+      console.log(`[EmailService] Configuring SMTP Fallback for ${SMTP_EMAIL}...`);
       this.transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false, // use STARTTLS
+        secure: false,
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
         },
         tls: {
-          rejectUnauthorized: false // Helps with some cloud hosting restrictions
-        },
-        pool: true
-      });
-
-      // Verify connection configuration
-      this.transporter.verify((error, success) => {
-        if (error) {
-          console.error('[EmailService] SMTP Verification Failed:', error.message);
-          console.error('[EmailService] Details:', {
-            code: (error as any).code,
-            command: (error as any).command
-          });
-        } else {
-          console.log('[EmailService] SMTP Server is ready');
+          rejectUnauthorized: false
         }
       });
+
+      // We don't verify SMTP here to avoid blocking startup since we know it might fail on Railway
     } else {
-      console.warn('[EmailService] SMTP_EMAIL or SMTP_PASS missing. Email sending will be disabled/mocked.');
-      // Mock transporter for development without creds
+      console.warn('[EmailService] SMTP fallback not configured. Using mock transport.');
       this.transporter = nodemailer.createTransport({
         jsonTransport: true
       });
@@ -58,12 +53,37 @@ class EmailService {
    * @param html Email body in HTML
    */
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
+    // 1. Try Resend API first (Bypasses SMTP blocks on Railway)
+    if (this.resend) {
+      try {
+        console.log(`[EmailService] Attempting to send via Resend API to ${to}...`);
+        const { data, error } = await this.resend.emails.send({
+          from: this.fromAddress.includes('<') ? this.fromAddress : `CustConnect <${this.fromAddress}>`,
+          to,
+          subject,
+          html
+        });
+
+        if (error) {
+          console.error('[EmailService] Resend API Error:', error);
+          // Don't return yet, try SMTP fallback below
+        } else {
+          console.log(`[EmailService] Email sent via Resend: ${data?.id}`);
+          return true;
+        }
+      } catch (resendError) {
+        console.error('[EmailService] Resend exception:', resendError);
+      }
+    }
+
+    // 2. Fallback to SMTP
     if (!this.hasSmtpConfig) {
-      console.warn(`[EmailService] Mock send to ${to}: ${subject}`);
+      console.warn(`[EmailService] No SMTP config found for fallback to ${to}`);
       return false;
     }
 
     try {
+      console.log(`[EmailService] Falling back to SMTP for ${to}...`);
       const info = await this.transporter.sendMail({
         from: this.fromAddress,
         to,
@@ -71,10 +91,10 @@ class EmailService {
         html
       });
 
-      console.log(`[EmailService] Email sent: ${info.messageId}`);
+      console.log(`[EmailService] Email sent via SMTP: ${info.messageId}`);
       return true;
     } catch (error) {
-      console.error('[EmailService] Error sending email:', error);
+      console.error('[EmailService] SMTP Fallback failed:', error);
       return false;
     }
   }
