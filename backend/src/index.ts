@@ -134,7 +134,7 @@ app.get('/api/seed', async (req, res) => {
         data: {
           name: 'SUPER_ADMIN',
           description: 'Full system access',
-          permissions: ['*']
+          permissions: '*'
         }
       });
     }

@@ -92,7 +92,7 @@ router.put('/cafes/:id/menu', authenticateToken, requireRole(['CAFE_OWNER', 'SUP
   }
 
   const cafe = await prisma.cafe.findUnique({
-    where: { id },
+    where: { id: id as string },
     select: { ownerId: true },
   });
 
@@ -109,7 +109,7 @@ router.put('/cafes/:id/menu', authenticateToken, requireRole(['CAFE_OWNER', 'SUP
   try {
     // Delete existing menus
     await prisma.cafeMenu.deleteMany({
-      where: { cafeId: id },
+      where: { cafeId: id as string },
     });
 
     // Create new menus with isFeatured
@@ -159,7 +159,7 @@ router.put('/cafes/:id/deals', authenticateToken, requireRole(['CAFE_OWNER', 'SU
   }
 
   const cafe = await prisma.cafe.findUnique({
-    where: { id },
+    where: { id: id as string },
     select: { ownerId: true },
   });
 
@@ -176,7 +176,7 @@ router.put('/cafes/:id/deals', authenticateToken, requireRole(['CAFE_OWNER', 'SU
   try {
     // Delete existing deals
     await prisma.cafeDeal.deleteMany({
-      where: { cafeId: id },
+      where: { cafeId: id as string },
     });
 
     // Create new deals with menuItemIds
@@ -255,7 +255,7 @@ router.put('/buses/:id', authenticateToken, requireRole(['BUS_OPERATOR', 'SUPER_
   const { busNumber, driverContactNumber, description } = req.body;
 
   const route = await prisma.busRoute.findUnique({
-    where: { id },
+    where: { id: id as string },
   });
 
   if (!route) {
@@ -268,7 +268,7 @@ router.put('/buses/:id', authenticateToken, requireRole(['BUS_OPERATOR', 'SUPER_
   if (description !== undefined) updateData.description = description;
 
   const updatedRoute = await prisma.busRoute.update({
-    where: { id },
+    where: { id: id as string },
     data: updateData,
     include: {
       university: {
@@ -301,7 +301,7 @@ router.put('/buses/:id/schedule', authenticateToken, requireRole(['BUS_OPERATOR'
   }
 
   const route = await prisma.busRoute.findUnique({
-    where: { id },
+    where: { id: id as string },
   });
 
   if (!route) {
@@ -310,7 +310,7 @@ router.put('/buses/:id/schedule', authenticateToken, requireRole(['BUS_OPERATOR'
 
   // Delete existing schedules
   await prisma.busSchedule.deleteMany({
-    where: { routeId: id },
+    where: { routeId: id as string },
   });
 
   // Create new schedules
@@ -340,7 +340,7 @@ router.post('/buses/:id/notify', authenticateToken, requireRole(['BUS_OPERATOR',
   }
 
   const route = await prisma.busRoute.findUnique({
-    where: { id },
+    where: { id: id as string },
     include: {
       subscriptions: {
         select: { userId: true },
@@ -355,7 +355,7 @@ router.post('/buses/:id/notify', authenticateToken, requireRole(['BUS_OPERATOR',
   // Create notification
   const notification = await prisma.busNotification.create({
     data: {
-      routeId: id,
+      routeId: id as string,
       title,
       message,
       type: type as any,
@@ -379,7 +379,7 @@ router.get('/analytics', authenticateToken, requireRole(['CAFE_OWNER', 'BUS_OPER
   const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
 
   // Extract query params for filtering
-  const { startDate, endDate, groupBy } = req.query; // groupBy: 'day' | 'month'
+  const { startDate, endDate, groupBy } = req.query as any; // groupBy: 'day' | 'month'
 
   let analytics: any = {};
 

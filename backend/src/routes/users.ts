@@ -340,7 +340,7 @@ router.get('/:id/followers', asyncHandler(async (req: AuthRequest, res) => {
   const offset = (Number(page) - 1) * Number(limit);
 
   const followers = await prisma.follow.findMany({
-    where: { followingId: id },
+    where: { followingId: id as string },
     include: {
       follower: {
         select: {
@@ -358,12 +358,12 @@ router.get('/:id/followers', asyncHandler(async (req: AuthRequest, res) => {
   });
 
   const total = await prisma.follow.count({
-    where: { followingId: id }
+    where: { followingId: id as string }
   });
 
   res.json({
     success: true,
-    followers: followers.map(f => f.follower),
+    followers: followers.map((f: any) => f.follower),
     pagination: {
       page: Number(page),
       limit: Number(limit),
@@ -381,7 +381,7 @@ router.get('/:id/following', asyncHandler(async (req: AuthRequest, res) => {
   const offset = (Number(page) - 1) * Number(limit);
 
   const following = await prisma.follow.findMany({
-    where: { followerId: id },
+    where: { followerId: id as string },
     include: {
       following: {
         select: {
@@ -399,12 +399,12 @@ router.get('/:id/following', asyncHandler(async (req: AuthRequest, res) => {
   });
 
   const total = await prisma.follow.count({
-    where: { followerId: id }
+    where: { followerId: id as string }
   });
 
   res.json({
     success: true,
-    following: following.map(f => f.following),
+    following: following.map((f: any) => f.following),
     pagination: {
       page: Number(page),
       limit: Number(limit),
