@@ -53,17 +53,17 @@ class EmailService {
    * @param html Email body in HTML
    */
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-    const { INTERNAL_EMAIL_KEY, FRONTEND_URL, SMTP_EMAIL } = process.env;
-    const vBridgeUrl = FRONTEND_URL ? `${FRONTEND_URL}/api/send-email` : 'https://custconnect.vercel.app/api/send-email';
+    const { INTERNAL_EMAIL_KEY, FRONTEND_URL } = process.env;
+
+    // Clean URL: Remove trailing slash if present
+    const cleanBaseUrl = (FRONTEND_URL || 'https://custconnect.vercel.app').replace(/\/$/, '');
+    const finalBridgeUrl = (process.env.NODE_ENV === 'production' || cleanBaseUrl.includes('railway.app'))
+      ? 'https://custconnect.vercel.app/api/send-email'
+      : `${cleanBaseUrl}/api/send-email`;
 
     // 1. Try Vercel Bridge first (Works around Railway port blocks)
     try {
-      // Force production URL if we're not in local dev
-      const finalBridgeUrl = (process.env.NODE_ENV === 'production' || vBridgeUrl.includes('railway.app'))
-        ? 'https://custconnect.vercel.app/api/send-email'
-        : vBridgeUrl;
-
-      console.log(`[EmailService] Attempting via Vercel Bridge (${finalBridgeUrl}) for ${to}...`);
+      console.log(`[EmailService] Calling Vercel Bridge: ${finalBridgeUrl} (to: ${to})`);
       const response = await fetch(finalBridgeUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -1,13 +1,18 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 
+export async function GET() {
+    return NextResponse.json({ status: 'Email Bridge is Active', message: 'Send a POST request with the secret to use this bridge.' });
+}
+
 export async function POST(req: Request) {
     try {
         const { to, subject, html, secret } = await req.json();
 
-        // Verify internal secret to prevent unauthorized use
+        // Verify internal secret
         const internalSecret = process.env.INTERNAL_EMAIL_KEY || 'default_secret_please_change';
         if (secret !== internalSecret) {
+            console.error('[VercelBridge] Secret mismatch');
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
