@@ -193,10 +193,12 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  // Send OTP email (Non-blocking: don't await)
-  emailService.sendOTP(finalEmail, otp).catch((emailError: any) => {
-    console.warn('Failed to send OTP email:', emailError.message);
-  });
+  // Send OTP email (Non-blocking: ensure it runs on next tick)
+  setTimeout(() => {
+    emailService.sendOTP(finalEmail, otp).catch((emailError: any) => {
+      console.warn('Failed to send OTP email:', emailError.message);
+    });
+  }, 0);
 
   res.status(201).json({
     success: true,
@@ -511,9 +513,11 @@ router.post('/resend-otp', asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Send email (Non-blocking)
-  emailService.sendOTP(email, otp).catch((error) => {
-    console.error('Failed to send OTP:', error);
-  });
+  setTimeout(() => {
+    emailService.sendOTP(email, otp).catch((error) => {
+      console.error('Failed to send OTP:', error);
+    });
+  }, 0);
 
   return res.json({
     success: true,
