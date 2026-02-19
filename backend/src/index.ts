@@ -70,24 +70,10 @@ app.use((req, res, next) => {
 });
 
 app.use(cors({
-  origin: function (origin, callback) {
-    const allowedOrigins = ["https://custconnect.vercel.app", "http://localhost:3000", "http://localhost:5000"];
-    if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      console.log('Blocked by CORS:', origin);
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: true, // Allow all origins temporarily to fix crash
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Authorization'],
-  optionsSuccessStatus: 200
 }));
-
-// Explicitly handle options for all routes
-app.options('*', cors());
 
 app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
