@@ -2,9 +2,6 @@ import type { NextConfig } from "next";
 
 const nextConfig = {
   /* config options here */
-  turbopack: {
-    root: __dirname,
-  },
   images: {
     remotePatterns: [
       {
@@ -33,10 +30,6 @@ const nextConfig = {
     // your project has ESLint errors.
     ignoreDuringBuilds: true,
   },
-} satisfies NextConfig & {
-  turbopack: {
-    root: string;
-  };
-};
+} satisfies NextConfig;
 
 export default nextConfig;
