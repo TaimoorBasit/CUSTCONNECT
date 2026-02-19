@@ -15,13 +15,18 @@ class EmailService {
     this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
 
     if (this.hasSmtpConfig) {
-      console.log('[EmailService] Initializing with Gmail SMTP...');
+      console.log('[EmailService] Initializing SMTP for Gmail...');
       this.transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // use SSL
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
-        }
+        },
+        pool: true,
+        maxConnections: 5,
+        maxMessages: 100
       });
 
       // Verify connection configuration
