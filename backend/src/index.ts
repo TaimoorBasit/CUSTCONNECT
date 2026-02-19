@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import bcrypt from 'bcryptjs';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
@@ -119,7 +120,6 @@ app.get('/api/ping', (req, res) => {
 
 // TEMPORARY: Seed Endpoint to create admin user
 // TODO: Remove this before proper launch
-const bcrypt = require('bcryptjs');
 app.get('/api/seed', async (req, res) => {
   try {
     const email = 'admin@admin.com'; // Using email to avoid validation issues with just 'admin'
@@ -163,7 +163,8 @@ app.get('/api/seed', async (req, res) => {
 
     return res.json({ message: 'User created. Login with: admin@admin.com / password' });
   } catch (error: any) {
-    res.status(500).json({ error: error.message });
+    console.error('Seed error:', error);
+    return res.status(500).json({ error: error.message });
   }
 });
 
