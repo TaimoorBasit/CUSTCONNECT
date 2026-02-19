@@ -315,7 +315,7 @@ router.post('/:id/rsvp', asyncHandler(async (req: AuthRequest, res) => {
   // Check if already RSVP'd
   const existingRSVP = await prisma.eventRSVP.findUnique({
     where: {
-      userId_eventId: {
+      eventId_userId: {
         userId: req.user!.id,
         eventId: id
       }
@@ -326,7 +326,7 @@ router.post('/:id/rsvp', asyncHandler(async (req: AuthRequest, res) => {
     // Update existing RSVP
     const updatedRSVP = await prisma.eventRSVP.update({
       where: {
-        userId_eventId: {
+        eventId_userId: {
           userId: req.user!.id,
           eventId: id
         }

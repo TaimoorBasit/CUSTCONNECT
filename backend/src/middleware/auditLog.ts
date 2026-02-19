@@ -23,7 +23,7 @@ export const auditLog = async (
         const action = getAction(req.method, req.path);
         const entityType = getEntityType(req.path);
         const entityId = req.params.id || req.params.roleId || req.params.universityId || 'unknown';
-        
+
         // Build details object
         const detailsObj: any = {
           path: req.path,
@@ -49,7 +49,7 @@ export const auditLog = async (
             entityType,
             entityId,
             userId: req.user!.id,
-            userEmail: req.user!.email,
+            userEmail: req.user!.email || '',
             details,
           },
         });
@@ -69,12 +69,12 @@ function getAction(method: string, path: string): string {
   // Handle role-specific actions
   if (path.includes('/roles') && method === 'POST') return 'ROLE_ASSIGN';
   if (path.includes('/roles') && method === 'DELETE') return 'ROLE_REMOVE';
-  
+
   // Handle standard CRUD operations
   if (method === 'POST' && !path.includes('/roles')) return 'CREATE';
   if (method === 'PUT' || method === 'PATCH') return 'UPDATE';
   if (method === 'DELETE') return 'DELETE';
-  
+
   return method;
 }
 

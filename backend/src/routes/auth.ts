@@ -467,7 +467,7 @@ router.post('/verify-email', asyncHandler(async (req: Request, res: Response) =>
     }
   });
 
-  res.json({
+  return res.json({
     success: true,
     message: 'Email verified successfully. You can now login.'
   });
@@ -521,7 +521,7 @@ router.post('/resend-otp', asyncHandler(async (req: Request, res: Response) => {
     console.error('Failed to send OTP:', error);
   }
 
-  res.json({
+  return res.json({
     success: true,
     message: 'A new verification code has been sent to your email.'
   });
