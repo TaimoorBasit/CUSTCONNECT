@@ -132,7 +132,7 @@ class AuthService {
     } catch (error: any) {
       // Handle network errors
       if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
-        throw new Error('Cannot connect to server. Please check your internet connection and ensure the backend server is running.');
+        throw new Error('Connection failed. Please ensure the account is registered and you have a stable internet connection.');
       }
 
       // Handle 401 errors specifically

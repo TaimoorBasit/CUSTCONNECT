@@ -292,12 +292,10 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
       });
     }
 
-    // Check if user exists
     if (!user) {
-      // Don't reveal if email exists - security best practice
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Account not registered or invalid password'
       });
     }
 
