@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import axiosRetry from 'axios-retry';
 import { User, RegisterData, ApiResponse } from '@/types';
 
 class AuthService {
@@ -13,6 +14,16 @@ class AuthService {
       },
       timeout: 30000, // 30 second timeout for cold starts
       withCredentials: false,
+    });
+
+    // Configure retry logic
+    axiosRetry(this.api, {
+      retries: 3,
+      retryDelay: axiosRetry.exponentialDelay,
+      retryCondition: (error) => {
+        // Retry on network errors or 5xx server errors
+        return axiosRetry.isNetworkOrIdempotentRequestError(error) || (error.response?.status ? error.response.status >= 500 : false);
+      }
     });
 
     // Add token to requests with retry logic
