@@ -118,6 +118,91 @@ app.get('/api/ping', (req, res) => {
   });
 });
 
+// TEMPORARY: Seed Endpoint to create admin user
+// TODO: Remove this before proper launch
+app.get('/api/seed', async (req, res) => {
+  try {
+    const email = 'admin@admin.com';
+    const username = 'Admin';
+    const password = 'Admin123';
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    // 1. Ensure SUPER_ADMIN role exists
+    let adminRole = await prisma.role.findUnique({ where: { name: 'SUPER_ADMIN' } });
+    if (!adminRole) {
+      adminRole = await prisma.role.create({
+        data: {
+          name: 'SUPER_ADMIN',
+          description: 'Full system access',
+          permissions: ['*']
+        }
+      });
+    }
+
+    // 2. Check if user exists
+    const existing = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: email },
+          { username: username }
+        ]
+      }
+    });
+
+    let user;
+    if (existing) {
+      user = await prisma.user.update({
+        where: { id: existing.id },
+        data: {
+          username: username,
+          password: hashedPassword,
+          isVerified: true,
+          isActive: true
+        }
+      });
+    } else {
+      user = await prisma.user.create({
+        data: {
+          email: email,
+          username: username,
+          password: hashedPassword,
+          firstName: 'Super',
+          lastName: 'Admin',
+          isVerified: true,
+          isActive: true
+        }
+      });
+    }
+
+    // 3. Assign role
+    await prisma.userRole.upsert({
+      where: {
+        userId_roleId: {
+          userId: user.id,
+          roleId: adminRole.id
+        }
+      },
+      create: {
+        userId: user.id,
+        roleId: adminRole.id
+      },
+      update: {}
+    });
+
+    return res.json({
+      message: 'Admin account secured!',
+      credentials: {
+        login: username,
+        password: password,
+        email: email
+      }
+    });
+  } catch (error: any) {
+    console.error('Seed error:', error);
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', authenticateToken, userRoutes);
