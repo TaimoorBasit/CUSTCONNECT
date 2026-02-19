@@ -66,6 +66,11 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
 
+    // TEMPORARY: Allow all origins to debug connection
+    callback(null, true);
+    return;
+
+    /* 
     const allowedOrigins = [
       process.env.FRONTEND_URL || "http://localhost:3000",
       "http://localhost:5000",
@@ -83,6 +88,7 @@ app.use(cors({
       console.warn('Blocked by CORS:', origin);
       callback(new Error('Not allowed by CORS'));
     }
+    */
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
