@@ -1,14 +1,19 @@
 {
   "name": "custconnect",
   "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
   "description": "Digital Student Hub - MVP web portal for university students",
   "main": "index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
     "dev:frontend": "cd frontend && npm run dev",
     "dev:backend": "cd backend && npm run dev",
-    "build": "cd frontend && npm run build",
-    "start": "cd frontend && npm run start",
+    "build": "cd frontend && npm install --legacy-peer-deps && npx next build",
+    "start": "cd frontend && npx next start",
     "install:all": "npm install && cd frontend && npm install --legacy-peer-deps && cd ../backend && npm install",
     "test": "cd frontend && npm test && cd ../backend && npm test"
   },
@@ -19,8 +24,11 @@
     "campus",
     "services"
   ],
-  "author": "CustConnect Team",
-  "license": "MIT",
+  "dependencies": {
+    "next": "15.5.6",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  },
   "devDependencies": {
     "concurrently": "^8.2.2"
   }
