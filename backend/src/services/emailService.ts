@@ -58,8 +58,13 @@ class EmailService {
 
     // 1. Try Vercel Bridge first (Works around Railway port blocks)
     try {
-      console.log(`[EmailService] Attempting to send via Vercel Bridge for ${to}...`);
-      const response = await fetch(vBridgeUrl, {
+      // Force production URL if we're not in local dev
+      const finalBridgeUrl = (process.env.NODE_ENV === 'production' || vBridgeUrl.includes('railway.app'))
+        ? 'https://custconnect.vercel.app/api/send-email'
+        : vBridgeUrl;
+
+      console.log(`[EmailService] Attempting via Vercel Bridge (${finalBridgeUrl}) for ${to}...`);
+      const response = await fetch(finalBridgeUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -81,10 +86,25 @@ class EmailService {
       console.error('[EmailService] Vercel Bridge failed:', vError.message);
     }
 
-    // 2. Try Resend API (Previous attempt)
+    // 2. Try Resend API (Alternative Cloud provider)
     if (this.resend) {
-      console.warn(`[EmailService] No SMTP config found for fallback to ${to}`);
-      return false;
+      try {
+        console.log(`[EmailService] Attempting to send via Resend API to ${to}...`);
+        const { data, error } = await this.resend.emails.send({
+          from: this.fromAddress.includes('<') ? this.fromAddress : `CustConnect <${this.fromAddress}>`,
+          to,
+          subject,
+          html
+        });
+
+        if (!error && data) {
+          console.log(`[EmailService] Email sent via Resend: ${data.id}`);
+          return true;
+        }
+        console.error('[EmailService] Resend API Error:', error);
+      } catch (resendError: any) {
+        console.error('[EmailService] Resend exception:', resendError.message);
+      }
     }
 
     try {
