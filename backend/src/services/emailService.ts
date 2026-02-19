@@ -15,26 +15,31 @@ class EmailService {
     this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
 
     if (this.hasSmtpConfig) {
-      console.log('[EmailService] Initializing SMTP for Gmail...');
+      console.log(`[EmailService] Initializing SMTP for Gmail (${SMTP_EMAIL})...`);
       this.transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
-        port: 465,
-        secure: true, // use SSL
+        port: 587,
+        secure: false, // use STARTTLS
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
         },
-        pool: true,
-        maxConnections: 5,
-        maxMessages: 100
+        tls: {
+          rejectUnauthorized: false // Helps with some cloud hosting restrictions
+        },
+        pool: true
       });
 
       // Verify connection configuration
       this.transporter.verify((error, success) => {
         if (error) {
-          console.error('[EmailService] SMTP Connection Error:', error);
+          console.error('[EmailService] SMTP Verification Failed:', error.message);
+          console.error('[EmailService] Details:', {
+            code: (error as any).code,
+            command: (error as any).command
+          });
         } else {
-          console.log('[EmailService] SMTP Server is ready to take our messages');
+          console.log('[EmailService] SMTP Server is ready');
         }
       });
     } else {
