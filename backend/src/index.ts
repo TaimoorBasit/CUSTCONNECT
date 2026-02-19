@@ -68,13 +68,16 @@ app.use(cors({
 
     const allowedOrigins = [
       process.env.FRONTEND_URL || "http://localhost:3000",
-      "http://localhost:3001",
-      "http://localhost:3002",
-      "http://localhost:3003",
-      "http://127.0.0.1:3000"
+      "http://localhost:5000",
+      // Add wildcard for Vercel preview deployments if needed
     ];
 
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+    // Check if the origin matches any of the allowed origins or if it's a Vercel deployment
+    if (
+      allowedOrigins.indexOf(origin) !== -1 ||
+      process.env.NODE_ENV === 'development' ||
+      origin.endsWith('.vercel.app')
+    ) {
       callback(null, true);
     } else {
       console.warn('Blocked by CORS:', origin);
