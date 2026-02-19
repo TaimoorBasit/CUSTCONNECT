@@ -1,0 +1,10 @@
+🔍 Debugging Printer Shops and Users...
+
+🖨️  Found 1 Printer Shops:
+- [ps1763594145329cnivvyzqe] BookShop
+  OwnerID: null
+  ❌ NO OWNER LINKED
+
+👤 Found 0 Users with role 'PRINTER_SHOP_OWNER':
+
+❌ User with email 'bookshop@custconnect.com' DOES NOT EXIST.

@@ -1,0 +1,748 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Management
+model User {
+  id            String   @id @default(cuid())
+  email         String?  @unique
+  username      String?  @unique
+  password      String
+  firstName     String
+  lastName      String
+  profileImage  String?
+  isVerified    Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  verificationCode String?
+  verificationCodeExpiresAt DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // University Information
+  universityId  String?
+  university    University? @relation(fields: [universityId], references: [id])
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  year          Int? // 1, 2, 3, 4 for undergraduate
+  studentId     String? // University student ID
+
+  // Social Features
+  posts         Post[]
+  comments      Comment[]
+  likes         Like[]
+  followers     Follow[] @relation("UserFollowers")
+  following     Follow[] @relation("UserFollowing")
+  notifications Notification[]
+  eventRSVPs    EventRSVP[]
+  reportedPosts PostReport[]
+
+  // Academic
+  gpaRecords    GPARecord[]
+  uploadedResources AcademicResource[]
+
+  // Admin Roles
+  roles         UserRole[]
+
+  // Service Relations
+  busSubscriptions BusSubscription[]
+  busEmergencies  BusEmergency[] @relation("ReportedEmergencies")
+  resolvedEmergencies BusEmergency[] @relation("ResolvedEmergencies")
+  ownedCafes    Cafe[]
+  ownedPrinterShops PrinterShop[]
+  operatedBusRoutes BusRoute[] @relation("BusOperator")
+  organizedEvents Event[]
+  cafeOrders    CafeOrder[]
+  cafeRatings   CafeRating[]
+  printRequests PrintRequest[]
+  lostFoundItems LostFound[]
+  sentMessages  Message[] @relation("SentMessages")
+  receivedMessages Message[] @relation("ReceivedMessages")
+
+  @@map("users")
+}
+
+model University {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  domain      String   @unique // e.g., "edu.pk"
+  country     String
+  city        String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       User[]
+  departments Department[]
+  busRoutes   BusRoute[]
+  lostFoundItems LostFound[]
+  cafes       Cafe[]
+  events      Event[]
+  courses     Course[]
+  semesters   Semester[]
+
+  @@map("universities")
+}
+
+model Department {
+  id           String   @id @default(cuid())
+  name         String
+  code         String
+  universityId String
+  university   University @relation(fields: [universityId], references: [id])
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  users        User[]
+
+  @@unique([name, universityId])
+  @@map("departments")
+}
+
+// Social Feed
+model Post {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  imageUrl    String?  @db.Text
+  videoUrl    String?  @db.Text
+  privacy     PostPrivacy @default(PUBLIC)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authorId    String
+  author      User @relation(fields: [authorId], references: [id])
+  comments    Comment[]
+  likes       Like[]
+  reports     PostReport[]
+
+  @@map("posts")
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  authorId  String
+  author    User @relation(fields: [authorId], references: [id])
+  postId    String
+  post      Post @relation(fields: [postId], references: [id])
+
+  @@map("comments")
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User @relation(fields: [userId], references: [id])
+  postId    String
+  post      Post @relation(fields: [postId], references: [id])
+
+  @@unique([userId, postId])
+  @@map("likes")
+}
+
+model Follow {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  followerId  String
+  follower    User @relation("UserFollowers", fields: [followerId], references: [id])
+  followingId String
+  following   User @relation("UserFollowing", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@map("follows")
+}
+
+model PostReport {
+  id        String   @id @default(cuid())
+  reason    String?  // Optional reason for reporting
+  status    ReportStatus @default(PENDING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  postId    String
+  post      Post @relation(fields: [postId], references: [id])
+  reporterId String
+  reporter  User @relation(fields: [reporterId], references: [id])
+
+  @@unique([postId, reporterId]) // Prevent duplicate reports from same user
+  @@map("post_reports")
+}
+
+// Bus Service
+model BusRoute {
+  id                String   @id @default(cuid())
+  name              String
+  number            String
+  busNumber         String?  // Physical bus number/plate
+  driverContactNumber String? // Driver's contact number
+  description       String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  universityId String
+  university   University @relation(fields: [universityId], references: [id])
+  operatorId   String?  // The primary operator to receive messages
+  operator     User?    @relation("BusOperator", fields: [operatorId], references: [id])
+  schedules   BusSchedule[]
+  notifications BusNotification[]
+  subscriptions BusSubscription[]
+  emergencies BusEmergency[]
+
+  @@unique([name, universityId])
+  @@map("bus_routes")
+}
+
+model BusSchedule {
+  id        String   @id @default(cuid())
+  dayOfWeek Int      // 0-6 (Sunday-Saturday)
+  startTime String   // HH:MM format
+  endTime   String   // HH:MM format
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  routeId   String
+  route     BusRoute @relation(fields: [routeId], references: [id])
+
+  @@map("bus_schedules")
+}
+
+model BusNotification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  routeId   String
+  route     BusRoute @relation(fields: [routeId], references: [id])
+
+  @@map("bus_notifications")
+}
+
+model BusSubscription {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User @relation(fields: [userId], references: [id])
+  routeId   String
+  route     BusRoute @relation(fields: [routeId], references: [id])
+
+  @@unique([userId, routeId])
+  @@map("bus_subscriptions")
+}
+
+model BusEmergency {
+  id          String   @id @default(cuid())
+  type        EmergencyType
+  title       String
+  description String   @db.Text
+  location    String?  // Current location if available
+  status      EmergencyStatus @default(PENDING)
+  priority    EmergencyPriority @default(MEDIUM)
+  resolvedAt  DateTime?
+  resolvedBy  String?  // Admin/Bus operator who resolved it
+  resolvedByUser User?  @relation("ResolvedEmergencies", fields: [resolvedBy], references: [id])
+  notes       String?  @db.Text // Admin notes
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User @relation("ReportedEmergencies", fields: [userId], references: [id])
+  routeId     String
+  route       BusRoute @relation(fields: [routeId], references: [id])
+
+  @@map("bus_emergencies")
+}
+
+enum EmergencyType {
+  LATE_BUS
+  ACCIDENT
+  BREAKDOWN
+  OVERCROWDED
+  DRIVER_ISSUE
+  SAFETY_CONCERN
+  OTHER
+}
+
+enum EmergencyStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  DISMISSED
+}
+
+enum EmergencyPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Printer Shops
+model PrinterShop {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  location    String?
+  phone       String?
+  email       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  ownerId     String?
+  owner       User? @relation(fields: [ownerId], references: [id])
+  printRequests PrintRequest[]
+
+  @@map("printer_shops")
+}
+
+model PrintRequest {
+  id          String   @id @default(cuid())
+  fileName    String
+  fileUrl     String   @db.Text
+  printType   PrintType @default(BLACK_WHITE)
+  copies      Int      @default(1)
+  pages       Int?     // Number of pages if known
+  notes       String?  @db.Text
+  status      PrintStatus @default(PENDING)
+  price       Decimal? // Calculated price
+  printedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+  printerShopId String
+  printerShop PrinterShop @relation(fields: [printerShopId], references: [id])
+
+  @@map("print_requests")
+}
+
+enum PrintType {
+  BLACK_WHITE
+  COLOR
+}
+
+enum PrintStatus {
+  PENDING
+  PROCESSING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+// Cafés
+model Cafe {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  location    String
+  phone       String?
+  email       String?
+  imageUrl    String? // Cafe image
+  openingHours String? // JSON string with hours
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  universityId String
+  university   University @relation(fields: [universityId], references: [id])
+  ownerId      String?
+  owner        User? @relation(fields: [ownerId], references: [id])
+  menus        CafeMenu[]
+  deals        CafeDeal[]
+  orders       CafeOrder[]
+  ratings      CafeRating[]
+
+  @@map("cafes")
+}
+
+model CafeMenu {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal
+  category    String
+  imageUrl    String? // Food item image
+  isAvailable Boolean  @default(true)
+  isFeatured  Boolean  @default(false) // Highlight as most liked/popular
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cafeId      String
+  cafe        Cafe @relation(fields: [cafeId], references: [id])
+  orderItems  CafeOrderItem[]
+
+  @@map("cafe_menus")
+}
+
+model CafeDeal {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  discount    Decimal? // Percentage discount
+  menuItemIds String?  // JSON array of menu item IDs this deal applies to
+  validFrom   DateTime
+  validUntil  DateTime
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cafeId      String
+  cafe        Cafe @relation(fields: [cafeId], references: [id])
+
+  @@map("cafe_deals")
+}
+
+model CafeOrder {
+  id          String      @id @default(cuid())
+  status      OrderStatus @default(PENDING)
+  totalAmount Decimal
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  cafeId      String
+  cafe        Cafe @relation(fields: [cafeId], references: [id])
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+  items       CafeOrderItem[]
+
+  @@map("cafe_orders")
+}
+
+model CafeOrderItem {
+  id          String     @id @default(cuid())
+  quantity    Int
+  price       Decimal
+  notes       String?
+  createdAt   DateTime   @default(now())
+
+  orderId     String
+  order       CafeOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuId      String
+  menu        CafeMenu  @relation(fields: [menuId], references: [id])
+
+  @@map("cafe_order_items")
+}
+
+model CafeRating {
+  id          String   @id @default(cuid())
+  rating      Int      // 1-5
+  comment     String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cafeId      String
+  cafe        Cafe @relation(fields: [cafeId], references: [id])
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+
+  @@unique([cafeId, userId])
+  @@map("cafe_ratings")
+}
+
+model LostFound {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  category    String         // "Lost" or "Found"
+  itemType    String?        // "Phone", "Wallet", "Keys", "Bag", "Other"
+  location    String?        // Where it was lost/found
+  contactInfo String?        // Phone/email for contact
+  imageUrl    String?        // Photo of the item
+  status      LostFoundStatus @default(ACTIVE)
+  isResolved  Boolean        @default(false)
+  resolvedAt  DateTime?
+  resolvedBy  String?        // User ID who marked as resolved
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  universityId String?
+  university  University?    @relation(fields: [universityId], references: [id])
+
+  @@map("lost_found")
+}
+
+enum LostFoundStatus {
+  ACTIVE
+  RESOLVED
+  CLOSED
+}
+
+// Academic Resources
+model AcademicResource {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  uploaderId  String
+  uploader    User @relation(fields: [uploaderId], references: [id])
+  courseId    String?
+  course      Course? @relation(fields: [courseId], references: [id])
+  semesterId  String?
+  semester    Semester? @relation(fields: [semesterId], references: [id])
+
+  @@map("academic_resources")
+}
+
+model Course {
+  id          String   @id @default(cuid())
+  name        String
+  code        String
+  credits     Int
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  universityId String
+  university   University @relation(fields: [universityId], references: [id])
+  resources    AcademicResource[]
+
+  @@unique([code, universityId])
+  @@map("courses")
+}
+
+model Semester {
+  id          String   @id @default(cuid())
+  name        String
+  year        Int
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  universityId String
+  university   University @relation(fields: [universityId], references: [id])
+  resources    AcademicResource[]
+
+  @@unique([name, year, universityId])
+  @@map("semesters")
+}
+
+// GPA Calculator
+model GPARecord {
+  id          String   @id @default(cuid())
+  semester    String
+  year        Int
+  gpa         Decimal
+  cgpa        Decimal
+  credits     Int
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  userId      String
+  user        User @relation(fields: [userId], references: [id])
+  subjects    GPASubject[]
+
+  @@map("gpa_records")
+}
+
+model GPASubject {
+  id          String   @id @default(cuid())
+  name        String
+  code        String
+  credits     Int
+  grade       String
+  gpa         Decimal
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  gpaRecordId String
+  gpaRecord   GPARecord @relation(fields: [gpaRecordId], references: [id])
+
+  @@map("gpa_subjects")
+}
+
+// Events
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  organizerId String
+  organizer   User @relation(fields: [organizerId], references: [id])
+  universityId String
+  university   University @relation(fields: [universityId], references: [id])
+  rsvps       EventRSVP[]
+
+  @@map("events")
+}
+
+model EventRSVP {
+  id        String   @id @default(cuid())
+  status    RSVPStatus @default(GOING)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  eventId   String
+  event     Event @relation(fields: [eventId], references: [id])
+  userId    String
+  user      User @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@map("event_rsvps")
+}
+
+// Notifications
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  userId    String
+  user      User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// Admin Roles
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  permissions Json? // Array of permission strings
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User @relation(fields: [userId], references: [id])
+  roleId    String
+  role      Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+  @@map("user_roles")
+}
+
+// Audit Logs
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String   // CREATE, UPDATE, DELETE, ROLE_ASSIGN, etc.
+  entityType String   // USER, CAFE, BUS_ROUTE, etc.
+  entityId   String
+  userId     String
+  userEmail  String
+  details    String   // JSON string with action details
+  createdAt  DateTime @default(now())
+
+  @@map("audit_logs")
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+// Enums
+enum PostPrivacy {
+  PUBLIC
+  UNIVERSITY_ONLY
+  FOLLOWERS_ONLY
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  ERROR
+  SUCCESS
+  BUS_ALERT
+  EVENT_UPDATE
+  NEW_MESSAGE
+}
+
+enum RSVPStatus {
+  GOING
+  NOT_GOING
+  MAYBE
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  RESOLVED
+  DISMISSED
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  READY
+  COMPLETED
+  CANCELLED
+}
+
+// Analytics (for future use)
+model Analytics {
+  id        String   @id @default(cuid())
+  metric    String
+  value     Decimal
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@map("analytics")
+}
+
+// Messaging System
+model Message {
+  id          String   @id @default(cuid())
+  content     String   @db.Text
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiverId  String
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@map("messages")
+  @@index([senderId])
+  @@index([receiverId])
+}
