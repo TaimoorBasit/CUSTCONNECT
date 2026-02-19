@@ -37,15 +37,15 @@ class VendorService {
   }
 
   // ============ CAFE OPERATIONS ============
-  
+
   async getMyCafe(): Promise<any | null> {
     try {
       const response: AxiosResponse<any> = await this.api.get('/vendor/cafe');
-      
+
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to fetch cafe');
       }
-      
+
       return response.data.cafe || null;
     } catch (error: any) {
       console.error('Failed to fetch cafe:', error);
@@ -65,7 +65,7 @@ class VendorService {
   }>): Promise<void> {
     try {
       const response: AxiosResponse<any> = await this.api.put(`/vendor/cafes/${cafeId}/menu`, { menus });
-      
+
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to update menu');
       }
@@ -88,7 +88,7 @@ class VendorService {
   }>): Promise<void> {
     try {
       const response: AxiosResponse<any> = await this.api.put(`/vendor/cafes/${cafeId}/deals`, { deals });
-      
+
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to update deals');
       }
@@ -102,15 +102,15 @@ class VendorService {
   }
 
   // ============ BUS OPERATIONS ============
-  
+
   async getMyBusRoutes(): Promise<any[]> {
     try {
       const response: AxiosResponse<any> = await this.api.get('/vendor/buses');
-      
+
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to fetch bus routes');
       }
-      
+
       return response.data.routes || [];
     } catch (error: any) {
       console.error('Failed to fetch bus routes:', error);
@@ -128,7 +128,7 @@ class VendorService {
   }>): Promise<void> {
     try {
       const response: AxiosResponse<any> = await this.api.put(`/vendor/buses/${routeId}/schedule`, { schedules });
-      
+
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to update schedule');
       }
@@ -148,11 +148,11 @@ class VendorService {
   }): Promise<any> {
     try {
       const response: AxiosResponse<any> = await this.api.put(`/vendor/buses/${routeId}`, data);
-      
+
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to update bus route');
       }
-      
+
       return response.data.route;
     } catch (error: any) {
       console.error('Failed to update bus route:', error);
@@ -170,7 +170,7 @@ class VendorService {
   }): Promise<void> {
     try {
       const response: AxiosResponse<any> = await this.api.post(`/vendor/buses/${routeId}/notify`, data);
-      
+
       if (!response.data.success) {
         throw new Error(response.data.message || 'Failed to send notification');
       }
