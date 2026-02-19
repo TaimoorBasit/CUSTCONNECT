@@ -42,7 +42,7 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
 
 // Mark notification as read
 router.put('/:id/read', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const notification = await prisma.notification.findUnique({
     where: { id },
@@ -86,7 +86,7 @@ router.put('/read-all', asyncHandler(async (req: AuthRequest, res) => {
 
 // Delete notification
 router.delete('/:id', asyncHandler(async (req: AuthRequest, res) => {
-  const { id } = req.params;
+  const { id } = req.params as any;
 
   const notification = await prisma.notification.findUnique({
     where: { id },

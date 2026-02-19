@@ -558,7 +558,7 @@ router.get('/:id/comments', asyncHandler(async (req: AuthRequest, res) => {
 
 // Update comment
 router.put('/comments/:commentId', asyncHandler(async (req: AuthRequest, res) => {
-  const { commentId } = req.params;
+  const { commentId } = req.params as any;
   const { content } = req.body;
 
   if (!content || content.trim().length === 0) {
@@ -609,7 +609,7 @@ router.put('/comments/:commentId', asyncHandler(async (req: AuthRequest, res) =>
 
 // Delete comment
 router.delete('/comments/:commentId', asyncHandler(async (req: AuthRequest, res) => {
-  const { commentId } = req.params;
+  const { commentId } = req.params as any;
 
   const comment = await prisma.comment.findUnique({
     where: { id: commentId },
