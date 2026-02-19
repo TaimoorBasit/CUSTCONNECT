@@ -99,58 +99,38 @@ class AuthService {
     // Normalize email
     const normalizedEmail = email.trim().toLowerCase();
 
+    let response: AxiosResponse<ApiResponse<{ user: User; token: string }>>;
     try {
-      const response: AxiosResponse<ApiResponse<{ user: User; token: string }>> =
-        await this.api.post('/auth/login', {
-          email: normalizedEmail,
-          password: password.trim()
-        }, {
-          timeout: 15000, // 15 second timeout
-          validateStatus: (status) => status < 500 // Don't throw on 4xx errors
-        });
-
-      // Handle response
-      if (response.status === 401) {
-        const customError: any = new Error(response.data?.message || 'Invalid email or password');
-        customError.data = response.data;
-        throw customError;
-      }
-
-      if (response.status >= 400) {
-        throw new Error(response.data?.message || `Login failed: ${response.status}`);
-      }
-
-      if (!response.data.success) {
-        throw new Error(response.data.message || 'Login failed');
-      }
-
-      if (!response.data.data) {
-        throw new Error('Invalid response from server');
-      }
-
-      return response.data.data;
+      response = await this.api.post('/auth/login', {
+        email: normalizedEmail,
+        password: password.trim()
+      }, {
+        timeout: 15000,
+        validateStatus: (status) => status < 500
+      });
     } catch (error: any) {
-      // Handle network errors
+      // Handle actual network/server errors
       if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
-        throw new Error('Connection failed. Please ensure the account is registered and you have a stable internet connection.');
+        throw new Error('Server connection failed. Please check your internet or try again later.');
       }
-
-      // Handle 401 errors specifically
-      if (error.response?.status === 401) {
-        const customError: any = new Error(error.response.data?.message || 'Invalid email or password');
-        customError.data = error.response.data;
-        throw customError;
-      }
-
-      // Handle other HTTP errors
-      if (error.response) {
-        const message = error.response.data?.message || `Login failed: ${error.response.status}`;
-        throw new Error(message);
-      }
-
-      // Handle other errors
-      throw new Error(error.message || 'Login failed. Please try again.');
+      throw error;
     }
+
+    // Handle the response properly
+    if (response.status === 401) {
+      const message = response.data?.message || 'Account not registered or invalid password';
+      throw new Error(message);
+    }
+
+    if (response.status >= 400) {
+      throw new Error(response.data?.message || `Error: ${response.status}`);
+    }
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Login failed');
+    }
+
+    return response.data.data!;
   }
 
   async register(userData: RegisterData): Promise<void> {
