@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import Header from '@/components/layout/Header';
 import RoleBasedSidebar from '@/components/layout/RoleBasedSidebar';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import Footer from '@/components/layout/Footer';
 
 export default function VendorLayout({
   children,
@@ -70,6 +71,7 @@ export default function VendorLayout({
               {children}
             </div>
           </div>
+          <Footer />
         </main>
       </div>
     </div>
