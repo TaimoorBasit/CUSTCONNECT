@@ -54,9 +54,9 @@ export default function LoginPage() {
             <Image
               src="/logo.png"
               alt="CustConnect"
-              width={200}
-              height={60}
-              className="h-16 w-auto object-contain"
+              width={350}
+              height={100}
+              className="h-24 w-auto object-contain brightness-110"
               priority
             />
           </div>
@@ -74,9 +74,9 @@ export default function LoginPage() {
               <Image
                 src="/logo.png"
                 alt="CustConnect"
-                width={180}
-                height={50}
-                className="h-12 w-auto object-contain mx-auto mb-2"
+                width={300}
+                height={80}
+                className="h-20 w-auto object-contain mx-auto mb-4"
                 priority
               />
               <h2 className="text-3xl font-extrabold text-gray-900">

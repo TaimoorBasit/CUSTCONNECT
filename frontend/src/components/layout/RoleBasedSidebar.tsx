@@ -119,13 +119,13 @@ export default function RoleBasedSidebar({ mobileOpen = false, onMobileClose }: 
   const renderNav = (isDesktop = false) => (
     <>
       <div className="flex h-16 shrink-0 items-center px-6">
-        <Link href="/" className="flex items-center">
+        <Link href="/" className="flex items-center justify-center w-full">
           <Image
             src="/logo.png"
             alt="CustConnect"
-            width={160}
-            height={40}
-            className="h-10 w-auto object-contain"
+            width={280}
+            height={80}
+            className="h-20 w-auto object-contain brightness-110 contrast-125"
             priority
           />
         </Link>
