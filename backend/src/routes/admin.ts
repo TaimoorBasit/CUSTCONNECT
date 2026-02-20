@@ -1368,7 +1368,17 @@ router.delete('/buses/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler
 }));
 
 // Get analytics
-router.get('/analytics', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: AuthRequest, res) => {
+router.get('/analytics', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN', 'CAFE_OWNER', 'BUS_OPERATOR', 'PRINTER_SHOP_OWNER']), asyncHandler(async (req: AuthRequest, res) => {
+  const isSuperAdmin = req.user!.roles.includes('SUPER_ADMIN');
+  const universityId = isSuperAdmin && req.query.universityId ? (req.query.universityId as string) : (isSuperAdmin ? undefined : req.user!.universityId);
+
+  const filter = universityId ? { universityId } : {};
+  const userFilter = universityId ? { universityId } : {};
+  const postFilter = universityId ? { author: { universityId } } : {};
+  const eventFilter = universityId ? { universityId } : {};
+  const resourceFilter = universityId ? { uploader: { universityId } } : {};
+  const notificationFilter = universityId ? { user: { universityId } } : {};
+
   const [
     totalUsers,
     totalVendors,
@@ -1376,27 +1386,33 @@ router.get('/analytics', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: 
     totalBusRoutes,
     totalPosts,
     totalEvents,
+    totalResources,
+    totalNotifications,
     cafeOwners,
     busOperators,
   ] = await Promise.all([
-    prisma.user.count(),
+    prisma.user.count({ where: userFilter }),
     prisma.user.count({
       where: {
+        ...userFilter,
         roles: {
           some: {
             role: {
-              name: { in: ['CAFE_OWNER', 'BUS_OPERATOR'] },
+              name: { in: ['CAFE_OWNER', 'BUS_OPERATOR', 'PRINTER_SHOP_OWNER'] },
             },
           },
         },
       },
     }),
-    prisma.cafe.count(),
-    prisma.busRoute.count(),
-    prisma.post.count(),
-    prisma.event.count(),
+    prisma.cafe.count({ where: filter }),
+    prisma.busRoute.count({ where: filter }),
+    prisma.post.count({ where: postFilter }),
+    prisma.event.count({ where: eventFilter }),
+    prisma.academicResource.count({ where: resourceFilter }),
+    prisma.notification.count({ where: notificationFilter }),
     prisma.user.count({
       where: {
+        ...userFilter,
         roles: {
           some: {
             role: { name: 'CAFE_OWNER' },
@@ -1406,6 +1422,7 @@ router.get('/analytics', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: 
     }),
     prisma.user.count({
       where: {
+        ...userFilter,
         roles: {
           some: {
             role: { name: 'BUS_OPERATOR' },
@@ -1415,15 +1432,17 @@ router.get('/analytics', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: 
     }),
   ]);
 
+
   // Get post engagement
-  const totalLikes = await prisma.like.count();
-  const totalComments = await prisma.comment.count();
+  const totalLikes = await prisma.like.count({ where: universityId ? { post: { author: { universityId } } } : {} });
+  const totalComments = await prisma.comment.count({ where: universityId ? { post: { author: { universityId } } } : {} });
   const averageEngagement = totalPosts > 0
     ? parseFloat(((totalLikes + totalComments) / totalPosts).toFixed(2))
     : 0;
 
   // Get busiest buses by subscriptions
   const busiestBuses = await prisma.busRoute.findMany({
+    where: filter,
     include: {
       university: { select: { name: true } },
       _count: { select: { subscriptions: true } }
@@ -1436,6 +1455,7 @@ router.get('/analytics', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: 
 
   // Get top cafes by menu items
   const topCafes = await prisma.cafe.findMany({
+    where: filter,
     include: {
       university: { select: { name: true } },
       _count: { select: { menus: true } }
@@ -1456,6 +1476,8 @@ router.get('/analytics', requireRole(['SUPER_ADMIN']), asyncHandler(async (req: 
         totalBusRoutes,
         totalPosts,
         totalEvents,
+        totalResources,
+        totalNotifications,
         postEngagement: {
           totalLikes,
           totalComments,

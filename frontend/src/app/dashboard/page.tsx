@@ -2,7 +2,8 @@
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { adminService } from '@/services/adminService';
 import {
   UserGroupIcon,
   BuildingStorefrontIcon,
@@ -13,15 +14,6 @@ import {
   MapIcon,
 } from '@heroicons/react/24/outline';
 import Link from 'next/link';
-
-const stats = [
-  { name: 'Total Posts', value: '1,234', icon: UserGroupIcon, color: 'text-blue-500', bg: 'bg-blue-500/10' },
-  { name: 'Bus Routes', value: '5', icon: MapIcon, color: 'text-emerald-500', bg: 'bg-emerald-500/10' },
-  { name: 'Cafés', value: '11', icon: BuildingStorefrontIcon, color: 'text-amber-500', bg: 'bg-amber-500/10' },
-  { name: 'Resources', value: '89', icon: BookOpenIcon, color: 'text-violet-500', bg: 'bg-violet-500/10' },
-  { name: 'Events', value: '23', icon: CalendarIcon, color: 'text-pink-500', bg: 'bg-pink-500/10' },
-  { name: 'Notifications', value: '7', icon: BellIcon, color: 'text-indigo-500', bg: 'bg-indigo-500/10' },
-];
 
 const quickActions = [
   { name: 'Create Post', href: '/dashboard/feed', icon: UserGroupIcon, description: 'Share something with your university community' },
@@ -35,6 +27,8 @@ const quickActions = [
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
+  const [realStats, setRealStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (user) {
@@ -48,9 +42,68 @@ export default function DashboardPage() {
       // Redirect students away from dashboard page
       if (isStudent) {
         router.push('/dashboard/feed');
+      } else {
+        fetchStats();
       }
     }
   }, [user, router]);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const data = await adminService.getAnalytics();
+      setRealStats(data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const dashboardStats = [
+    {
+      name: 'Total Posts',
+      value: realStats?.totalPosts?.toLocaleString() || '0',
+      icon: UserGroupIcon,
+      color: 'text-blue-500',
+      bg: 'bg-blue-500/10'
+    },
+    {
+      name: 'Bus Routes',
+      value: realStats?.totalBusRoutes?.toLocaleString() || '0',
+      icon: MapIcon,
+      color: 'text-emerald-500',
+      bg: 'bg-emerald-500/10'
+    },
+    {
+      name: 'Cafés',
+      value: realStats?.totalCafes?.toLocaleString() || '0',
+      icon: BuildingStorefrontIcon,
+      color: 'text-amber-500',
+      bg: 'bg-amber-500/10'
+    },
+    {
+      name: 'Resources',
+      value: realStats?.totalResources?.toLocaleString() || '0',
+      icon: BookOpenIcon,
+      color: 'text-violet-500',
+      bg: 'bg-violet-500/10'
+    },
+    {
+      name: 'Events',
+      value: realStats?.totalEvents?.toLocaleString() || '0',
+      icon: CalendarIcon,
+      color: 'text-pink-500',
+      bg: 'bg-pink-500/10'
+    },
+    {
+      name: 'Notifications',
+      value: realStats?.totalNotifications?.toLocaleString() || '0',
+      icon: BellIcon,
+      color: 'text-indigo-500',
+      bg: 'bg-indigo-500/10'
+    },
+  ];
 
   // If user is a student, don't render anything (will redirect)
   if (user) {
@@ -82,18 +135,18 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {stats.map((stat) => (
-          <div key={stat.name} className="group relative overflow-hidden bg-card rounded-2xl border border-border/50 p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/20">
+        {(loading ? Array(6).fill({}) : dashboardStats).map((stat, idx) => (
+          <div key={stat.name || idx} className={`group relative overflow-hidden bg-card rounded-2xl border border-border/50 p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/20 ${loading ? 'animate-pulse' : ''}`}>
             <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${stat.bg} ${stat.color} ring-1 ring-inset ring-black/5`}>
-                <stat.icon className="h-6 w-6" aria-hidden="true" />
+              <div className={`p-3 rounded-xl ${stat.bg || 'bg-gray-100'} ${stat.color || 'text-gray-400'} ring-1 ring-inset ring-black/5`}>
+                {stat.icon ? <stat.icon className="h-6 w-6" aria-hidden="true" /> : <div className="h-6 w-6" />}
               </div>
               <div>
                 <dt className="text-sm font-medium text-muted-foreground">
-                  {stat.name}
+                  {stat.name || <div className="h-4 w-20 bg-gray-200 rounded" />}
                 </dt>
                 <dd className="text-2xl font-bold tracking-tight text-foreground">
-                  {stat.value}
+                  {stat.value || <div className="h-8 w-12 bg-gray-200 rounded mt-1" />}
                 </dd>
               </div>
             </div>
@@ -136,83 +189,17 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Recent Activity */}
       <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-border/50">
           <h3 className="text-lg font-semibold text-foreground">
             Recent Activity
           </h3>
         </div>
-        <div className="p-6">
-          <div className="flow-root">
-            <ul className="-mb-8">
-              <li>
-                <div className="relative pb-8">
-                  <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-border" aria-hidden="true" />
-                  <div className="relative flex space-x-3">
-                    <div>
-                      <span className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center ring-4 ring-background">
-                        <UserGroupIcon className="h-4 w-4 text-emerald-500" />
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                      <div>
-                        <p className="text-sm text-foreground">
-                          You posted a new update in the social feed
-                        </p>
-                      </div>
-                      <div className="text-right text-sm whitespace-nowrap text-muted-foreground">
-                        <time dateTime="2024-01-15">2 hours ago</time>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-              <li>
-                <div className="relative pb-8">
-                  <span className="absolute top-4 left-4 -ml-px h-full w-0.5 bg-border" aria-hidden="true" />
-                  <div className="relative flex space-x-3">
-                    <div>
-                      <span className="h-8 w-8 rounded-full bg-blue-500/10 flex items-center justify-center ring-4 ring-background">
-                        <BookOpenIcon className="h-4 w-4 text-blue-500" />
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                      <div>
-                        <p className="text-sm text-foreground">
-                          You uploaded a new study resource
-                        </p>
-                      </div>
-                      <div className="text-right text-sm whitespace-nowrap text-muted-foreground">
-                        <time dateTime="2024-01-14">1 day ago</time>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-              <li>
-                <div className="relative">
-                  <div className="relative flex space-x-3">
-                    <div>
-                      <span className="h-8 w-8 rounded-full bg-amber-500/10 flex items-center justify-center ring-4 ring-background">
-                        <CalendarIcon className="h-4 w-4 text-amber-500" />
-                      </span>
-                    </div>
-                    <div className="min-w-0 flex-1 pt-1.5 flex justify-between space-x-4">
-                      <div>
-                        <p className="text-sm text-foreground">
-                          You RSVP'd to "Programming Workshop" event
-                        </p>
-                      </div>
-                      <div className="text-right text-sm whitespace-nowrap text-muted-foreground">
-                        <time dateTime="2024-01-13">2 days ago</time>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </li>
-            </ul>
+        <div className="p-12 text-center text-muted-foreground">
+          <div className="inline-flex p-4 rounded-full bg-secondary mb-4">
+            <BellIcon className="h-8 w-8 opacity-20" />
           </div>
+          <p>No recent activity found on your account.</p>
         </div>
       </div>
     </div>

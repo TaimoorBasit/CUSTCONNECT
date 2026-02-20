@@ -8,6 +8,7 @@ import BuildingStorefrontIcon from '@heroicons/react/24/outline/BuildingStorefro
 import MapIcon from '@heroicons/react/24/outline/MapIcon';
 import ChartBarIcon from '@heroicons/react/24/outline/ChartBarIcon';
 import DocumentTextIcon from '@heroicons/react/24/outline/DocumentTextIcon';
+import BellIcon from '@heroicons/react/24/outline/BellIcon';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
@@ -19,6 +20,8 @@ export default function AdminDashboard() {
     totalBusRoutes: 0,
     totalPosts: 0,
     totalEvents: 0,
+    totalResources: 0,
+    totalNotifications: 0,
   });
 
   useEffect(() => {
@@ -35,6 +38,8 @@ export default function AdminDashboard() {
         totalBusRoutes: analytics.totalBusRoutes || 0,
         totalPosts: analytics.totalPosts || 0,
         totalEvents: analytics.totalEvents || 0,
+        totalResources: analytics.totalResources || 0,
+        totalNotifications: analytics.totalNotifications || 0,
       });
     } catch (error) {
       console.error('Failed to load stats', error);
@@ -171,7 +176,7 @@ export default function AdminDashboard() {
           <div className="p-5">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <div className="p-3 rounded-md bg-red-500">
+                <div className="p-3 rounded-md bg-pink-500">
                   <ChartBarIcon className="h-6 w-6 text-white" />
                 </div>
               </div>
@@ -182,6 +187,50 @@ export default function AdminDashboard() {
                   </dt>
                   <dd className="text-lg font-medium text-gray-900">
                     {stats.totalEvents}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="p-3 rounded-md bg-violet-500">
+                  <DocumentTextIcon className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Total Resources
+                  </dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {stats.totalResources}
+                  </dd>
+                </dl>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white overflow-hidden shadow rounded-lg">
+          <div className="p-5">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="p-3 rounded-md bg-indigo-500">
+                  <BellIcon className="h-6 w-6 text-white" />
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">
+                    Total Notifications
+                  </dt>
+                  <dd className="text-lg font-medium text-gray-900">
+                    {stats.totalNotifications}
                   </dd>
                 </dl>
               </div>
