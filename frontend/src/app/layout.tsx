@@ -1,27 +1,21 @@
-'use client';
-
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { SocketProvider } from '@/contexts/SocketContext';
-import { NotificationProvider } from '@/contexts/NotificationContext';
-import { Toaster } from 'react-hot-toast';
+import { Providers } from '@/components/layout/Providers';
 import { Inter } from 'next/font/google';
 import './globals.css';
+import { Metadata } from 'next';
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      retry: 1,
-    },
+export const metadata: Metadata = {
+  title: 'CustConnect | Your Student Hub',
+  description: 'Your all-in-one digital hub for campus life. Connect, study, and thrive.',
+  icons: {
+    icon: '/logo.png',
+    apple: '/logo.png',
   },
-});
+};
 
 export default function RootLayout({
   children,
@@ -31,26 +25,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} font-sans bg-background text-foreground antialiased`}>
-        <QueryClientProvider client={queryClient}>
-          <AuthProvider>
-            <SocketProvider>
-              <NotificationProvider>
-                {children}
-                <Toaster
-                  position="top-right"
-                  toastOptions={{
-                    duration: 4000,
-                    style: {
-                      background: '#363636',
-                      color: '#fff',
-                    },
-                  }}
-                />
-              </NotificationProvider>
-            </SocketProvider>
-          </AuthProvider>
-          <ReactQueryDevtools initialIsOpen={false} />
-        </QueryClientProvider>
+        <Providers>
+          {children}
+        </Providers>
       </body>
     </html>
   );

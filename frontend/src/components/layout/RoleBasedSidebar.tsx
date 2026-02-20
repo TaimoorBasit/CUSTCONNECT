@@ -119,18 +119,16 @@ export default function RoleBasedSidebar({ mobileOpen = false, onMobileClose }: 
   const renderNav = (isDesktop = false) => (
     <>
       <div className="flex h-16 shrink-0 items-center px-6">
-        {isSuperAdmin ? (
-          <h1 className="text-white text-xl font-bold tracking-tight">Admin<span className="text-indigo-400">.</span></h1>
-        ) : isVendor ? (
-          <h1 className="text-white text-xl font-bold tracking-tight">Vendor<span className="text-indigo-400">.</span></h1>
-        ) : (
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-xl ring-1 ring-indigo-500/50">
-              C
-            </div>
-            <span className="text-xl font-bold tracking-tight text-white">CustConnect</span>
-          </div>
-        )}
+        <Link href="/" className="flex items-center">
+          <Image
+            src="/logo.png"
+            alt="CustConnect"
+            width={160}
+            height={40}
+            className="h-10 w-auto object-contain"
+            priority
+          />
+        </Link>
       </div>
       <nav className="flex-1 space-y-1 px-3 mt-4">
         {navigation.map((item) => {
