@@ -204,5 +204,50 @@ router.get('/prints/:filename', (req, res) => {
   res.sendFile(filePath);
 });
 
+// Serve post images and videos
+router.get('/posts/:filename', (req, res) => {
+  const { filename } = req.params as any;
+
+  // Security: Prevent directory traversal
+  if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
+    res.status(400).json({ success: false, message: 'Invalid filename' });
+    return;
+  }
+
+  const filePath = path.join(process.cwd(), 'uploads', 'posts', filename);
+
+  // Check if file exists
+  if (!fs.existsSync(filePath)) {
+    console.log(`❌ Post file not found: ${filePath}`);
+    res.status(404).json({ success: false, message: 'File not found' });
+    return;
+  }
+
+  console.log(`✅ Serving post file: ${filePath}`);
+
+  // Get file extension for content type
+  const ext = path.extname(filename).toLowerCase();
+  const contentTypes: Record<string, string> = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp',
+    '.mp4': 'video/mp4',
+    '.mov': 'video/quicktime',
+    '.avi': 'video/x-msvideo'
+  };
+
+  const contentType = contentTypes[ext] || 'application/octet-stream';
+
+  // Set appropriate headers
+  res.setHeader('Content-Type', contentType);
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET');
+  res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year
+
+  res.sendFile(filePath);
+});
+
 export default router;
 

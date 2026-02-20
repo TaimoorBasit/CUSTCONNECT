@@ -87,15 +87,6 @@ export default function SocialFeedPage() {
     }
   };
 
-  const uploadFile = async (file: File): Promise<string> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        resolve(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    });
-  };
 
   const handleCreatePost = async () => {
     if (!postContent.trim() && !postImageFile && !postVideoFile) {
@@ -109,20 +100,10 @@ export default function SocialFeedPage() {
       let videoUrl = '';
 
       if (postImageFile) {
-        if (postImageFile.size > 10 * 1024 * 1024) {
-          toast.error('Image size must be less than 10MB');
-          setCreating(false);
-          return;
-        }
-        imageUrl = await uploadFile(postImageFile);
+        imageUrl = await postService.uploadPostFile(postImageFile);
       }
       if (postVideoFile) {
-        if (postVideoFile.size > 50 * 1024 * 1024) {
-          toast.error('Video size must be less than 50MB');
-          setCreating(false);
-          return;
-        }
-        videoUrl = await uploadFile(postVideoFile);
+        videoUrl = await postService.uploadPostFile(postVideoFile);
       }
 
       const postData: any = { privacy: postPrivacy };
@@ -239,20 +220,10 @@ export default function SocialFeedPage() {
       let videoUrl = editingPost.videoUrl || '';
 
       if (postImageFile) {
-        if (postImageFile.size > 10 * 1024 * 1024) {
-          toast.error('Image size must be less than 10MB');
-          setUpdating(false);
-          return;
-        }
-        imageUrl = await uploadFile(postImageFile);
+        imageUrl = await postService.uploadPostFile(postImageFile);
       }
       if (postVideoFile) {
-        if (postVideoFile.size > 50 * 1024 * 1024) {
-          toast.error('Video size must be less than 50MB');
-          setUpdating(false);
-          return;
-        }
-        videoUrl = await uploadFile(postVideoFile);
+        videoUrl = await postService.uploadPostFile(postVideoFile);
       }
 
       const postData: any = { privacy: postPrivacy };
@@ -348,6 +319,13 @@ export default function SocialFeedPage() {
     } finally {
       setReporting(false);
     }
+  };
+
+  const getImageUrl = (imagePath?: string) => {
+    if (!imagePath) return '';
+    if (imagePath.startsWith('http')) return imagePath;
+    const baseUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+    return `${baseUrl}${imagePath}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -604,7 +582,7 @@ export default function SocialFeedPage() {
                 {post.imageUrl && (
                   <div className="mt-4 overflow-hidden rounded-2xl border border-border/50 bg-secondary/30">
                     <img
-                      src={post.imageUrl}
+                      src={getImageUrl(post.imageUrl)}
                       alt="Post image"
                       className="w-full object-cover"
                       style={{ maxHeight: '500px', minHeight: '200px' }}
@@ -615,7 +593,7 @@ export default function SocialFeedPage() {
                 {post.videoUrl && (
                   <div className="mt-4 overflow-hidden rounded-2xl border border-border/50">
                     <video
-                      src={post.videoUrl}
+                      src={getImageUrl(post.videoUrl)}
                       controls
                       className="w-full max-h-[500px] bg-black"
                     />

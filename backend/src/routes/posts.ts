@@ -3,8 +3,23 @@ import { prisma } from '../index';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 import { io } from '../index';
+import { uploadPost, getFileUrl } from '../utils/upload';
 
 const router = express.Router();
+
+// Upload post image/video
+router.post('/upload', uploadPost.single('file'), asyncHandler(async (req: AuthRequest, res) => {
+  if (!req.file) {
+    throw createError('No file provided', 400);
+  }
+
+  const fileUrl = getFileUrl(req.file.path, 'post');
+
+  res.json({
+    success: true,
+    fileUrl
+  });
+}));
 
 // Get posts feed
 router.get('/', asyncHandler(async (req: AuthRequest, res) => {
