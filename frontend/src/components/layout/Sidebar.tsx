@@ -55,9 +55,9 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
         <Image
           src="/logo.png"
           alt="CustConnect"
-          width={150}
-          height={40}
-          className="h-10 w-auto object-contain"
+          width={250}
+          height={80}
+          className="h-24 w-auto object-contain"
           priority
         />
       </div>

@@ -123,9 +123,9 @@ export default function RoleBasedSidebar({ mobileOpen = false, onMobileClose }: 
           <Image
             src="/logo.png"
             alt="CustConnect"
-            width={400}
-            height={120}
-            className="h-32 w-auto object-contain brightness-110 contrast-125 scale-125"
+            width={500}
+            height={150}
+            className="h-44 w-auto object-contain brightness-110 contrast-125 scale-110"
             priority
           />
         </Link>
