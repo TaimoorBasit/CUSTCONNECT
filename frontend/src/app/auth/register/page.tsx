@@ -84,9 +84,9 @@ export default function RegisterPage() {
             <Image
               src="/logo.png"
               alt="CustConnect"
-              width={350}
-              height={100}
-              className="h-24 w-auto object-contain brightness-110"
+              width={500}
+              height={150}
+              className="h-40 w-auto object-contain brightness-125"
               priority
             />
           </div>
@@ -107,9 +107,9 @@ export default function RegisterPage() {
               <Image
                 src="/logo.png"
                 alt="CustConnect"
-                width={320}
-                height={90}
-                className="h-20 w-auto object-contain mx-auto mb-4"
+                width={450}
+                height={120}
+                className="h-32 w-auto object-contain mx-auto mb-6"
                 priority
               />
               <p className="text-sm text-gray-600">
