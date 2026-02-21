@@ -269,7 +269,7 @@ export default function ChatInterface() {
                                     <ArrowLeftIcon className="w-6 h-6" />
                                 </button>
                                 <Link
-                                    href={selectedConv.isGroup ? '#' : `/dashboard/profile/${selectedConv.partner?.id}`}
+                                    href={selectedConv.isGroup ? '#' : `/dashboard/profile?id=${selectedConv.partner?.id}`}
                                     className="w-12 h-12 rounded-[18px] bg-primary/10 flex items-center justify-center overflow-hidden hover:scale-105 transition-transform"
                                 >
                                     {selectedConv.isGroup ? (
@@ -282,7 +282,7 @@ export default function ChatInterface() {
                                 </Link>
                                 <div>
                                     <Link
-                                        href={selectedConv.isGroup ? '#' : `/dashboard/profile/${selectedConv.partner?.id}`}
+                                        href={selectedConv.isGroup ? '#' : `/dashboard/profile?id=${selectedConv.partner?.id}`}
                                         className="font-black text-lg uppercase tracking-tighter hover:text-primary transition-colors block leading-none"
                                     >
                                         {selectedConv.isGroup ? selectedConv.name : `${selectedConv.partner?.firstName} ${selectedConv.partner?.lastName}`}
@@ -298,7 +298,7 @@ export default function ChatInterface() {
 
                             {!selectedConv.isGroup && selectedConv.partner && (
                                 <button
-                                    onClick={() => router.push(`/dashboard/profile/${selectedConv.partner?.id}`)}
+                                    onClick={() => router.push(`/dashboard/profile?id=${selectedConv.partner?.id}`)}
                                     className="p-3 bg-secondary/50 text-foreground hover:bg-primary hover:text-white rounded-[16px] transition-all active:scale-95 flex items-center gap-2 group"
                                     title="View Profile"
                                 >

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { userService } from '@/services/userService';
 import { postService } from '@/services/postService';
@@ -11,9 +11,8 @@ import {
     AcademicCapIcon,
     ChatBubbleBottomCenterTextIcon,
     UserPlusIcon,
-    UserMinusIcon
 } from '@heroicons/react/24/outline';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -55,8 +54,9 @@ function ProfilePostCard({ post, onLike, currentUserId }: PostCardProps) {
     );
 }
 
-export default function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = use(params);
+function UserProfileContent() {
+    const searchParams = useSearchParams();
+    const id = searchParams.get('id');
     const { user: currentUser } = useAuth();
     const router = useRouter();
     const [user, setUser] = useState<User | null>(null);
@@ -65,10 +65,13 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
     const [followLoading, setFollowLoading] = useState(false);
 
     useEffect(() => {
-        fetchData();
+        if (id) {
+            fetchData();
+        }
     }, [id]);
 
     const fetchData = async () => {
+        if (!id) return;
         try {
             setLoading(true);
             const [userData, postData] = await Promise.all([
@@ -88,11 +91,6 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
         if (!user) return;
         try {
             setFollowLoading(true);
-            // In a real app, 'user' object should have 'isFollowing' flag
-            // For now, we'll implement a simple toggle based on a local state if we had it,
-            // but we'll just call the service and refresh for now.
-            // Since User type might not have isFollowing, we check if target is in currentUser's following list in a real app.
-            // But let's assume the API handles it and we just toast the result.
             await userService.followUser(user.id);
             toast.success(`Following ${user.firstName}`);
             fetchData();
@@ -120,8 +118,8 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
 
     if (loading) {
         return (
-            <div className="max-w-4xl mx-auto p-8 animate-pulse">
-                <div className="h-40 bg-gray-100 rounded-[40px] mb-8" />
+            <div className="max-w-4xl mx-auto p-8 animate-pulse text-primary">
+                <div className="h-48 bg-gray-100 rounded-b-[40px] mb-8" />
                 <div className="flex gap-8">
                     <div className="w-32 h-32 bg-gray-100 rounded-[32px] -mt-20 ml-8 border-8 border-white" />
                     <div className="flex-1 pt-4 space-y-4">
@@ -237,5 +235,20 @@ export default function UserProfilePage({ params }: { params: Promise<{ id: stri
                 )}
             </div>
         </div>
+    );
+}
+
+export default function UserProfilePage() {
+    return (
+        <Suspense fallback={
+            <div className="max-w-4xl mx-auto p-8 animate-pulse text-primary">
+                <div className="h-48 bg-gray-100 rounded-b-[40px] mb-8" />
+                <div className="flex gap-8">
+                    <div className="w-32 h-32 bg-gray-100 rounded-[32px] -mt-20 ml-8 border-8 border-white" />
+                </div>
+            </div>
+        }>
+            <UserProfileContent />
+        </Suspense>
     );
 }

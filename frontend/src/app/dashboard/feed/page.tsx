@@ -540,7 +540,7 @@ function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: Po
       {/* Header */}
       <div className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link href={`/dashboard/profile/${post.author.id}`} className="relative group">
+          <Link href={`/dashboard/profile?id=${post.author.id}`} className="relative group">
             <div className={`w-10 h-10 rounded-full p-[2px] transition-all duration-300 ${post.isFollowing ? 'bg-gradient-to-tr from-primary/20 to-primary/10' : 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600'}`}>
               <div className="w-full h-full rounded-full bg-background p-0.5">
                 <div className="w-full h-full rounded-full bg-secondary/30 flex items-center justify-center font-black text-primary overflow-hidden">
@@ -552,7 +552,7 @@ function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: Po
             </div>
           </Link>
           <div className="flex flex-col">
-            <Link href={`/dashboard/profile/${post.author.id}`} className="font-black text-sm hover:text-primary transition-colors leading-none tracking-tight">
+            <Link href={`/dashboard/profile?id=${post.author.id}`} className="font-black text-sm hover:text-primary transition-colors leading-none tracking-tight">
               {post.author.firstName} {post.author.lastName}
             </Link>
             <span className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-widest">
@@ -628,7 +628,7 @@ function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: Po
           </div>
 
           <div className="text-[14px]">
-            <Link href={`/dashboard/profile/${post.author.id}`} className="font-black mr-2 hover:text-primary transition-colors">
+            <Link href={`/dashboard/profile?id=${post.author.id}`} className="font-black mr-2 hover:text-primary transition-colors">
               {post.author.firstName}
             </Link>
             <span className="text-foreground/80 font-medium leading-relaxed">{post.content}</span>
