@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect, useRef } from 'react';
 import { postService } from '@/services/postService';
 import { userService } from '@/services/userService';
