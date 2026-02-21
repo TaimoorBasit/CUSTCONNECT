@@ -171,25 +171,31 @@ export default function RoleBasedSidebar({ mobileOpen = false, onMobileClose }: 
 
           {/* User Section */}
           <div className="p-6 mt-auto border-t border-white/5">
-            <div className="bg-white/5 p-4 rounded-[28px] flex items-center justify-between border border-white/5 hover:bg-white/10 transition-all group">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-[18px] bg-gradient-to-tr from-indigo-500 to-purple-500 p-[2px] shadow-lg group-hover:scale-110 transition-transform duration-500">
-                  <div className="w-full h-full rounded-[16px] bg-[#1a1b3b] flex items-center justify-center font-black text-white text-lg border-2 border-white/10">
-                    {user?.firstName?.[0]}
+            <div className="bg-white/5 p-4 rounded-[28px] border border-white/5 hover:bg-white/10 transition-all group">
+              <div className="flex items-center justify-between">
+                <Link href={`/dashboard/profile/${user?.id}`} className="flex items-center gap-3 cursor-pointer">
+                  <div className="w-12 h-12 rounded-[18px] bg-gradient-to-tr from-indigo-500 to-purple-500 p-[2px] shadow-lg group-hover:scale-110 transition-transform duration-500">
+                    <div className="w-full h-full rounded-[16px] bg-[#1a1b3b] flex items-center justify-center font-black text-white text-lg border-2 border-white/10 overflow-hidden">
+                      {user?.profileImage ? (
+                        <img src={user.profileImage} className="w-full h-full object-cover" alt="" />
+                      ) : (
+                        user?.firstName?.[0]
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-[15px] font-black text-white leading-tight">{user?.firstName} {user?.lastName}</span>
-                  <span className="text-[11px] text-white/40 font-bold mt-0.5 tracking-tight uppercase">{roleDisplay}</span>
-                </div>
+                  <div className="flex flex-col">
+                    <span className="text-[15px] font-black text-white leading-tight group-hover:text-indigo-400 transition-colors">{user?.firstName} {user?.lastName}</span>
+                    <span className="text-[11px] text-white/40 font-bold mt-0.5 tracking-tight uppercase">{roleDisplay}</span>
+                  </div>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="p-3 text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded-2xl transition-all active:scale-90"
+                  title="Logout"
+                >
+                  <ArrowRightOnRectangleIcon className="w-6 h-6" />
+                </button>
               </div>
-              <button
-                onClick={handleLogout}
-                className="p-3 text-white/20 hover:text-red-400 hover:bg-red-400/10 rounded-2xl transition-all active:scale-90"
-                title="Logout"
-              >
-                <ArrowRightOnRectangleIcon className="w-6 h-6" />
-              </button>
             </div>
           </div>
         </div>

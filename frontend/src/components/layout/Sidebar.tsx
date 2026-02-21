@@ -103,22 +103,26 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
 
   const renderUserBlock = () => (
     <div className="flex-shrink-0 flex border-t border-white border-opacity-20 p-4">
-      <div className="flex items-center">
+      <Link href={`/dashboard/profile/${user?.id}`} className="flex items-center group cursor-pointer">
         <div className="flex-shrink-0">
-          <div className="h-10 w-10 rounded-full bg-white bg-opacity-20 flex items-center justify-center border-2 border-white border-opacity-30">
-            <span className="text-sm font-medium text-white">
-              {user?.firstName?.[0]}
-              {user?.lastName?.[0]}
-            </span>
+          <div className="h-10 w-10 rounded-full bg-white bg-opacity-20 flex items-center justify-center border-2 border-white border-opacity-30 group-hover:border-opacity-100 transition-all">
+            {user?.profileImage ? (
+              <img src={user.profileImage} className="w-full h-full object-cover rounded-full" alt="" />
+            ) : (
+              <span className="text-sm font-medium text-white">
+                {user?.firstName?.[0]}
+                {user?.lastName?.[0]}
+              </span>
+            )}
           </div>
         </div>
         <div className="ml-3">
-          <p className="text-sm font-medium text-white">
+          <p className="text-sm font-medium text-white group-hover:underline">
             {user?.firstName} {user?.lastName}
           </p>
           <p className="text-xs text-white text-opacity-80">{user?.university?.name}</p>
         </div>
-      </div>
+      </Link>
       <button
         onClick={handleLogout}
         className="ml-auto flex-shrink-0 p-2 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all duration-200"

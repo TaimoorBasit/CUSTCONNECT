@@ -21,6 +21,91 @@ router.post('/upload', uploadPost.single('file'), asyncHandler(async (req: AuthR
   });
 }));
 
+// Get posts by user ID
+router.get('/user/:userId', asyncHandler(async (req: AuthRequest, res) => {
+  const { userId } = req.params;
+  const { page = 1, limit = 20 } = req.query;
+  const offset = (Number(page) - 1) * Number(limit);
+
+  // Check if current user follows this user for privacy
+  const existingFollow = await prisma.follow.findUnique({
+    where: {
+      followerId_followingId: {
+        followerId: req.user!.id,
+        followingId: userId
+      }
+    }
+  });
+
+  const isFollowing = !!existingFollow;
+
+  const whereClause: any = {
+    authorId: userId,
+    isActive: true,
+    OR: [
+      { privacy: 'PUBLIC' },
+      { authorId: req.user!.id },
+      ...(isFollowing ? [{ privacy: 'FOLLOWERS_ONLY' }] : [])
+    ]
+  };
+
+  const posts = await prisma.post.findMany({
+    where: whereClause,
+    include: {
+      author: {
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          profileImage: true,
+          year: true,
+          university: { select: { name: true } }
+        }
+      },
+      _count: {
+        select: {
+          likes: true,
+          comments: true
+        }
+      },
+      likes: {
+        where: { userId: req.user!.id },
+        select: { id: true }
+      }
+    },
+    skip: offset,
+    take: Number(limit),
+    orderBy: { createdAt: 'desc' }
+  });
+
+  const total = await prisma.post.count({ where: whereClause });
+
+  res.json({
+    success: true,
+    posts: posts.map(post => ({
+      id: post.id,
+      content: post.content,
+      imageUrl: post.imageUrl,
+      videoUrl: post.videoUrl,
+      privacy: post.privacy,
+      isActive: post.isActive,
+      createdAt: post.createdAt,
+      updatedAt: post.updatedAt,
+      author: post.author,
+      isLiked: post.likes.length > 0,
+      isFollowing,
+      likes: post._count.likes,
+      comments: post._count.comments
+    })),
+    pagination: {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      pages: Math.ceil(total / Number(limit))
+    }
+  });
+}));
+
 // Get posts feed
 router.get('/', asyncHandler(async (req: AuthRequest, res) => {
   const { page = 1, limit = 20, universityOnly = false, followingOnly = false } = req.query;

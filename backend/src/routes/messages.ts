@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { prisma } from '../lib/prisma';
+import { prisma } from '../index';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, createError } from '../middleware/errorHandler';
 import { io } from '../index';
@@ -67,48 +67,27 @@ router.get('/direct/:userId', authenticateToken, asyncHandler(async (req: AuthRe
     const currentUserId = req.user!.id;
     const targetUserId = req.params.userId;
 
-    // Find if a direct conversation already exists between these two
-    let conversation = await prisma.conversation.findFirst({
-        where: {
-            isGroup: false,
-            AND: [
-                { members: { some: { userId: currentUserId } } },
-                { members: { some: { userId: targetUserId } } }
-            ]
-        },
-        include: {
-            messages: {
-                orderBy: { createdAt: 'asc' },
-                include: {
-                    sender: {
-                        select: { id: true, firstName: true }
-                    }
-                }
-            },
-            members: {
-                include: {
-                    user: {
-                        select: { id: true, firstName: true, lastName: true, profileImage: true }
-                    }
-                }
-            }
-        }
-    });
+    console.log(`Checking direct conversation between ${currentUserId} and ${targetUserId}`);
 
-    // If not, create one
-    if (!conversation) {
-        conversation = await prisma.conversation.create({
-            data: {
+    try {
+        // Find if a direct conversation already exists between these two
+        let conversation = await prisma.conversation.findFirst({
+            where: {
                 isGroup: false,
-                members: {
-                    create: [
-                        { userId: currentUserId, role: 'ADMIN' },
-                        { userId: targetUserId, role: 'MEMBER' }
-                    ]
-                }
+                AND: [
+                    { members: { some: { userId: currentUserId } } },
+                    { members: { some: { userId: targetUserId } } }
+                ]
             },
             include: {
-                messages: true,
+                messages: {
+                    orderBy: { createdAt: 'asc' },
+                    include: {
+                        sender: {
+                            select: { id: true, firstName: true }
+                        }
+                    }
+                },
                 members: {
                     include: {
                         user: {
@@ -117,24 +96,56 @@ router.get('/direct/:userId', authenticateToken, asyncHandler(async (req: AuthRe
                     }
                 }
             }
-        }) as any;
-    }
+        });
 
-    // Update last read for current user
-    await prisma.conversationMember.update({
-        where: {
-            userId_conversationId: {
-                userId: currentUserId,
-                conversationId: conversation!.id
+        // If not, create one
+        if (!conversation) {
+            console.log(`Creating new direct conversation between ${currentUserId} and ${targetUserId}`);
+            conversation = await prisma.conversation.create({
+                data: {
+                    isGroup: false,
+                    members: {
+                        create: [
+                            { userId: currentUserId, role: 'ADMIN' },
+                            { userId: targetUserId, role: 'MEMBER' }
+                        ]
+                    }
+                },
+                include: {
+                    messages: true,
+                    members: {
+                        include: {
+                            user: {
+                                select: { id: true, firstName: true, lastName: true, profileImage: true }
+                            }
+                        }
+                    }
+                }
+            }) as any;
+        }
+
+        // Update last read for current user
+        await prisma.conversationMember.update({
+            where: {
+                userId_conversationId: {
+                    userId: currentUserId,
+                    conversationId: conversation!.id
+                }
+            },
+            data: { lastReadAt: new Date() }
+        });
+
+        res.json({
+            success: true,
+            conversation: {
+                ...conversation,
+                partner: conversation!.members.find(m => m.userId !== currentUserId)?.user
             }
-        },
-        data: { lastReadAt: new Date() }
-    });
-
-    res.json({
-        success: true,
-        conversation
-    });
+        });
+    } catch (error) {
+        console.error('Error in /direct/:userId:', error);
+        throw error;
+    }
 }));
 
 // Create Group Conversation

@@ -33,7 +33,6 @@ export default function SocialFeedPage() {
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'FOR_YOU' | 'FOLLOWING'>('FOR_YOU');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [postContent, setPostContent] = useState('');
   const [privacy, setPrivacy] = useState<'PUBLIC' | 'UNIVERSITY_ONLY' | 'FOLLOWERS_ONLY'>('PUBLIC');
@@ -50,7 +49,7 @@ export default function SocialFeedPage() {
   useEffect(() => {
     fetchPosts();
     fetchStories();
-  }, [activeTab]);
+  }, []);
 
   useEffect(() => {
     if (!socket) return;
@@ -82,8 +81,7 @@ export default function SocialFeedPage() {
       setLoading(true);
       const data = await postService.getPosts({
         page: 1,
-        limit: 20,
-        followingOnly: activeTab === 'FOLLOWING'
+        limit: 30, // Increased limit for combined feed
       });
       setPosts(data?.posts || []);
     } catch (error: any) {
@@ -162,23 +160,24 @@ export default function SocialFeedPage() {
 
   return (
     <div className="flex flex-col min-h-full bg-background/50 animate-in fade-in duration-700">
-      {/* Dynamic Tab Navigation */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/10">
-        <div className="max-w-2xl mx-auto flex">
-          <button
-            onClick={() => setActiveTab('FOR_YOU')}
-            className={`flex-1 py-4 text-[13px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'FOR_YOU' ? 'text-primary' : 'text-muted-foreground/40 hover:text-muted-foreground'}`}
-          >
-            For You
-            {activeTab === 'FOR_YOU' && <div className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-primary rounded-full animate-in slide-in-from-bottom-2" />}
-          </button>
-          <button
-            onClick={() => setActiveTab('FOLLOWING')}
-            className={`flex-1 py-4 text-[13px] font-black uppercase tracking-widest transition-all relative ${activeTab === 'FOLLOWING' ? 'text-primary' : 'text-muted-foreground/40 hover:text-muted-foreground'}`}
-          >
-            Following
-            {activeTab === 'FOLLOWING' && <div className="absolute bottom-0 left-1/4 right-1/4 h-1 bg-primary rounded-full animate-in slide-in-from-bottom-2" />}
-          </button>
+      {/* Instagram Style Header */}
+      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/10 px-6 py-4">
+        <div className="max-w-2xl mx-auto flex items-center justify-between">
+          <h1 className="text-2xl font-black tracking-tighter text-foreground">Campus<span className="text-primary italic">Feed</span></h1>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => setShowStoryCreator(true)}
+              className="p-2 hover:bg-secondary/50 rounded-xl transition-all active:scale-90"
+            >
+              <CameraIcon className="w-6 h-6 text-foreground" />
+            </button>
+            <button
+              onClick={() => router.push('/dashboard/messages')}
+              className="p-2 hover:bg-secondary/50 rounded-xl transition-all active:scale-90"
+            >
+              <PaperAirplaneIcon className="w-6 h-6 text-foreground -rotate-45" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -189,17 +188,17 @@ export default function SocialFeedPage() {
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setShowStoryCreator(true)}
-              className="w-16 h-16 rounded-[22px] bg-primary/10 border-2 border-dashed border-primary/30 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
+              className="w-16 h-16 rounded-full p-[2px] border-2 border-dashed border-primary/30 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
             >
               <PlusIcon className="w-8 h-8" />
             </button>
-            <span className="text-[10px] font-black uppercase text-primary tracking-widest">Post</span>
+            <span className="text-[10px] font-black uppercase text-primary tracking-widest">You</span>
           </div>
 
           {loadingStories ? (
             Array(5).fill(0).map((_, i) => (
               <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
-                <div className="w-16 h-16 rounded-[22px] bg-secondary" />
+                <div className="w-16 h-16 rounded-full bg-secondary" />
                 <div className="w-10 h-2 bg-secondary rounded-full" />
               </div>
             ))
@@ -208,16 +207,18 @@ export default function SocialFeedPage() {
               <div className="relative">
                 <button
                   onClick={() => setSelectedStoryAuthor(item)}
-                  className="w-16 h-16 rounded-[22px] p-0.5 border-2 border-primary bg-background shadow-md active:scale-95 transition-all overflow-hidden"
+                  className="w-16 h-16 rounded-full p-[2.5px] bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 shadow-md active:scale-95 transition-all overflow-hidden"
                 >
-                  <div className="w-full h-full rounded-[18px] bg-secondary/30 flex items-center justify-center font-black text-primary overflow-hidden">
-                    {item.author.profileImage ? (
-                      <img src={item.author.profileImage} className="w-full h-full object-cover" alt="" />
-                    ) : item.author.firstName[0]}
+                  <div className="w-full h-full rounded-full bg-background p-0.5">
+                    <div className="w-full h-full rounded-full bg-secondary/30 flex items-center justify-center font-black text-primary overflow-hidden">
+                      {item.author.profileImage ? (
+                        <img src={item.author.profileImage} className="w-full h-full object-cover" alt="" />
+                      ) : item.author.firstName[0]}
+                    </div>
                   </div>
                 </button>
                 {onlineUsers.includes(item.author.id) && (
-                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-4 border-background" />
+                  <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-4 border-background" />
                 )}
               </div>
               <span className="text-[10px] font-black uppercase text-foreground/60 tracking-tighter truncate w-16 text-center">
@@ -228,12 +229,12 @@ export default function SocialFeedPage() {
         </div>
       </div>
 
-      <div className="flex-1 px-4 py-6 space-y-6 max-w-2xl mx-auto w-full">
+      <div className="flex-1 px-4 py-6 space-y-8 max-w-2xl mx-auto w-full">
         {loading ? (
           Array(4).fill(0).map((_, i) => (
             <div key={i} className="bg-card/40 border border-border/10 rounded-[32px] p-6 space-y-4 animate-pulse">
-              <div className="flex gap-4"><div className="w-12 h-12 bg-secondary rounded-2xl" /><div className="space-y-3 py-2 flex-1"><div className="w-24 h-2.5 bg-secondary rounded-full" /><div className="w-32 h-2 bg-secondary rounded-full" /></div></div>
-              <div className="space-y-2"><div className="w-full h-2.5 bg-secondary rounded-full" /><div className="w-3/4 h-2.5 bg-secondary rounded-full" /></div>
+              <div className="flex gap-4"><div className="w-12 h-12 bg-secondary rounded-full" /><div className="space-y-3 py-2 flex-1"><div className="w-24 h-2.5 bg-secondary rounded-full" /><div className="w-32 h-2 bg-secondary rounded-full" /></div></div>
+              <div className="h-64 bg-secondary rounded-[24px]" />
             </div>
           ))
         ) : posts.length === 0 ? (
@@ -243,14 +244,6 @@ export default function SocialFeedPage() {
             </div>
             <h3 className="text-xl font-black text-foreground mb-2">Feed is quiet...</h3>
             <p className="text-muted-foreground font-medium mb-8">Start following your friends or cafes to see what's happening!</p>
-            {activeTab === 'FOLLOWING' && (
-              <button
-                onClick={() => setActiveTab('FOR_YOU')}
-                className="bg-primary text-primary-foreground px-8 py-4 rounded-[20px] font-black shadow-lg shadow-primary/20 active:scale-95 transition-all"
-              >
-                Explore Campus
-              </button>
-            )}
           </div>
         ) : (
           posts.map((post) => (
@@ -413,7 +406,7 @@ export default function SocialFeedPage() {
                     setCreating(false);
                   }
                 }}
-                className="w-full py-5 bg-primary text-primary-foreground rounded-[24px] font-black shadow-xl shadow-primary/25 disabled:opacity-30 active:scale-95 transition-all"
+                className="w-full py-5 bg-primary text-primary-foreground rounded-[24px] font-black shadow-xl shadow-primary/25 disabled:opacity-30 active:scale-90 transition-all"
               >
                 {creating ? 'Posting...' : 'Share Story'}
               </button>
@@ -518,14 +511,8 @@ interface PostCardProps {
 }
 
 function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: PostCardProps) {
-  const [following, setFollowing] = useState(false);
+  const router = useRouter();
   const [followLoading, setFollowLoading] = useState(false);
-
-  // Note: Backend doesn't explicitly return isFollowing in post, 
-  // we would need to check this. For a better UX, an 'isFollowing' flag in post would be ideal.
-  // In the interest of immediate functionality, we'll assume Not Following for now 
-  // OR we can check user's following list.
-
   const isMe = post.author.id === currentUserId;
 
   const handleFollowToggle = async () => {
@@ -549,94 +536,114 @@ function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: Po
   const getImageUrl = (path: string) => path.startsWith('http') ? path : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${path}`;
 
   return (
-    <div className="bg-card border border-border/40 rounded-[32px] overflow-hidden transition-all active:scale-[0.99] shadow-sm hover:shadow-md">
-      <div className="p-6 flex gap-4">
-        <div className="w-12 h-12 rounded-2xl bg-primary/5 flex-shrink-0 flex items-center justify-center font-black text-primary border border-primary/10 text-lg shadow-sm">
-          {post.author.firstName[0]}
-        </div>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between">
-            <div className="flex flex-col">
-              <h4 className="font-black text-[16px] text-foreground tracking-tight leading-tight">{post.author.firstName} {post.author.lastName}</h4>
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="text-[11px] text-primary/70 font-black uppercase tracking-widest">
-                  {post.author.university?.name || 'STUDENT'}
-                </span>
-                <span className="text-muted-foreground/30">•</span>
-                <span className="text-[11px] text-muted-foreground font-bold tracking-tight">
-                  {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
-                </span>
+    <div className="bg-card border-y md:border md:rounded-[24px] border-border/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
+      {/* Header */}
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link href={`/dashboard/profile/${post.author.id}`} className="relative group">
+            <div className={`w-10 h-10 rounded-full p-[2px] transition-all duration-300 ${post.isFollowing ? 'bg-gradient-to-tr from-primary/20 to-primary/10' : 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600'}`}>
+              <div className="w-full h-full rounded-full bg-background p-0.5">
+                <div className="w-full h-full rounded-full bg-secondary/30 flex items-center justify-center font-black text-primary overflow-hidden">
+                  {post.author.profileImage ? (
+                    <img src={post.author.profileImage} className="w-full h-full object-cover" alt="" />
+                  ) : post.author.firstName[0]}
+                </div>
               </div>
             </div>
-
-            {!isMe && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleFollowToggle}
-                  disabled={followLoading}
-                  className={`p-2.5 rounded-xl transition-all active:scale-90 ${post.isFollowing ? 'bg-secondary text-foreground hover:bg-red-50 hover:text-red-500' : 'bg-primary/10 text-primary hover:bg-primary hover:text-white'}`}
-                  title={post.isFollowing ? 'Unfollow' : 'Follow'}
-                >
-                  {post.isFollowing ? (
-                    <UserMinusIcon className="w-5 h-5 stroke-[2.5]" />
-                  ) : (
-                    <UserPlusIcon className="w-5 h-5 stroke-[2.5]" />
-                  )}
-                </button>
-                <button
-                  onClick={() => onMessage(post.author.id)}
-                  className="p-2.5 rounded-xl bg-secondary/80 text-foreground hover:bg-secondary transition-all active:scale-90"
-                  title="Direct Message"
-                >
-                  <PaperAirplaneIcon className="w-5 h-5 -rotate-45 relative translate-x-0.5" />
-                </button>
-              </div>
-            )}
+          </Link>
+          <div className="flex flex-col">
+            <Link href={`/dashboard/profile/${post.author.id}`} className="font-black text-sm hover:text-primary transition-colors leading-none tracking-tight">
+              {post.author.firstName} {post.author.lastName}
+            </Link>
+            <span className="text-[10px] text-muted-foreground font-bold mt-1 uppercase tracking-widest">
+              {post.author.university?.name || 'STUDENT'}
+            </span>
           </div>
-
-          <p className="mt-4 text-[16px] leading-[1.6] text-foreground/80 font-medium tracking-tight whitespace-pre-wrap">{post.content}</p>
+        </div>
+        <div className="flex items-center gap-1">
+          {!isMe && !post.isFollowing && (
+            <button
+              onClick={handleFollowToggle}
+              disabled={followLoading}
+              className="text-[13px] font-black text-primary px-3 py-1.5 hover:bg-primary/5 rounded-lg transition-colors"
+            >
+              Follow
+            </button>
+          )}
+          <button className="p-2 text-muted-foreground hover:text-foreground">
+            <EllipsisHorizontalIcon className="w-6 h-6" />
+          </button>
         </div>
       </div>
 
+      {/* Content Image/Video */}
       {(post.imageUrl || post.videoUrl) && (
-        <div className="px-6 pb-2">
+        <div className="aspect-square bg-secondary/10 flex items-center justify-center overflow-hidden">
           {post.videoUrl || (post.imageUrl && (post.imageUrl.toLowerCase().endsWith('.mp4') || post.imageUrl.toLowerCase().endsWith('.mov'))) ? (
             <video
               src={getImageUrl(post.videoUrl || post.imageUrl!)}
-              className="w-full h-[300px] rounded-[24px] object-cover border border-border/10 shadow-inner"
+              className="w-full h-full object-cover"
               controls
             />
           ) : post.imageUrl ? (
             <img
               src={getImageUrl(post.imageUrl)}
-              className="w-full h-[300px] rounded-[24px] object-cover border border-border/10 shadow-inner"
+              className="w-full h-full object-cover"
               alt="Post content"
             />
           ) : null}
         </div>
       )}
 
-      <div className="px-8 py-5 flex items-center justify-between bg-secondary/5 border-t border-border/10">
-        <div className="flex items-center gap-8">
-          <button onClick={onLike} className="flex items-center gap-2.5 group scale-110">
-            {post.isLiked ? (
-              <HandThumbUpSolid className="w-6 h-6 text-primary animate-in zoom-in-50" />
-            ) : (
-              <HandThumbUpIcon className="w-6 h-6 text-muted-foreground/40 transition-colors group-hover:text-primary" />
-            )}
-            <span className={`text-[14px] font-black ${post.isLiked ? 'text-primary' : 'text-muted-foreground/40'}`}>{post.likes}</span>
-          </button>
-
-          <button className="flex items-center gap-2.5 group scale-110">
-            <ChatBubbleOvalLeftIcon className="w-6 h-6 text-muted-foreground/40 transition-colors group-hover:text-primary" />
-            <span className="text-[14px] font-black text-muted-foreground/40">{post.comments}</span>
+      {/* Actions */}
+      <div className="p-4 border-t border-border/5">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-4">
+            <button onClick={onLike} className="group transition-transform active:scale-125">
+              {post.isLiked ? (
+                <HandThumbUpSolid className="w-7 h-7 text-primary animate-in zoom-in-50" />
+              ) : (
+                <HandThumbUpIcon className="w-7 h-7 text-foreground hover:text-muted-foreground transition-colors" />
+              )}
+            </button>
+            <button className="group transition-transform active:scale-125">
+              <ChatBubbleOvalLeftIcon className="w-7 h-7 text-foreground hover:text-muted-foreground" />
+            </button>
+            <button onClick={() => onMessage(post.author.id)} className="group transition-transform active:scale-125">
+              <PaperAirplaneIcon className="w-7 h-7 text-foreground -rotate-45 hover:text-muted-foreground mr-1" />
+            </button>
+          </div>
+          <button className="group">
+            <ShareIcon className="w-7 h-7 text-foreground hover:text-muted-foreground" />
           </button>
         </div>
 
-        <button className="p-2.5 rounded-2xl bg-secondary/30 text-muted-foreground/40 hover:text-primary hover:bg-primary/5 transition-all">
-          <ShareIcon className="w-5 h-5" />
-        </button>
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-1.5">
+            <div className="flex -space-x-2">
+              <div className="w-4 h-4 rounded-full bg-primary/20 border border-background" />
+              <div className="w-4 h-4 rounded-full bg-primary/40 border border-background" />
+            </div>
+            <span className="text-[13px] font-black">{post.likes.toLocaleString()} likes</span>
+          </div>
+
+          <div className="text-[14px]">
+            <Link href={`/dashboard/profile/${post.author.id}`} className="font-black mr-2 hover:text-primary transition-colors">
+              {post.author.firstName}
+            </Link>
+            <span className="text-foreground/80 font-medium leading-relaxed">{post.content}</span>
+          </div>
+
+          <button className="text-[13px] font-bold text-muted-foreground hover:text-foreground transition-colors mt-1 block">
+            View all {post.comments} comments
+          </button>
+
+          <span className="text-[10px] text-muted-foreground/60 font-black uppercase tracking-widest mt-1 block">
+            {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+          </span>
+        </div>
       </div>
     </div>
   );
 }
+

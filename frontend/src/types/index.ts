@@ -26,6 +26,11 @@ export interface User {
   isActive?: boolean;
   universityId?: string;
   departmentId?: string;
+  _count?: {
+    posts: number;
+    followers: number;
+    following: number;
+  };
 }
 
 export interface University {

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { chatService, Conversation, Message } from '@/services/chatService';
@@ -17,10 +16,13 @@ import {
     XMarkIcon
 } from '@heroicons/react/24/outline';
 import { userService } from '@/services/userService';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function ChatInterface() {
     const { user: currentUser } = useAuth();
     const { socket, onlineUsers } = useSocket();
+    const router = useRouter();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -266,7 +268,10 @@ export default function ChatInterface() {
                                 <button onClick={() => setSelectedConv(null)} className="md:hidden p-2 hover:bg-secondary rounded-full transition-all">
                                     <ArrowLeftIcon className="w-6 h-6" />
                                 </button>
-                                <div className="w-12 h-12 rounded-[18px] bg-primary/10 flex items-center justify-center overflow-hidden">
+                                <Link
+                                    href={selectedConv.isGroup ? '#' : `/dashboard/profile/${selectedConv.partner?.id}`}
+                                    className="w-12 h-12 rounded-[18px] bg-primary/10 flex items-center justify-center overflow-hidden hover:scale-105 transition-transform"
+                                >
                                     {selectedConv.isGroup ? (
                                         <UserGroupIcon className="w-6 h-6 text-primary" />
                                     ) : selectedConv.partner?.profileImage ? (
@@ -274,19 +279,33 @@ export default function ChatInterface() {
                                     ) : (
                                         <span className="font-black text-primary">{selectedConv.partner?.firstName[0]}</span>
                                     )}
-                                </div>
+                                </Link>
                                 <div>
-                                    <h3 className="font-black text-lg uppercase tracking-tighter">
+                                    <Link
+                                        href={selectedConv.isGroup ? '#' : `/dashboard/profile/${selectedConv.partner?.id}`}
+                                        className="font-black text-lg uppercase tracking-tighter hover:text-primary transition-colors block leading-none"
+                                    >
                                         {selectedConv.isGroup ? selectedConv.name : `${selectedConv.partner?.firstName} ${selectedConv.partner?.lastName}`}
-                                    </h3>
+                                    </Link>
                                     {!selectedConv.isGroup && selectedConv.partner && onlineUsers.includes(selectedConv.partner.id) && (
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center gap-2 mt-1">
                                             <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                                             <span className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">Active Now</span>
                                         </div>
                                     )}
                                 </div>
                             </div>
+
+                            {!selectedConv.isGroup && selectedConv.partner && (
+                                <button
+                                    onClick={() => router.push(`/dashboard/profile/${selectedConv.partner?.id}`)}
+                                    className="p-3 bg-secondary/50 text-foreground hover:bg-primary hover:text-white rounded-[16px] transition-all active:scale-95 flex items-center gap-2 group"
+                                    title="View Profile"
+                                >
+                                    <UserCircleIcon className="w-6 h-6 group-hover:rotate-12 transition-transform" />
+                                    <span className="text-[10px] font-black uppercase tracking-widest hidden sm:inline">Profile</span>
+                                </button>
+                            )}
                         </div>
 
                         {/* Messages */}

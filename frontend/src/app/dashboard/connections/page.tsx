@@ -122,12 +122,16 @@ export default function ConnectionsPage() {
                 ) : (
                     filteredList.map((u) => (
                         <div key={u.id} className="group bg-card border border-border/40 rounded-[32px] p-6 flex items-center gap-6 transition-all hover:shadow-xl hover:shadow-primary/5 hover:border-primary/10">
-                            <div className="w-16 h-16 rounded-[24px] bg-primary/5 border border-primary/10 flex items-center justify-center font-black text-primary text-2xl shadow-sm">
-                                {u.firstName[0]}
-                            </div>
+                            <Link href={`/dashboard/profile/${u.id}`} className="w-16 h-16 rounded-[24px] bg-primary/5 border border-primary/10 flex items-center justify-center font-black text-primary text-2xl shadow-sm hover:scale-105 transition-transform">
+                                {u.profileImage ? (
+                                    <img src={u.profileImage} className="w-full h-full object-cover rounded-[24px]" alt="" />
+                                ) : u.firstName[0]}
+                            </Link>
 
                             <div className="flex-1 min-w-0">
-                                <h4 className="font-black text-lg text-foreground truncate">{u.firstName} {u.lastName}</h4>
+                                <Link href={`/dashboard/profile/${u.id}`} className="font-black text-lg text-foreground truncate hover:text-primary transition-colors block">
+                                    {u.firstName} {u.lastName}
+                                </Link>
                                 <p className="text-[11px] text-primary/70 font-black uppercase tracking-widest truncate">
                                     {u.university?.name || 'STUDENT'}
                                     {u.year ? ` • YEAR ${u.year}` : ''}

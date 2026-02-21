@@ -45,6 +45,20 @@ class PostService {
     return { posts: [], pagination: {} };
   }
 
+  async getUserPosts(userId: string, params?: { page?: number; limit?: number }): Promise<{ posts: Post[]; pagination: any }> {
+    const response: AxiosResponse<any> =
+      await this.api.get(`/posts/user/${userId}`, { params });
+
+    if (!response.data.success) {
+      throw new Error(response.data.message || 'Failed to fetch user posts');
+    }
+
+    return {
+      posts: response.data.posts,
+      pagination: response.data.pagination || {}
+    };
+  }
+
   async createPost(data: { content: string; imageUrl?: string; videoUrl?: string; privacy?: 'PUBLIC' | 'UNIVERSITY_ONLY' | 'FOLLOWERS_ONLY' }): Promise<Post> {
     const response: AxiosResponse<any> =
       await this.api.post('/posts', data);
