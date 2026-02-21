@@ -67,6 +67,7 @@ export interface Post {
   likes: number;
   comments: number;
   isLiked: boolean;
+  isFollowing: boolean;
   canEdit?: boolean;
   canDelete?: boolean;
 }

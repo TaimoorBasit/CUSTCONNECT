@@ -30,6 +30,9 @@
 }
 
 :root {
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+
   /* High Contrast Zinc Theme */
   --background: #f4f4f5;
   /* Zinc 100 - Distinct off-white to let cards pop */

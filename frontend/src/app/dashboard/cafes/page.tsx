@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import axios from 'axios';
+import { userService } from '@/services/userService';
 import {
   StarIcon as StarIconSolid,
   MapPinIcon,
@@ -13,7 +14,8 @@ import {
   PlusIcon,
   MinusIcon,
   ChatBubbleLeftRightIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  UserPlusIcon
 } from '@heroicons/react/24/solid';
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
@@ -330,9 +332,24 @@ export default function CafesPage() {
                     </div>
                   </div>
                   {selectedCafe.ownerId && (
-                    <button onClick={() => router.push(`/dashboard/messages?userId=${selectedCafe.ownerId}`)} className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all border border-white/20 flex items-center gap-2">
-                      <ChatBubbleLeftRightIcon className="h-4 w-4" /> Message
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await userService.followUser(selectedCafe.ownerId!);
+                            toast.success(`Following ${selectedCafe.name}`);
+                          } catch (err) {
+                            toast.error('Already following or failed');
+                          }
+                        }}
+                        className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all border border-white/20 flex items-center gap-2"
+                      >
+                        <UserPlusIcon className="h-4 w-4" /> Follow
+                      </button>
+                      <button onClick={() => router.push(`/dashboard/messages?userId=${selectedCafe.ownerId}`)} className="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white px-4 py-2 rounded-xl text-sm font-semibold transition-all border border-white/20 flex items-center gap-2">
+                        <ChatBubbleLeftRightIcon className="h-4 w-4" /> Message
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>

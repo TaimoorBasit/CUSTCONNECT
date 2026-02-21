@@ -7,6 +7,7 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const BACKGROUND_IMAGE =
   'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1600&q=80';
@@ -136,12 +137,12 @@ export default function LoginPage() {
 
             <div className="flex items-center justify-between">
               <div className="text-sm">
-                <a
+                <Link
                   href="/auth/forgot-password"
                   className="font-medium text-blue-600 hover:text-blue-500"
                 >
                   Forgot your password?
-                </a>
+                </Link>
               </div>
             </div>
 
@@ -158,12 +159,12 @@ export default function LoginPage() {
             <div className="form-footer">
               <span className="text-sm text-gray-600">
                 Don't have an account?{' '}
-                <a
+                <Link
                   href="/auth/register"
                   className="font-medium text-blue-600 hover:text-blue-500"
                 >
                   Sign up
-                </a>
+                </Link>
               </span>
             </div>
           </form>

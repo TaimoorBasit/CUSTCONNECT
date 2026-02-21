@@ -414,5 +414,38 @@ router.get('/:id/following', asyncHandler(async (req: AuthRequest, res) => {
   });
 }));
 
+// Search users
+router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
+  const { q } = req.query;
+  if (!q || typeof q !== 'string') {
+    return res.json({ success: true, users: [] });
+  }
+
+  const users = await prisma.user.findMany({
+    where: {
+      OR: [
+        { firstName: { contains: q } },
+        { lastName: { contains: q } },
+        { email: { contains: q } }
+      ],
+      isActive: true,
+      NOT: { id: req.user!.id }
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      profileImage: true,
+      email: true
+    },
+    take: 10
+  });
+
+  res.json({
+    success: true,
+    users
+  });
+}));
+
 export default router;
 

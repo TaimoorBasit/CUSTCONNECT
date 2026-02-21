@@ -2,49 +2,71 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import { useAuth } from './AuthContext';
+import toast from 'react-hot-toast';
 
 interface SocketContextType {
   socket: Socket | null;
-  connected: boolean;
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
 
+const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http://localhost:5000';
+
 export function SocketProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
-  const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const socketUrl = 'https://custconnect-backend-production.up.railway.app';
-    console.log('Connecting to Socket URL:', socketUrl);
-    const newSocket = io(socketUrl, {
-      autoConnect: true,
-    });
+    if (user) {
+      const newSocket = io(SOCKET_URL, {
+        reconnectionAttempts: 5,
+        reconnectionDelay: 1000,
+      });
 
-    newSocket.on('connect', () => {
-      console.log('Connected to server');
-      setConnected(true);
-    });
+      newSocket.on('connect', () => {
+        console.log('Socket connected');
+        // Join private user room
+        newSocket.emit('join-room', user.id);
+      });
 
-    newSocket.on('disconnect', () => {
-      console.log('Disconnected from server');
-      setConnected(false);
-    });
+      newSocket.on('new-message', (data) => {
+        // Global notification for new message
+        toast.success(`${data.message.sender.firstName}: ${data.message.content}`, {
+          icon: '💬',
+          duration: 4000,
+        });
+      });
 
-    setSocket(newSocket);
+      newSocket.on('new-story', (data) => {
+        toast(`${data.author.firstName} shared a new story!`, {
+          icon: '📸',
+          duration: 3000,
+        });
+      });
 
-    return () => {
-      newSocket.close();
-    };
-  }, []);
+      newSocket.on('notification', (data) => {
+        toast(data.message, {
+          icon: '🔔',
+          duration: 3000,
+        });
+      });
 
-  const value = {
-    socket,
-    connected,
-  };
+      setSocket(newSocket);
+
+      return () => {
+        newSocket.close();
+      };
+    } else {
+      if (socket) {
+        socket.close();
+        setSocket(null);
+      }
+    }
+  }, [user?.id]);
 
   return (
-    <SocketContext.Provider value={value}>
+    <SocketContext.Provider value={{ socket }}>
       {children}
     </SocketContext.Provider>
   );
@@ -57,18 +79,3 @@ export function useSocket() {
   }
   return context;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

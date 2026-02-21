@@ -22,7 +22,7 @@ class PostService {
     });
   }
 
-  async getPosts(params?: { page?: number; limit?: number; universityOnly?: boolean }): Promise<{ posts: Post[]; pagination: any }> {
+  async getPosts(params?: { page?: number; limit?: number; universityOnly?: boolean; followingOnly?: boolean }): Promise<{ posts: Post[]; pagination: any }> {
     const response: AxiosResponse<any> =
       await this.api.get('/posts', { params });
 

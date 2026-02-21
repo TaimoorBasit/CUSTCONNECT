@@ -3,55 +3,58 @@ import express from 'express';
 import { prisma } from '../lib/prisma';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, createError } from '../middleware/errorHandler';
+import { io } from '../index';
 
 const router = express.Router();
 
-// Get conversations (users communicated with)
+// Get conversations (Inbox)
 router.get('/conversations', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
     const userId = req.user!.id;
 
-    // Find all messages where user is sender or receiver
-    const messages = await prisma.message.findMany({
-        where: {
-            OR: [
-                { senderId: userId },
-                { receiverId: userId }
-            ]
-        },
+    const memberships = await prisma.conversationMember.findMany({
+        where: { userId },
         include: {
-            sender: {
-                select: { id: true, firstName: true, lastName: true, email: true, profileImage: true, roles: { include: { role: true } } }
-            },
-            receiver: {
-                select: { id: true, firstName: true, lastName: true, email: true, profileImage: true, roles: { include: { role: true } } }
+            conversation: {
+                include: {
+                    members: {
+                        where: {
+                            NOT: { userId }
+                        },
+                        include: {
+                            user: {
+                                select: { id: true, firstName: true, lastName: true, profileImage: true, roles: { include: { role: true } } }
+                            }
+                        }
+                    },
+                    messages: {
+                        orderBy: { createdAt: 'desc' },
+                        take: 1
+                    }
+                }
             }
         },
-        orderBy: { createdAt: 'desc' }
+        orderBy: { conversation: { updatedAt: 'desc' } }
     });
 
-    // Extract unique conversation partners
-    const conversationsMap = new Map();
+    const conversations = memberships.map(m => {
+        const conv = m.conversation;
+        const lastMessage = conv.messages[0];
 
-    messages.forEach(msg => {
-        const isSender = msg.senderId === userId;
-        const partner = isSender ? msg.receiver : msg.sender;
+        // For direct messages, the partner is the other member
+        // For groups, we might show group name or members
+        const partner = !conv.isGroup ? conv.members[0]?.user : null;
 
-        if (!conversationsMap.has(partner.id)) {
-            conversationsMap.set(partner.id, {
-                partner,
-                lastMessage: msg.content,
-                timestamp: msg.createdAt,
-                unreadCount: !isSender && !msg.isRead ? 1 : 0
-            });
-        } else {
-            const conv = conversationsMap.get(partner.id);
-            if (!isSender && !msg.isRead) {
-                conv.unreadCount++;
-            }
-        }
+        return {
+            id: conv.id,
+            name: conv.name,
+            imageUrl: conv.imageUrl,
+            isGroup: conv.isGroup,
+            partner,
+            lastMessage: lastMessage?.content || '',
+            lastMessageAt: lastMessage?.createdAt || conv.createdAt,
+            unread: lastMessage ? lastMessage.createdAt > m.lastReadAt : false
+        };
     });
-
-    const conversations = Array.from(conversationsMap.values());
 
     res.json({
         success: true,
@@ -59,52 +62,221 @@ router.get('/conversations', authenticateToken, asyncHandler(async (req: AuthReq
     });
 }));
 
-// Get messages with a specific user
-router.get('/:userId', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+// Get or Create Direct Conversation with a user
+router.get('/direct/:userId', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
     const currentUserId = req.user!.id;
-    const otherUserId = req.params.userId as any;
+    const targetUserId = req.params.userId;
 
-    const messages = await prisma.message.findMany({
+    // Find if a direct conversation already exists between these two
+    let conversation = await prisma.conversation.findFirst({
         where: {
-            OR: [
-                { senderId: currentUserId, receiverId: otherUserId },
-                { senderId: otherUserId, receiverId: currentUserId }
+            isGroup: false,
+            AND: [
+                { members: { some: { userId: currentUserId } } },
+                { members: { some: { userId: targetUserId } } }
             ]
         },
-        orderBy: { createdAt: 'asc' }
+        include: {
+            messages: {
+                orderBy: { createdAt: 'asc' },
+                include: {
+                    sender: {
+                        select: { id: true, firstName: true }
+                    }
+                }
+            },
+            members: {
+                include: {
+                    user: {
+                        select: { id: true, firstName: true, lastName: true, profileImage: true }
+                    }
+                }
+            }
+        }
     });
 
-    // Mark messages as read
-    await prisma.message.updateMany({
+    // If not, create one
+    if (!conversation) {
+        conversation = await prisma.conversation.create({
+            data: {
+                isGroup: false,
+                members: {
+                    create: [
+                        { userId: currentUserId, role: 'ADMIN' },
+                        { userId: targetUserId, role: 'MEMBER' }
+                    ]
+                }
+            },
+            include: {
+                messages: true,
+                members: {
+                    include: {
+                        user: {
+                            select: { id: true, firstName: true, lastName: true, profileImage: true }
+                        }
+                    }
+                }
+            }
+        }) as any;
+    }
+
+    // Update last read for current user
+    await prisma.conversationMember.update({
         where: {
-            senderId: otherUserId,
-            receiverId: currentUserId,
-            isRead: false
+            userId_conversationId: {
+                userId: currentUserId,
+                conversationId: conversation!.id
+            }
         },
-        data: { isRead: true }
+        data: { lastReadAt: new Date() }
     });
 
     res.json({
         success: true,
-        messages
+        conversation
     });
 }));
 
-// Send a message
-router.post('/', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
-    const senderId = req.user!.id;
-    const { receiverId, content } = req.body;
+// Create Group Conversation
+router.post('/group', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+    const { name, members } = req.body; // members is array of user IDs
+    const currentUserId = req.user!.id;
 
-    if (!receiverId || !content) {
-        throw createError('Receiver ID and content are required', 400);
+    if (!name || !members || !Array.isArray(members)) {
+        throw createError('Group name and members list are required', 400);
+    }
+
+    const conversation = await prisma.conversation.create({
+        data: {
+            name,
+            isGroup: true,
+            members: {
+                create: [
+                    { userId: currentUserId, role: 'ADMIN' },
+                    ...members.map((userId: string) => ({ userId, role: 'MEMBER' }))
+                ]
+            }
+        },
+        include: {
+            members: {
+                include: {
+                    user: {
+                        select: { id: true, firstName: true, lastName: true, profileImage: true }
+                    }
+                }
+            }
+        }
+    });
+
+    res.status(201).json({
+        success: true,
+        conversation
+    });
+}));
+
+// Send a message to a conversation
+router.post('/:conversationId', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+    const senderId = req.user!.id;
+    const { conversationId } = req.params;
+    const { content } = req.body;
+
+    if (!content) {
+        throw createError('Content is required', 400);
+    }
+
+    // Check if user is a member
+    const membership = await prisma.conversationMember.findUnique({
+        where: { userId_conversationId: { userId: senderId, conversationId } }
+    });
+
+    if (!membership) {
+        throw createError('You are not a member of this conversation', 403);
     }
 
     const message = await prisma.message.create({
         data: {
             senderId,
-            receiverId,
+            conversationId,
+            content,
+        },
+        include: {
+            sender: {
+                select: { id: true, firstName: true, lastName: true, profileImage: true }
+            }
+        }
+    });
+
+    // Update conversation updatedAt
+    await prisma.conversation.update({
+        where: { id: conversationId },
+        data: { updatedAt: new Date() }
+    });
+
+    // Update last read for current user (since they sent it)
+    await prisma.conversationMember.update({
+        where: { userId_conversationId: { userId: senderId, conversationId } },
+        data: { lastReadAt: new Date() }
+    });
+
+    // Emit real-time message
+    io.to(conversationId).emit('new-message', {
+        conversationId,
+        message
+    });
+
+    res.status(201).json({
+        success: true,
+        message
+    });
+}));
+
+// Backward compatibility: Send to userId
+router.post('/', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+    const { userId, receiverId, content } = req.body;
+    const targetId = userId || receiverId;
+    const senderId = req.user!.id;
+
+    if (!targetId || !content) {
+        throw createError('Receiver ID and content are required', 400);
+    }
+
+    // Find or create direct conversation
+    let conversation = await prisma.conversation.findFirst({
+        where: {
+            isGroup: false,
+            AND: [
+                { members: { some: { userId: senderId } } },
+                { members: { some: { userId: targetId } } }
+            ]
+        }
+    });
+
+    if (!conversation) {
+        conversation = await prisma.conversation.create({
+            data: {
+                isGroup: false,
+                members: {
+                    create: [
+                        { userId: senderId, role: 'ADMIN' },
+                        { userId: targetId, role: 'MEMBER' }
+                    ]
+                }
+            }
+        });
+    }
+
+    const message = await prisma.message.create({
+        data: {
+            senderId,
+            conversationId: conversation.id,
             content,
         }
+    });
+
+    // Emit real-time message
+    io.to(conversation.id).emit('new-message', {
+        conversationId: conversation.id,
+        message
     });
 
     res.status(201).json({

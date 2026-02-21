@@ -7,6 +7,9 @@ import FunnelIcon from '@heroicons/react/24/outline/FunnelIcon';
 import CalendarIcon from '@heroicons/react/24/outline/CalendarIcon';
 import ArrowDownTrayIcon from '@heroicons/react/24/outline/ArrowDownTrayIcon';
 import ArrowPathIcon from '@heroicons/react/24/outline/ArrowPathIcon';
+import ShieldCheckIcon from '@heroicons/react/24/outline/ShieldCheckIcon';
+import XMarkIcon from '@heroicons/react/24/outline/XMarkIcon';
+import FingerPrintIcon from '@heroicons/react/24/outline/FingerPrintIcon';
 import { adminService } from '@/services/adminService';
 import toast from 'react-hot-toast';
 
@@ -36,27 +39,16 @@ export default function AdminAuditPage() {
     fetchLogs();
   }, [filter, entityFilter, dateFilter]);
 
-  // Also fetch when search query changes (with debounce)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Search is handled client-side, no need to refetch
-    }, 300);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      // Always fetch all logs first, then filter client-side for better UX
       const logs = await adminService.getAuditLogs(
-        undefined, // Don't filter by action on backend - do it client-side
-        1000, // Get more logs
-        undefined, // Don't filter by entity type on backend
-        undefined // Don't filter by date on backend - do it client-side
+        undefined,
+        1000,
+        undefined,
+        undefined
       );
-      
-      console.log('Fetched audit logs:', logs.length, logs);
-      
+
       const mappedLogs = logs.map((log: any) => ({
         ...log,
         timestamp: log.createdAt || log.timestamp,
@@ -68,53 +60,35 @@ export default function AdminAuditPage() {
         userEmail: log.userEmail || 'Unknown',
         details: log.details || '{}'
       }));
-      
+
       setLogs(mappedLogs);
-      
-      if (mappedLogs.length === 0) {
-        console.warn('No audit logs found in database. Perform some admin actions to generate logs.');
-      }
-      
       setLoading(false);
     } catch (error: any) {
-      console.error('Audit log error:', error);
-      toast.error('Failed to load audit logs: ' + (error.message || 'Unknown error'));
-      setLogs([]);
+      toast.error('Failed to synchronize security registers');
       setLoading(false);
     }
   };
 
   const getActionColor = (action: string) => {
     switch (action) {
-      case 'CREATE':
-        return 'bg-green-100 text-green-800';
-      case 'UPDATE':
-        return 'bg-blue-100 text-blue-800';
-      case 'DELETE':
-        return 'bg-red-100 text-red-800';
+      case 'CREATE': return 'bg-emerald-500 text-white';
+      case 'UPDATE': return 'bg-indigo-500 text-white';
+      case 'DELETE': return 'bg-rose-500 text-white shadow-lg shadow-rose-500/20';
       case 'ROLE_ASSIGN':
-      case 'ROLE_REMOVE':
-        return 'bg-purple-100 text-purple-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
+      case 'ROLE_REMOVE': return 'bg-violet-500 text-white';
+      default: return 'bg-slate-500 text-white';
     }
   };
 
-  const getActionIcon = (action: string) => {
-    switch (action) {
-      case 'CREATE':
-        return '➕';
-      case 'UPDATE':
-        return '✏️';
-      case 'DELETE':
-        return '🗑️';
-      case 'ROLE_ASSIGN':
-        return '👤';
-      case 'ROLE_REMOVE':
-        return '➖';
-      default:
-        return '📝';
-    }
+  const getActionLabel = (action: string) => {
+    const labels: { [key: string]: string } = {
+      'CREATE': 'Provisioned',
+      'UPDATE': 'Modified',
+      'DELETE': 'Terminated',
+      'ROLE_ASSIGN': 'Permission Accession',
+      'ROLE_REMOVE': 'Permission Revocation'
+    };
+    return labels[action] || action;
   };
 
   const parseDetails = (details: string) => {
@@ -153,20 +127,15 @@ export default function AdminAuditPage() {
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `audit-logs-${new Date().toISOString().split('T')[0]}.csv`;
+    a.download = `custconnect-audit-${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
     window.URL.revokeObjectURL(url);
-    toast.success('Audit logs exported successfully');
+    toast.success('Security manifest exported');
   };
 
   const filteredLogs = logs.filter(log => {
-    // Filter by action
     if (filter !== 'all' && log.action !== filter) return false;
-    
-    // Filter by entity type
     if (entityFilter !== 'all' && log.entityType !== entityFilter) return false;
-    
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
@@ -179,321 +148,225 @@ export default function AdminAuditPage() {
     return true;
   });
 
-  const getDateRange = () => {
-    const now = new Date();
-    switch (dateFilter) {
-      case 'today': {
-        const today = new Date(now);
-        today.setHours(0, 0, 0, 0);
-        return today;
-      }
-      case 'week': {
-        const weekAgo = new Date(now);
-        weekAgo.setDate(weekAgo.getDate() - 7);
-        return weekAgo;
-      }
-      case 'month': {
-        const monthAgo = new Date(now);
-        monthAgo.setMonth(monthAgo.getMonth() - 1);
-        return monthAgo;
-      }
-      default:
-        return null;
-    }
-  };
-
-  const dateFilteredLogs = dateFilter !== 'all' 
-    ? filteredLogs.filter(log => {
-        try {
-          const logDate = new Date(log.timestamp);
-          const rangeStart = getDateRange();
-          if (!rangeStart) return true;
-          return logDate >= rangeStart;
-        } catch (e) {
-          return true; // Include if date parsing fails
-        }
-      })
-    : filteredLogs;
-
   const uniqueEntityTypes = Array.from(new Set(logs.map(log => log.entityType)));
 
-  if (loading) {
-    return <div className="text-center py-12 text-gray-900">Loading...</div>;
+  if (loading && logs.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-medium animate-pulse text-xs uppercase tracking-widest">Accessing encrypted archives...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Audit Logs</h1>
-          <p className="text-gray-500">Review all admin actions and system changes.</p>
+    <div className="max-w-7xl mx-auto space-y-8 pb-12 px-4 sm:px-0">
+      {/* Premium Header */}
+      <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-[#020617] to-[#1e1b4b] p-8 md:p-12 shadow-2xl transition-all duration-700">
+        <div className="absolute top-0 right-0 -m-12 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-0 left-0 -m-12 w-64 h-64 bg-violet-500/10 rounded-full blur-[80px]"></div>
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="space-y-4">
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/5 border border-white/10 rounded-full text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400">
+              <ShieldCheckIcon className="w-3.5 h-3.5" />
+              Governance & Security
+            </div>
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
+              System <span className="text-indigo-400">Ledger</span>
+            </h1>
+            <p className="text-slate-400 font-medium max-w-xl leading-relaxed">
+              Consolidated immutable records of administrative operations. Trace every modification to maintain the platform's integrity.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-4">
+            <button
+              onClick={fetchLogs}
+              className="px-6 py-4 bg-white/5 hover:bg-white/10 text-white rounded-[20px] font-black border border-white/10 transition-all active:scale-95 flex items-center gap-2 uppercase text-[10px] tracking-widest"
+            >
+              <ArrowPathIcon className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Resync Archives
+            </button>
+            <button
+              onClick={exportLogs}
+              className="px-8 py-4 bg-indigo-600 hover:bg-black text-white rounded-[20px] font-black shadow-xl shadow-indigo-600/20 transition-all active:scale-95 flex items-center gap-2 uppercase text-[10px] tracking-widest"
+            >
+              <ArrowDownTrayIcon className="h-4 w-4" />
+              Intelligence Export
+            </button>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            onClick={fetchLogs}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-            title="Refresh logs"
+      </div>
+
+      {/* Modernized Filters */}
+      <div className="bg-white rounded-[32px] p-6 lg:p-8 border border-gray-100 shadow-sm flex flex-col lg:flex-row gap-6">
+        <div className="flex-[2] relative group">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4 mb-2 block">Global Query</label>
+          <div className="relative">
+            <MagnifyingGlassIcon className="absolute left-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-300 group-focus-within:text-indigo-500 transition-colors" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by agent, target, or operation..."
+              className="w-full rounded-2xl bg-gray-50 border border-transparent px-14 py-4 font-bold text-gray-900 focus:bg-white focus:border-indigo-500/20 focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all placeholder:text-gray-300 placeholder:font-medium"
+            />
+          </div>
+        </div>
+        <div className="flex-1">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4 mb-2 block">Operation Protocol</label>
+          <select
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            className="w-full rounded-2xl bg-gray-50 border border-transparent px-6 py-4 font-black text-gray-900 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all cursor-pointer appearance-none uppercase text-[10px] tracking-widest"
           >
-            <ArrowPathIcon className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-          <button
-            onClick={exportLogs}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+            <option value="all">Every Action</option>
+            <option value="CREATE">Creation Protocol</option>
+            <option value="UPDATE">Update Protocol</option>
+            <option value="DELETE">Deletion Protocol</option>
+            <option value="ROLE_ASSIGN">Accession Grant</option>
+            <option value="ROLE_REMOVE">Accession Denial</option>
+          </select>
+        </div>
+        <div className="flex-1">
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4 mb-2 block">Target Entity</label>
+          <select
+            value={entityFilter}
+            onChange={(e) => setEntityFilter(e.target.value)}
+            className="w-full rounded-2xl bg-gray-50 border border-transparent px-6 py-4 font-black text-gray-900 focus:bg-white focus:ring-4 focus:ring-indigo-500/5 outline-none transition-all cursor-pointer appearance-none uppercase text-[10px] tracking-widest"
           >
-            <ArrowDownTrayIcon className="h-4 w-4 mr-2" />
-            Export
-          </button>
+            <option value="all">All Modules</option>
+            {uniqueEntityTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white shadow rounded-lg p-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Search</label>
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search logs..."
-                className="pl-10 w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
+      {/* Logs Display */}
+      <div className="space-y-4">
+        {filteredLogs.length === 0 ? (
+          <div className="bg-white rounded-[40px] p-32 text-center border border-dashed border-gray-100">
+            <div className="w-24 h-24 rounded-full bg-indigo-50 flex items-center justify-center mx-auto mb-8 text-indigo-400">
+              <FingerPrintIcon className="h-12 w-12 stroke-[1.5]" />
             </div>
+            <h3 className="text-2xl font-black text-gray-900 uppercase tracking-tight mb-2">Null Sector Detected</h3>
+            <p className="text-gray-400 font-medium max-w-sm mx-auto leading-relaxed">No administrative activity matches the filtered query parameters.</p>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Action</label>
-            <select
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+        ) : (
+          filteredLogs.map((log) => (
+            <div
+              key={log.id}
+              onClick={() => {
+                setSelectedLog(log);
+                setShowDetailsModal(true);
+              }}
+              className="group bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm hover:shadow-2xl hover:border-black/5 transition-all duration-500 cursor-pointer flex flex-col md:flex-row md:items-center gap-6"
             >
-              <option value="all">All Actions</option>
-              <option value="CREATE">Create</option>
-              <option value="UPDATE">Update</option>
-              <option value="DELETE">Delete</option>
-              <option value="ROLE_ASSIGN">Role Assign</option>
-              <option value="ROLE_REMOVE">Role Remove</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Entity Type</label>
-            <select
-              value={entityFilter}
-              onChange={(e) => setEntityFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Types</option>
-              {uniqueEntityTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Date Range</label>
-            <select
-              value={dateFilter}
-              onChange={(e) => setDateFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            >
-              <option value="all">All Time</option>
-              <option value="today">Today</option>
-              <option value="week">Last 7 Days</option>
-              <option value="month">Last 30 Days</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <DocumentTextIcon className="h-6 w-6 text-gray-400" />
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Total Logs</dt>
-                  <dd className="text-lg font-medium text-gray-900">{dateFilteredLogs.length}</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">➕</span>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Creates</dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    {dateFilteredLogs.filter(l => l.action === 'CREATE').length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">✏️</span>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Updates</dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    {dateFilteredLogs.filter(l => l.action === 'UPDATE').length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div className="bg-white overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <span className="text-2xl">🗑️</span>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Deletes</dt>
-                  <dd className="text-lg font-medium text-gray-900">
-                    {dateFilteredLogs.filter(l => l.action === 'DELETE').length}
-                  </dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Logs Table */}
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <p className="text-sm text-gray-700">
-            Showing <span className="font-medium">{dateFilteredLogs.length}</span> of <span className="font-medium">{logs.length}</span> logs
-          </p>
-        </div>
-        <ul className="divide-y divide-gray-200">
-          {dateFilteredLogs.length === 0 ? (
-            <li className="px-4 py-8 text-center text-gray-500">
-              No audit logs found matching your filters
-            </li>
-          ) : (
-            dateFilteredLogs.map((log) => {
-              const details = parseDetails(log.details);
-              return (
-                <li 
-                  key={log.id} 
-                  className="px-4 py-4 sm:px-6 hover:bg-gray-50 cursor-pointer transition-colors"
-                  onClick={() => {
-                    setSelectedLog(log);
-                    setShowDetailsModal(true);
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-lg">{getActionIcon(log.action)}</span>
-                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionColor(log.action)}`}>
-                          {log.action}
-                        </span>
-                        <span className="text-sm font-semibold text-gray-900">
-                          {log.entityType}
-                        </span>
-                        <span className="text-xs text-gray-400 font-mono">
-                          ID: {log.entityId.substring(0, 8)}...
-                        </span>
-                      </div>
-                      <div className="mt-1 text-sm text-gray-600">
-                        {typeof details === 'object' && details !== null
-                          ? Object.entries(details).slice(0, 3).map(([key, value]) => (
-                              <span key={key} className="mr-4">
-                                <span className="font-medium">{key}:</span>{' '}
-                                <span className="text-gray-500">
-                                  {typeof value === 'object' ? JSON.stringify(value).substring(0, 50) : String(value).substring(0, 50)}
-                                </span>
-                              </span>
-                            ))
-                          : formatDetails(log.details).substring(0, 150)}
-                        {formatDetails(log.details).length > 150 && '...'}
-                      </div>
-                      <div className="mt-2 flex items-center gap-4 text-xs text-gray-400">
-                        <span>👤 {log.userEmail}</span>
-                        <span>🕐 {new Date(log.timestamp).toLocaleString()}</span>
-                        <span className="text-blue-600 hover:text-blue-800">View Details →</span>
-                      </div>
-                    </div>
+              <div className="flex items-center gap-5">
+                <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-[10px] font-black uppercase tracking-tight shadow-sm ${getActionColor(log.action)}`}>
+                  {log.action.slice(0, 3)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-lg font-black text-gray-900 tracking-tight group-hover:text-indigo-600 transition-colors uppercase">{log.entityType}</span>
+                    <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.1em]">
+                      TOKEN: {log.entityId.substring(0, 8).toUpperCase()}
+                    </span>
                   </div>
-                </li>
-              );
-            })
-          )}
-        </ul>
+                  <div className="flex items-center gap-3">
+                    <p className="text-xs font-black text-gray-500 uppercase">{log.userEmail}</p>
+                    <div className="w-1.5 h-1.5 bg-gray-200 rounded-full"></div>
+                    <p className="text-[10px] font-bold text-gray-400 tracking-wide">{new Date(log.timestamp).toLocaleString().toUpperCase()}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex-1 md:px-6">
+                <p className="text-xs font-bold text-gray-400 line-clamp-1 italic bg-gray-50/50 px-4 py-2 rounded-xl group-hover:bg-white transition-colors">
+                  {formatDetails(log.details)}
+                </p>
+              </div>
+
+              <div className="text-right">
+                <span className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.2em] opacity-0 group-hover:opacity-100 group-hover:translate-x-2 transition-all block">
+                  INSPECT LOG →
+                </span>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Details Modal */}
       {showDetailsModal && selectedLog && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowDetailsModal(false)} />
-            <div className="relative bg-white rounded-lg shadow-xl max-w-3xl w-full p-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-900">Audit Log Details</h2>
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Action</label>
-                    <div className="mt-1">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getActionColor(selectedLog.action)}`}>
-                        {selectedLog.action}
-                      </span>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Entity Type</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedLog.entityType}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Entity ID</label>
-                    <p className="mt-1 text-sm text-gray-900 font-mono">{selectedLog.entityId}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">User Email</label>
-                    <p className="mt-1 text-sm text-gray-900">{selectedLog.userEmail}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Timestamp</label>
-                    <p className="mt-1 text-sm text-gray-900">{new Date(selectedLog.timestamp).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Log ID</label>
-                    <p className="mt-1 text-sm text-gray-900 font-mono">{selectedLog.id}</p>
-                  </div>
+          <div className="flex items-center justify-center min-h-screen px-4 py-12">
+            <div className="fixed inset-0 bg-[#020617]/95 backdrop-blur-xl" onClick={() => setShowDetailsModal(false)} />
+            <div className="relative bg-white rounded-[40px] shadow-2xl max-w-4xl w-full overflow-hidden border border-white/20 text-gray-900">
+              <div className="absolute top-0 right-0 -m-8 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
+
+              <div className="flex items-center justify-between p-8 md:p-10 border-b border-gray-50">
+                <div className="space-y-1">
+                  <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">Archive Penetration</h2>
+                  <p className="text-gray-400 font-medium italic text-xs tracking-wide">Ledger Entry: {selectedLog.id.toUpperCase()}</p>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Details</label>
-                  <pre className="bg-gray-50 p-4 rounded-md text-xs text-gray-800 overflow-auto max-h-96">
-                    {JSON.stringify(parseDetails(selectedLog.details), null, 2)}
-                  </pre>
-                </div>
-              </div>
-              <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setShowDetailsModal(false)}
-                  className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700"
+                  className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-gray-900 hover:scale-110 transition-all outline-none"
                 >
-                  Close
+                  <XMarkIcon className="w-6 h-6" />
                 </button>
+              </div>
+
+              <div className="p-8 md:p-10 space-y-10">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Operation</p>
+                    <p className={`inline-flex px-3 py-1 rounded-lg text-[10px] font-black uppercase ${getActionColor(selectedLog.action)}`}>
+                      {getActionLabel(selectedLog.action)}
+                    </p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Asset Type</p>
+                    <p className="text-sm font-black text-gray-900 uppercase">{selectedLog.entityType}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Asset Index</p>
+                    <p className="text-sm font-mono font-black text-gray-900">{selectedLog.entityId}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Executing Agent</p>
+                    <p className="text-sm font-black text-gray-900">{selectedLog.userEmail}</p>
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Temporal Anchor</p>
+                    <p className="text-sm font-black text-gray-900 uppercase">{new Date(selectedLog.timestamp).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Payload Analysis</p>
+                    <span className="text-[10px] font-black text-emerald-500 bg-emerald-50 px-3 py-1 rounded-full uppercase tracking-widest">Valid Integrity</span>
+                  </div>
+                  <div className="relative group">
+                    <div className="absolute inset-0 bg-indigo-500/5 blur-3xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <pre className="relative bg-slate-900 p-8 rounded-[32px] text-[13px] text-indigo-300 font-bold overflow-auto max-h-[400px] border border-white/5 scrollbar-hide shadow-inner leading-relaxed">
+                      {JSON.stringify(parseDetails(selectedLog.details), null, 4)}
+                    </pre>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
+                  <button
+                    onClick={() => setShowDetailsModal(false)}
+                    className="px-10 py-5 bg-black text-white rounded-[24px] font-black hover:bg-indigo-600 transition-all active:scale-95 uppercase tracking-widest text-xs"
+                  >
+                    CLOSE ANALYSIS
+                  </button>
+                </div>
               </div>
             </div>
           </div>

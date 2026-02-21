@@ -8,9 +8,14 @@ import PlusIcon from '@heroicons/react/24/outline/PlusIcon';
 import PencilIcon from '@heroicons/react/24/outline/PencilIcon';
 import TrashIcon from '@heroicons/react/24/outline/TrashIcon';
 import XMarkIcon from '@heroicons/react/24/outline/XMarkIcon';
+import MapPinIcon from '@heroicons/react/24/outline/MapPinIcon';
+import PhoneIcon from '@heroicons/react/24/outline/PhoneIcon';
+import EnvelopeIcon from '@heroicons/react/24/outline/EnvelopeIcon';
+import UserIcon from '@heroicons/react/24/outline/UserIcon';
 import CheckCircleIcon from '@heroicons/react/24/solid/CheckCircleIcon';
+import DocumentTextIcon from '@heroicons/react/24/outline/DocumentTextIcon';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://custconnect-backend-production.up.railway.app/api';
 
 interface PrinterShop {
   id: string;
@@ -117,46 +122,30 @@ export default function PrinterShopsPage() {
       const url = selectedShop
         ? `${API_URL}/admin/printer-shops/${selectedShop.id}`
         : `${API_URL}/admin/printer-shops`;
-      
-      const method = selectedShop ? 'put' : 'post';
 
-      // Log form data for debugging
-      if (!selectedShop) {
-        console.log('📝 Submitting printer shop with owner data:', {
-          name: formData.name,
-          ownerFirstName: formData.ownerFirstName,
-          ownerLastName: formData.ownerLastName,
-          ownerEmail: formData.ownerEmail,
-          hasPassword: !!formData.ownerPassword
-        });
-      }
+      const method = selectedShop ? 'put' : 'post';
 
       const response = await axios[method](url, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
       if (response.data.success) {
-        const message = selectedShop 
-          ? 'Printer shop updated successfully' 
-          : response.data.ownerCreated 
-            ? 'Printer shop and owner account created successfully' 
-            : 'Printer shop created successfully';
+        const message = selectedShop
+          ? 'Network node updated'
+          : 'New printer hub established';
         toast.success(message);
         setShowModal(false);
         fetchShops();
       }
     } catch (error: any) {
-      console.error('Error saving printer shop:', error);
-      const errorMessage = error.response?.data?.message || 'Failed to save printer shop';
-      toast.error(errorMessage);
-      console.error('Full error response:', error.response?.data);
+      toast.error(error.response?.data?.message || 'Operation failed');
     } finally {
       setSubmitting(false);
     }
   };
 
   const handleDelete = async (shop: PrinterShop) => {
-    if (!confirm(`Are you sure you want to delete "${shop.name}"? This will also delete all associated print requests.`)) {
+    if (!confirm(`Confirm decommissioning of "${shop.name}"? This action is irreversible.`)) {
       return;
     }
 
@@ -167,158 +156,139 @@ export default function PrinterShopsPage() {
       });
 
       if (response.data.success) {
-        toast.success('Printer shop deleted successfully');
+        toast.success('Node decommissioned');
         fetchShops();
       }
     } catch (error: any) {
-      console.error('Error deleting printer shop:', error);
-      toast.error(error.response?.data?.message || 'Failed to delete printer shop');
+      toast.error(error.response?.data?.message || 'Decommissioning failed');
     }
   };
 
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-2 text-gray-600">Loading printer shops...</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-medium animate-pulse">Scanning network for active hubs...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Printer Shops</h1>
-          <p className="text-gray-500">Manage printer shops and their administrators</p>
-        </div>
-        <div className="flex gap-3">
+    <div className="max-w-7xl mx-auto space-y-8 pb-12 px-4 sm:px-0">
+      {/* Premium Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#1a1b3b] to-indigo-900 p-8 md:p-12 shadow-2xl transition-all duration-700">
+        <div className="absolute top-0 right-0 -m-12 w-96 h-96 bg-blue-500/10 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-0 left-0 -m-12 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px]"></div>
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="space-y-3">
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white line-clamp-1">
+              Printer <span className="text-blue-400">Network</span>
+            </h1>
+            <p className="text-blue-100/60 font-medium max-w-xl leading-relaxed">
+              Managing high-performance printing hubs and distributed document fulfillment nodes across the campus.
+            </p>
+          </div>
+
           <button
             onClick={handleCreate}
-            className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="flex items-center gap-3 px-8 py-5 bg-blue-500 hover:bg-blue-600 text-white rounded-[24px] font-black shadow-xl shadow-blue-500/20 transition-all active:scale-95 whitespace-nowrap"
           >
-            <PlusIcon className="mr-2 h-5 w-5" />
-            Add Printer Shop
+            <PlusIcon className="h-6 w-6" />
+            Establish Hub
           </button>
         </div>
       </div>
 
-      {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Shops</p>
-              <p className="text-2xl font-bold text-gray-900">{shops.length}</p>
+      {/* Modern Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {[
+          { label: 'Network Hubs', value: shops.length, icon: PrinterIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
+          { label: 'Operational Nodes', value: shops.filter(s => s.isActive).length, icon: CheckCircleIcon, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+          { label: 'Throughput (Total)', value: shops.reduce((sum, s) => sum + (s._count?.printRequests || 0), 0), icon: DocumentTextIcon, color: 'text-indigo-500', bg: 'bg-indigo-50' },
+        ].map((stat, i) => (
+          <div key={i} className="bg-white rounded-[24px] p-6 border border-gray-100 shadow-sm transition-all hover:shadow-xl hover:-translate-y-1">
+            <div className="flex items-center justify-between mb-4">
+              <div className={`p-4 rounded-2xl ${stat.bg} ${stat.color}`}>
+                <stat.icon className="w-8 h-8 stroke-[2.5]" />
+              </div>
+              <div className="text-[10px] font-black text-gray-400 tracking-widest uppercase">REAL-TIME</div>
             </div>
-            <PrinterIcon className="w-8 h-8 text-gray-400" />
+            <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
+            <p className="text-3xl font-black text-gray-900 tracking-tighter">{stat.value.toLocaleString()}</p>
           </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Active Shops</p>
-              <p className="text-2xl font-bold text-green-600">
-                {shops.filter(s => s.isActive).length}
-              </p>
-            </div>
-            <CheckCircleIcon className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500">Total Requests</p>
-              <p className="text-2xl font-bold text-blue-600">
-                {shops.reduce((sum, shop) => sum + (shop._count?.printRequests || 0), 0)}
-              </p>
-            </div>
-            <PrinterIcon className="w-8 h-8 text-blue-400" />
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Shops List */}
       {shops.length === 0 ? (
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <PrinterIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No printer shops</h3>
-          <p className="mt-1 text-sm text-gray-500">Create a printer shop to get started.</p>
-          <button
-            onClick={handleCreate}
-            className="mt-4 inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-          >
-            <PlusIcon className="mr-2 h-5 w-5" />
-            Add Printer Shop
-          </button>
+        <div className="py-24 bg-white rounded-[40px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center space-y-6">
+          <div className="p-8 bg-blue-50 rounded-full">
+            <PrinterIcon className="h-16 w-16 text-blue-200" />
+          </div>
+          <div className="text-center space-y-2">
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight">No Active Hubs</h3>
+            <p className="text-gray-400 font-medium max-w-xs mx-auto">The printer network is currently offline. Establish your first hub to begin operations.</p>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {shops.map((shop) => (
-            <div key={shop.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">{shop.name}</h3>
-                  {shop.description && (
-                    <p className="text-sm text-gray-500 mt-1">{shop.description}</p>
-                  )}
+            <div key={shop.id} className="group relative bg-white rounded-[32px] border border-gray-100 p-8 shadow-sm transition-all duration-500 hover:shadow-2xl hover:border-blue-500/20 flex flex-col">
+              <div className="flex items-start justify-between mb-6">
+                <div className="space-y-1.5">
+                  <h3 className="text-xl font-black text-gray-900 tracking-tight group-hover:text-blue-600 transition-colors uppercase">{shop.name}</h3>
+                  <div className="flex items-center gap-1.5">
+                    <span className={`w-2 h-2 rounded-full ${shop.isActive ? 'bg-emerald-500' : 'bg-gray-300'}`}></span>
+                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest leading-none">
+                      {shop.isActive ? 'Operational' : 'Disabled'}
+                    </span>
+                  </div>
                 </div>
-                <span
-                  className={`ml-2 inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    shop.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-gray-100 text-gray-800'
-                  }`}
-                >
-                  {shop.isActive ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-
-              <div className="space-y-2 text-sm mb-4">
-                {shop.location && (
-                  <div>
-                    <span className="text-gray-500">Location: </span>
-                    <span className="text-gray-900">{shop.location}</span>
-                  </div>
-                )}
-                {shop.phone && (
-                  <div>
-                    <span className="text-gray-500">Phone: </span>
-                    <span className="text-gray-900">{shop.phone}</span>
-                  </div>
-                )}
-                {shop.email && (
-                  <div>
-                    <span className="text-gray-500">Email: </span>
-                    <span className="text-gray-900">{shop.email}</span>
-                  </div>
-                )}
-                {shop.owner && (
-                  <div>
-                    <span className="text-gray-500">Owner: </span>
-                    <span className="text-gray-900">{shop.owner.firstName} {shop.owner.lastName}</span>
-                  </div>
-                )}
-                <div>
-                  <span className="text-gray-500">Total Requests: </span>
-                  <span className="text-gray-900 font-medium">{shop._count?.printRequests || 0}</span>
+                <div className="p-3 bg-blue-50 rounded-2xl text-blue-600 group-hover:scale-110 transition-transform">
+                  <PrinterIcon className="w-6 h-6 stroke-[2.5]" />
                 </div>
               </div>
 
-              <div className="flex gap-2 pt-4 border-t border-gray-200">
+              {shop.description && (
+                <p className="text-sm text-gray-500 font-medium mb-6 line-clamp-2 italic">
+                  "{shop.description}"
+                </p>
+              )}
+
+              <div className="space-y-4 mb-8 flex-grow">
+                {[
+                  { icon: MapPinIcon, value: shop.location, label: 'Coordinates' },
+                  { icon: PhoneIcon, value: shop.phone, label: 'Direct Line' },
+                  { icon: EnvelopeIcon, value: shop.email, label: 'Digital Mail' },
+                  { icon: UserIcon, value: shop.owner ? `${shop.owner.firstName} ${shop.owner.lastName}` : null, label: 'Authorized Admin' },
+                  { icon: DocumentTextIcon, value: `${shop._count?.printRequests || 0} fulfillments`, label: 'Hub Throughput' },
+                ].map((item, i) => item.value && (
+                  <div key={i} className="flex items-center gap-3">
+                    <div className="p-2 bg-gray-50 rounded-xl text-gray-400">
+                      <item.icon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-gray-300 uppercase tracking-widest -mb-0.5">{item.label}</p>
+                      <p className="text-xs font-bold text-gray-700">{item.value}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex gap-3 pt-6 border-t border-gray-50">
                 <button
                   onClick={() => handleEdit(shop)}
-                  className="flex-1 inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                  className="flex-1 inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-2xl border border-gray-100 bg-gray-50 text-xs font-black text-gray-600 hover:bg-black hover:text-white hover:border-black transition-all active:scale-95 uppercase tracking-widest"
                 >
-                  <PencilIcon className="mr-2 h-4 w-4" />
-                  Edit
+                  <PencilIcon className="w-4 h-4" />
+                  RECONFIGURE
                 </button>
                 <button
                   onClick={() => handleDelete(shop)}
-                  className="inline-flex items-center justify-center rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50"
+                  className="inline-flex items-center justify-center p-3.5 rounded-2xl border border-red-50 bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all active:scale-95"
                 >
-                  <TrashIcon className="h-4 w-4" />
+                  <TrashIcon className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -329,156 +299,157 @@ export default function PrinterShopsPage() {
       {/* Create/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowModal(false)} />
-            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full">
-              <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                <h2 className="text-xl font-bold text-gray-900">
-                  {selectedShop ? 'Edit Printer Shop' : 'Create Printer Shop'}
-                </h2>
-                <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+          <div className="flex items-center justify-center min-h-screen px-4 py-8">
+            <div className="fixed inset-0 bg-[#1a1b3b]/80 backdrop-blur-md" onClick={() => setShowModal(false)} />
+            <div className="relative bg-white rounded-[40px] shadow-2xl max-w-2xl w-full overflow-hidden border border-white/20 text-gray-900">
+              <div className="absolute top-0 right-0 -m-8 w-32 h-32 bg-blue-500/10 rounded-full blur-3xl"></div>
+
+              <div className="flex items-center justify-between p-8 md:p-10 border-b border-gray-50">
+                <div className="space-y-1">
+                  <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+                    {selectedShop ? 'Reconfigure Node' : 'Establish Network Hub'}
+                  </h2>
+                  <p className="text-gray-400 font-medium italic text-sm">Automated infrastructure deployment</p>
+                </div>
+                <button
+                  onClick={() => setShowModal(false)}
+                  className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-gray-900 hover:scale-110 transition-all"
+                >
                   <XMarkIcon className="w-6 h-6" />
                 </button>
               </div>
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Shop Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    required
-                  />
-                </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.description}
-                    onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
-                    rows={3}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Location
-                    </label>
+              <form onSubmit={handleSubmit} className="p-8 md:p-10 space-y-8">
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Hub Designation *</label>
                     <input
                       type="text"
-                      value={formData.location}
-                      onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      value={formData.name}
+                      onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-black text-gray-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-gray-300"
+                      placeholder="e.g. ALPHA DOCUMENT CENTER"
+                      required
                     />
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone
-                    </label>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Operational Summary</label>
+                    <textarea
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                      rows={2}
+                      className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-bold text-gray-700 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all placeholder:text-gray-300"
+                      placeholder="Specify Hub capabilities..."
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Deployment Coordinates</label>
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                        className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all mr-4"
+                        placeholder="Building/Zone"
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Direct Communication</label>
+                      <input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                        className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                        placeholder="Contact number"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Hub Digital Address</label>
                     <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-                      className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
+                      placeholder="corporate@network.com"
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Shop Email
-                  </label>
-                  <input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-
-                {/* Owner Information Section */}
                 {!selectedShop && (
-                  <div className="pt-4 border-t border-gray-200">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Owner Information</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Owner First Name *
-                        </label>
+                  <div className="pt-8 border-t border-gray-50 space-y-6">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Administrative Credentials</h3>
+                      <p className="text-xs text-gray-400 font-medium">Define the authorized hub superintendent</p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Agent Given Name *</label>
                         <input
                           type="text"
                           required={!selectedShop}
                           value={formData.ownerFirstName}
                           onChange={(e) => setFormData(prev => ({ ...prev, ownerFirstName: e.target.value }))}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Owner Last Name *
-                        </label>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Agent Surname *</label>
                         <input
                           type="text"
                           required={!selectedShop}
                           value={formData.ownerLastName}
                           onChange={(e) => setFormData(prev => ({ ...prev, ownerLastName: e.target.value }))}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
                         />
                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 mt-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Owner Email *
-                        </label>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Professional Email *</label>
                         <input
                           type="email"
                           required={!selectedShop}
                           value={formData.ownerEmail}
                           onChange={(e) => setFormData(prev => ({ ...prev, ownerEmail: e.target.value }))}
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-bold text-gray-900 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
                         />
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Owner Password *
-                        </label>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-4">Security Key *</label>
                         <input
                           type="password"
                           required={!selectedShop}
                           value={formData.ownerPassword}
                           onChange={(e) => setFormData(prev => ({ ...prev, ownerPassword: e.target.value }))}
-                          placeholder="Set initial password"
-                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          placeholder="8+ characters"
+                          className="w-full rounded-2xl bg-gray-50 border border-gray-100 px-6 py-4 font-black text-blue-600 focus:ring-4 focus:ring-blue-500/10 outline-none transition-all"
                         />
-                        <p className="mt-1 text-xs text-gray-500">Owner can change password after first login</p>
                       </div>
                     </div>
                   </div>
                 )}
 
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col md:flex-row gap-4 pt-6">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                    className="flex-1 py-5 bg-gray-50 text-gray-400 rounded-[24px] font-black hover:bg-gray-100 hover:text-gray-900 transition-all active:scale-[0.98] uppercase tracking-widest text-xs"
                   >
-                    Cancel
+                    ABORT
                   </button>
                   <button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="flex-[2] py-5 bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-[24px] font-black shadow-2xl shadow-blue-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 uppercase tracking-widest text-xs"
                   >
-                    {submitting ? 'Saving...' : selectedShop ? 'Update' : 'Create'}
+                    {submitting ? 'PROCESSING...' : selectedShop ? 'UPDATE CONFIG' : 'INITIALIZE HUB'}
                   </button>
                 </div>
               </form>

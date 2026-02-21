@@ -6,7 +6,34 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { SocketProvider } from '@/contexts/SocketContext';
 import { NotificationProvider } from '@/contexts/NotificationContext';
 import { Toaster } from 'react-hot-toast';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { App } from '@capacitor/app';
+import { useRouter, usePathname } from 'next/navigation';
+
+function CapacitorHandler() {
+    const router = useRouter();
+    const pathname = usePathname();
+
+    useEffect(() => {
+        const backListener = App.addListener('backButton', ({ canGoBack }) => {
+            if (canGoBack) {
+                window.history.back();
+            } else if (pathname === '/auth/login' || pathname === '/' || pathname === '/dashboard/feed') {
+                // Exit app if on main screens
+                App.exitApp();
+            } else {
+                // Try to go back to a safe spot
+                router.push('/dashboard/feed');
+            }
+        });
+
+        return () => {
+            backListener.then(l => l.remove());
+        };
+    }, [pathname, router]);
+
+    return null;
+}
 
 export function Providers({ children }: { children: React.ReactNode }) {
     const [queryClient] = useState(() => new QueryClient({
@@ -23,6 +50,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <AuthProvider>
                 <SocketProvider>
                     <NotificationProvider>
+                        <CapacitorHandler />
                         {children}
                         <Toaster
                             position="top-right"

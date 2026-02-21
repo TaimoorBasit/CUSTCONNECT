@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import Link from 'next/link';
 
 const BACKGROUND_IMAGE =
     'https://images.unsplash.com/photo-1523240795612-9a054b0db644?auto=format&fit=crop&w=1600&q=80';
@@ -21,10 +22,14 @@ function VerifyEmailContent() {
     const email = searchParams.get('email');
 
     useEffect(() => {
-        if (!email) {
-            toast.error('Email parameter missing');
-            router.push('/auth/login');
-        }
+        // Wait a bit to ensure searchParams are hydrated
+        const timer = setTimeout(() => {
+            if (!email) {
+                toast.error('Email parameter missing');
+                router.push('/auth/login');
+            }
+        }, 500);
+        return () => clearTimeout(timer);
     }, [email, router]);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -124,12 +129,12 @@ function VerifyEmailContent() {
 
                 <div className="text-center">
                     <span className="text-sm text-gray-600">
-                        <a
+                        <Link
                             href="/auth/register"
                             className="font-medium text-gray-600 hover:text-gray-500"
                         >
                             Back to Register
-                        </a>
+                        </Link>
                     </span>
                 </div>
             </form>
@@ -163,7 +168,20 @@ export default function VerifyEmailPage() {
                 </div>
             </div>
 
-            <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+            <div className="flex-1 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50 relative">
+                <div className="absolute top-8 left-8">
+                    <Link
+                        href="/auth/register"
+                        className="flex items-center gap-2 text-sm font-semibold text-gray-500 hover:text-indigo-600 transition-colors group"
+                    >
+                        <div className="p-2 rounded-xl bg-white border border-gray-100 shadow-sm group-hover:bg-indigo-50 group-hover:border-indigo-100 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                            </svg>
+                        </div>
+                        Back to Register
+                    </Link>
+                </div>
                 <Suspense fallback={<LoadingSpinner />}>
                     <VerifyEmailContent />
                 </Suspense>

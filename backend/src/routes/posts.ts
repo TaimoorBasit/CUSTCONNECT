@@ -23,24 +23,48 @@ router.post('/upload', uploadPost.single('file'), asyncHandler(async (req: AuthR
 
 // Get posts feed
 router.get('/', asyncHandler(async (req: AuthRequest, res) => {
-  const { page = 1, limit = 20, universityOnly = false } = req.query;
+  const { page = 1, limit = 20, universityOnly = false, followingOnly = false } = req.query;
   const offset = (Number(page) - 1) * Number(limit);
 
+  // Pre-fetch following IDs for privacy checks
+  const following = await prisma.follow.findMany({
+    where: { followerId: req.user!.id },
+    select: { followingId: true }
+  });
+  const followingIds = new Set(following.map(u => u.followingId));
+
   const whereClause: any = {
-    isActive: true
+    isActive: true,
+    AND: [
+      {
+        OR: [
+          { privacy: 'PUBLIC' },
+          { authorId: req.user!.id },
+          {
+            AND: [
+              { privacy: 'FOLLOWERS_ONLY' },
+              { authorId: { in: followingIds } }
+            ]
+          }
+        ]
+      }
+    ]
   };
 
-  // If university only, filter by user's university
-  if (universityOnly === 'true') {
-    const user = await prisma.user.findUnique({
+  // If follow-only filter is active
+  if (followingOnly === 'true') {
+    whereClause.AND.push({
+      authorId: { in: [...Array.from(followingIds), req.user!.id] }
+    });
+  } else if (universityOnly === 'true') {
+    const userProfile = await prisma.user.findUnique({
       where: { id: req.user!.id },
       select: { universityId: true }
     });
-
-    if (user?.universityId) {
-      whereClause.author = {
-        universityId: user.universityId
-      };
+    if (userProfile?.universityId) {
+      whereClause.AND.push({
+        author: { universityId: userProfile.universityId }
+      });
     }
   }
 
@@ -99,19 +123,22 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
     where: whereClause
   });
 
+
+
   res.json({
     success: true,
     posts: posts.map(post => ({
       id: post.id,
       content: post.content,
-      imageUrl: post.imageUrl, // Explicitly include imageUrl
-      videoUrl: post.videoUrl, // Explicitly include videoUrl
+      imageUrl: post.imageUrl,
+      videoUrl: post.videoUrl,
       privacy: post.privacy,
       isActive: post.isActive,
       createdAt: post.createdAt,
       updatedAt: post.updatedAt,
       author: post.author,
       isLiked: post.likes.length > 0,
+      isFollowing: followingIds.has(post.author.id),
       likes: post._count.likes,
       comments: post._count.comments,
       canEdit: post.author.id === req.user!.id || isSuperAdmin,

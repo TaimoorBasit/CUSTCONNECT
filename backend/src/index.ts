@@ -27,6 +27,7 @@ import imageRoutes from './routes/images';
 import lostFoundRoutes from './routes/lostFound';
 import printRoutes from './routes/print';
 import messageRoutes from './routes/messages';
+import storyRoutes from './routes/stories';
 import { ensureDirectories } from './utils/upload';
 
 // Import middleware
@@ -219,6 +220,7 @@ app.use('/api/orders', authenticateToken, orderRoutes);
 app.use('/api/lost-found', authenticateToken, lostFoundRoutes);
 app.use('/api/print', authenticateToken, printRoutes);
 app.use('/api/messages', authenticateToken, messageRoutes);
+app.use('/api/stories', authenticateToken, storyRoutes);
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -250,11 +252,11 @@ app.use((req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
-const PORT = process.env.PORT || 5000;
+const PORT = Number(process.env.PORT) || 5000;
 
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📊 Health check: http://localhost:${PORT}/health`);
+  console.log(`📊 Health check: http://0.0.0.0:${PORT}/health`);
 });
 
 // Graceful shutdown

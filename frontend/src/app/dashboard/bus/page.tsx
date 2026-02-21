@@ -12,6 +12,8 @@ import {
 import { ExclamationTriangleIcon } from '@heroicons/react/24/solid';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import { userService } from '@/services/userService';
+import { UserPlusIcon } from '@heroicons/react/24/outline';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -183,8 +185,22 @@ export default function BusServicePage() {
                     </div>
 
                     {route.operator && (
-                      <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <a href={`/dashboard/messages?userId=${route.operator.id}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-110 transition-transform" title="Message Operator">
+                      <div className="absolute top-6 right-6 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-2">
+                        <button
+                          onClick={async () => {
+                            try {
+                              await userService.followUser(route.operator!.id);
+                              toast.success(`Following ${route.operator!.firstName}`);
+                            } catch (err) {
+                              toast.error('Failed to follow');
+                            }
+                          }}
+                          className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg hover:scale-110 transition-transform"
+                          title="Follow Operator"
+                        >
+                          <UserPlusIcon className="h-4 w-4" />
+                        </button>
+                        <a href={`/dashboard/messages?userId=${route.operator.id}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600 text-white shadow-lg hover:scale-110 transition-transform" title="Message Operator">
                           <ChatBubbleLeftRightIcon className="h-4 w-4" />
                         </a>
                       </div>

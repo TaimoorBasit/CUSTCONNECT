@@ -16,12 +16,12 @@ import {
 import Link from 'next/link';
 
 const quickActions = [
-  { name: 'Create Post', href: '/dashboard/feed', icon: UserGroupIcon, description: 'Share something with your university community' },
-  { name: 'Check Bus Schedule', href: '/dashboard/bus', icon: MapIcon, description: 'View bus routes and schedules' },
-  { name: 'Find Café', href: '/dashboard/cafes', icon: BuildingStorefrontIcon, description: 'Discover campus cafés and menus' },
-  { name: 'Upload Resource', href: '/dashboard/resources', icon: BookOpenIcon, description: 'Share study materials and notes' },
-  { name: 'Calculate GPA', href: '/dashboard/gpa', icon: CalculatorIcon, description: 'Calculate your semester and cumulative GPA' },
-  { name: 'Create Event', href: '/dashboard/events', icon: CalendarIcon, description: 'Organize university or student events' },
+  { name: 'Campus Feed', href: '/dashboard/feed', icon: UserGroupIcon, description: 'Connect with your university community.', color: 'text-blue-500', bg: 'bg-blue-50' },
+  { name: 'Bus Tracking', href: '/dashboard/bus', icon: MapIcon, description: 'Live transit updates and schedules.', color: 'text-emerald-500', bg: 'bg-emerald-50' },
+  { name: 'Gastro Hub', href: '/dashboard/cafes', icon: BuildingStorefrontIcon, description: 'Explore menus and claim student deals.', color: 'text-amber-500', bg: 'bg-amber-50' },
+  { name: 'Resource Lab', href: '/dashboard/resources', icon: BookOpenIcon, description: 'Access academic materials and notes.', color: 'text-violet-500', bg: 'bg-violet-50' },
+  { name: 'GPA Master', href: '/dashboard/gpa', icon: CalculatorIcon, description: 'Calibrate your academic performance.', color: 'text-indigo-500', bg: 'bg-indigo-50' },
+  { name: 'Campus Events', href: '/dashboard/events', icon: CalendarIcon, description: 'Discover what is happening on campus.', color: 'text-pink-500', bg: 'bg-pink-50' },
 ];
 
 export default function DashboardPage() {
@@ -34,17 +34,21 @@ export default function DashboardPage() {
     if (user) {
       const userRoles = user.roles?.map(r => r.name) || [];
       const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+
+      // Redirect Super Admins to the administrative control center
+      if (isSuperAdmin) {
+        router.push('/admin');
+        return;
+      }
+
       const isCafeOwner = userRoles.includes('CAFE_OWNER');
       const isBusOperator = userRoles.includes('BUS_OPERATOR');
       const isVendor = isCafeOwner || isBusOperator;
       const isStudent = !isSuperAdmin && !isVendor;
 
-      // Redirect students away from dashboard page
-      if (isStudent) {
-        router.push('/dashboard/feed');
-      } else {
-        fetchStats();
-      }
+      // Redirect students away from dashboard overview if needed, or just show it
+      // Currently letting them see the overview
+      fetchStats();
     }
   }, [user, router]);
 
@@ -61,146 +65,100 @@ export default function DashboardPage() {
   };
 
   const dashboardStats = [
-    {
-      name: 'Total Posts',
-      value: realStats?.totalPosts?.toLocaleString() || '0',
-      icon: UserGroupIcon,
-      color: 'text-blue-500',
-      bg: 'bg-blue-500/10'
-    },
-    {
-      name: 'Bus Routes',
-      value: realStats?.totalBusRoutes?.toLocaleString() || '0',
-      icon: MapIcon,
-      color: 'text-emerald-500',
-      bg: 'bg-emerald-500/10'
-    },
-    {
-      name: 'Cafés',
-      value: realStats?.totalCafes?.toLocaleString() || '0',
-      icon: BuildingStorefrontIcon,
-      color: 'text-amber-500',
-      bg: 'bg-amber-500/10'
-    },
-    {
-      name: 'Resources',
-      value: realStats?.totalResources?.toLocaleString() || '0',
-      icon: BookOpenIcon,
-      color: 'text-violet-500',
-      bg: 'bg-violet-500/10'
-    },
-    {
-      name: 'Events',
-      value: realStats?.totalEvents?.toLocaleString() || '0',
-      icon: CalendarIcon,
-      color: 'text-pink-500',
-      bg: 'bg-pink-500/10'
-    },
-    {
-      name: 'Notifications',
-      value: realStats?.totalNotifications?.toLocaleString() || '0',
-      icon: BellIcon,
-      color: 'text-indigo-500',
-      bg: 'bg-indigo-500/10'
-    },
+    { name: 'Global Feed', value: realStats?.totalPosts || 0, icon: UserGroupIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
+    { name: 'Bus Lines', value: realStats?.totalBusRoutes || 0, icon: MapIcon, color: 'text-emerald-500', bg: 'bg-emerald-50' },
+    { name: 'Campus Dining', value: realStats?.totalCafes || 0, icon: BuildingStorefrontIcon, color: 'text-amber-500', bg: 'bg-amber-50' },
+    { name: 'Academic Docs', value: realStats?.totalResources || 0, icon: BookOpenIcon, color: 'text-violet-500', bg: 'bg-violet-50' },
   ];
 
-  // If user is a student, don't render anything (will redirect)
-  if (user) {
-    const userRoles = user.roles?.map(r => r.name) || [];
-    const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
-    const isCafeOwner = userRoles.includes('CAFE_OWNER');
-    const isBusOperator = userRoles.includes('BUS_OPERATOR');
-    const isVendor = isCafeOwner || isBusOperator;
-    const isStudent = !isSuperAdmin && !isVendor;
-
-    if (isStudent) {
-      return null; // Will redirect
-    }
+  if (loading && !realStats) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-black animate-pulse text-[10px] uppercase tracking-[0.2em]">Synchronizing Campus Pulse...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-8 p-6">
-      {/* Welcome Section */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-primary/10 border border-primary/10 p-8">
-        <div className="relative z-10">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Welcome back, {user?.firstName}! 👋
-          </h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            Here's what's happening at {user?.university?.name} today.
-          </p>
+    <div className="max-w-4xl mx-auto space-y-10 pb-12 px-4 font-sans animate-in fade-in duration-700">
+      {/* Premium Welcome Header */}
+      <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-[#0f172a] to-[#1e293b] p-8 md:p-12 shadow-2xl border border-white/5">
+        <div className="absolute top-0 right-0 -m-12 w-80 h-80 bg-primary/10 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-0 left-0 -m-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]"></div>
+
+        <div className="relative z-10 space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-primary-foreground/60 text-[10px] font-black uppercase tracking-[0.2em]">
+            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
+            Campus Pulse Active
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white">
+              Welcome back, <span className="text-primary">{user?.firstName}</span>! 👋
+            </h1>
+            <p className="text-lg text-slate-400 font-medium">
+              Everything happening at <span className="text-white font-bold">{user?.university?.name}</span> today.
+            </p>
+          </div>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {(loading ? Array(6).fill({}) : dashboardStats).map((stat, idx) => (
-          <div key={stat.name || idx} className={`group relative overflow-hidden bg-card rounded-2xl border border-border/50 p-6 shadow-sm transition-all hover:shadow-md hover:border-primary/20 ${loading ? 'animate-pulse' : ''}`}>
-            <div className="flex items-center gap-4">
-              <div className={`p-3 rounded-xl ${stat.bg || 'bg-gray-100'} ${stat.color || 'text-gray-400'} ring-1 ring-inset ring-black/5`}>
-                {stat.icon ? <stat.icon className="h-6 w-6" aria-hidden="true" /> : <div className="h-6 w-6" />}
-              </div>
-              <div>
-                <dt className="text-sm font-medium text-muted-foreground">
-                  {stat.name || <div className="h-4 w-20 bg-gray-200 rounded" />}
-                </dt>
-                <dd className="text-2xl font-bold tracking-tight text-foreground">
-                  {stat.value || <div className="h-8 w-12 bg-gray-200 rounded mt-1" />}
-                </dd>
-              </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {dashboardStats.map((stat) => (
+          <div key={stat.name} className="group bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm transition-all hover:shadow-xl hover:border-black/5">
+            <div className={`p-4 rounded-[20px] ${stat.bg} ${stat.color} mb-4 transition-transform group-hover:scale-110 shadow-sm inline-block`}>
+              <stat.icon className="w-6 h-6 stroke-[2]" />
+            </div>
+            <div>
+              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{stat.name}</p>
+              <h3 className="text-2xl font-black tracking-tighter text-gray-900 group-hover:text-primary transition-colors">
+                {stat.value.toLocaleString()}
+              </h3>
             </div>
           </div>
         ))}
       </div>
 
       {/* Quick Actions */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-foreground px-1">
-          Quick Actions
-        </h3>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between px-4 border-l-4 border-primary">
+          <h3 className="text-xl font-black tracking-tight text-gray-900 uppercase">
+            Quick <span className="text-gray-400">Actions</span>
+          </h3>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {quickActions.map((action) => (
             <Link
               key={action.name}
               href={action.href}
-              className="group relative flex flex-col gap-3 bg-card p-6 rounded-2xl border border-border/50 shadow-sm transition-all hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5"
+              className="group flex items-center gap-6 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm transition-all hover:shadow-xl hover:border-black/5 hover:-translate-y-1"
             >
-              <div className="flex items-center justify-between">
-                <span className="inline-flex p-3 rounded-xl bg-secondary text-primary ring-1 ring-inset ring-black/5 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-                  <action.icon className="h-6 w-6" aria-hidden="true" />
-                </span>
-                <span className="text-muted-foreground/50 group-hover:text-primary/50 transition-colors">
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </span>
+              <div className={`p-5 rounded-[24px] ${action.bg} ${action.color} group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-sm`}>
+                <action.icon className="w-8 h-8 stroke-[1.5]" />
               </div>
-              <div>
-                <h3 className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
-                  {action.name}
-                </h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {action.description}
-                </p>
+              <div className="flex-1">
+                <h4 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors leading-none mb-1">{action.name}</h4>
+                <p className="text-xs text-gray-400 font-medium">{action.description}</p>
+              </div>
+              <div className="p-3 text-gray-200 group-hover:text-primary transition-all group-hover:translate-x-1">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
+                </svg>
               </div>
             </Link>
           ))}
         </div>
       </div>
 
-      <div className="bg-card rounded-2xl border border-border/50 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-border/50">
-          <h3 className="text-lg font-semibold text-foreground">
-            Recent Activity
-          </h3>
+      {/* Activity Section */}
+      <div className="relative group bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden p-12 text-center transition-all hover:shadow-xl">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
+        <div className="inline-flex p-6 rounded-[32px] bg-secondary/30 mb-6 group-hover:scale-110 transition-transform">
+          <BellIcon className="h-10 w-10 text-gray-300 group-hover:text-primary transition-colors" />
         </div>
-        <div className="p-12 text-center text-muted-foreground">
-          <div className="inline-flex p-4 rounded-full bg-secondary mb-4">
-            <BellIcon className="h-8 w-8 opacity-20" />
-          </div>
-          <p>No recent activity found on your account.</p>
-        </div>
+        <h4 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">No Recent Alerts</h4>
+        <p className="text-gray-400 font-medium max-w-xs mx-auto text-sm leading-relaxed">Your campus timeline is currently peaceful. New notifications will arrive here.</p>
       </div>
     </div>
   );

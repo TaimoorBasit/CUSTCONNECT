@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import RoleBasedSidebar from '@/components/layout/RoleBasedSidebar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Footer from '@/components/layout/Footer';
+import MobileNav from '@/components/layout/MobileNav';
 
 export default function VendorLayout({
   children,
@@ -52,28 +53,33 @@ export default function VendorLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Sidebar */}
+    <div className="min-h-screen bg-background overflow-hidden flex">
+      {/* Infrastructure Sidebar */}
       <RoleBasedSidebar
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
       />
 
-      {/* Main content */}
-      <div className="md:pl-64 flex flex-col min-h-screen">
-        {/* Header */}
+      <div className="flex-1 flex flex-col min-h-screen relative overflow-hidden md:pl-72">
+        {/* Modern Nav Bridge */}
         <Header onMenuClick={() => setMobileSidebarOpen(true)} />
 
-        {/* Page content */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="py-6">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
+        {/* Operational Viewport */}
+        <main className="flex-1 overflow-y-auto no-scrollbar relative focus:outline-none">
+          <div className="py-8 md:py-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-8">
               {children}
             </div>
           </div>
-          <Footer />
+
+          <div className="pb-12 px-8">
+            <Footer />
+          </div>
         </main>
       </div>
+
+      {/* Vendor Mobile Nav */}
+      <MobileNav />
     </div>
   );
 }

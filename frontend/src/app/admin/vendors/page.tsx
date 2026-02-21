@@ -6,6 +6,9 @@ import MapIcon from '@heroicons/react/24/outline/MapIcon';
 import CheckIcon from '@heroicons/react/24/outline/CheckIcon';
 import XMarkIcon from '@heroicons/react/24/outline/XMarkIcon';
 import PlusIcon from '@heroicons/react/24/outline/PlusIcon';
+import ShieldCheckIcon from '@heroicons/react/24/outline/ShieldCheckIcon';
+import AcademicCapIcon from '@heroicons/react/24/outline/AcademicCapIcon';
+import ArrowPathIcon from '@heroicons/react/24/outline/ArrowPathIcon';
 import toast from 'react-hot-toast';
 import { adminService } from '@/services/adminService';
 
@@ -33,6 +36,7 @@ export default function AdminVendorsPage() {
 
   const fetchVendors = async () => {
     try {
+      setLoading(true);
       const vendors = await adminService.getVendors();
       setVendors(vendors.map((v: any) => ({
         ...v,
@@ -49,8 +53,7 @@ export default function AdminVendorsPage() {
   const fetchRoles = async () => {
     try {
       const rolesData = await adminService.getRoles();
-      // Filter to only vendor roles
-      const vendorRoles = rolesData.filter((r: any) => 
+      const vendorRoles = rolesData.filter((r: any) =>
         r.name === 'CAFE_OWNER' || r.name === 'BUS_OPERATOR' || r.name === 'PRINTER_SHOP_OWNER'
       );
       setRoles(vendorRoles);
@@ -62,146 +65,166 @@ export default function AdminVendorsPage() {
   const handleApproveVendor = async (vendorId: string) => {
     try {
       await adminService.approveVendor(vendorId);
-      toast.success('Vendor approved successfully');
+      toast.success('Vendor access granted');
       fetchVendors();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to approve vendor');
+      toast.error(error.message || 'Approval failed');
     }
   };
 
-  const handleCreate = () => {
-    setShowModal(true);
-  };
-
   if (loading) {
-    return <div className="text-center py-12 text-gray-900">Loading...</div>;
-  }
-
-  if (vendors.length === 0) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Vendor Management</h1>
-          <p className="text-gray-500">Approve vendors and manage their portal access.</p>
-        </div>
-        <div className="bg-white rounded-lg shadow p-12 text-center">
-          <BuildingStorefrontIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <h3 className="mt-2 text-sm font-medium text-gray-900">No vendors yet</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Assign vendor roles to users from the Users page.
-          </p>
-        </div>
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-medium animate-pulse">Syncing business directory...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Vendor Management</h1>
-          <p className="text-gray-500">Create vendors, assign business roles, and manage their portal access.</p>
+    <div className="max-w-7xl mx-auto space-y-8 pb-12 px-4 sm:px-0">
+      {/* Premium Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#1a1b3b] to-indigo-900 p-8 shadow-2xl transition-all duration-700">
+        <div className="absolute top-0 right-0 -m-12 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-0 left-0 -m-12 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px]"></div>
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="space-y-3">
+            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white line-clamp-1">
+              Business <span className="text-indigo-400">Registry</span>
+            </h1>
+            <p className="text-indigo-100/60 font-medium max-w-xl leading-relaxed">
+              Verify vendor credentials, manage operational authorization, and monitor service distributions.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <button
+              onClick={fetchVendors}
+              className="p-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-all"
+            >
+              <ArrowPathIcon className="h-6 w-6 text-indigo-300" />
+            </button>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-3 px-8 py-5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-[24px] font-black shadow-xl shadow-indigo-500/20 transition-all active:scale-95 whitespace-nowrap"
+            >
+              <PlusIcon className="h-6 w-6" />
+              Onboard Partner
+            </button>
+          </div>
         </div>
-        <button
-          onClick={handleCreate}
-          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <PlusIcon className="mr-2 h-5 w-5" />
-          Create Vendor
-        </button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {vendors.map((vendor) => {
-          const isCafeOwner = vendor.roles.some(r => r.name === 'CAFE_OWNER');
-          const isBusOperator = vendor.roles.some(r => r.name === 'BUS_OPERATOR');
+      {vendors.length === 0 ? (
+        <div className="py-32 bg-white rounded-[40px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center space-y-6">
+          <div className="p-8 bg-indigo-50 rounded-full animate-bounce">
+            <BuildingStorefrontIcon className="h-16 w-16 text-indigo-200" />
+          </div>
+          <div className="text-center space-y-2">
+            <h3 className="text-2xl font-black text-gray-900 tracking-tight">Ecosystem is Empty</h3>
+            <p className="text-gray-400 font-medium max-w-xs mx-auto">Start by onboarding your first commercial partner or service provider.</p>
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {vendors.map((vendor) => {
+            const isCafeOwner = vendor.roles.some(r => r.name === 'CAFE_OWNER');
+            const isBusOperator = vendor.roles.some(r => r.name === 'BUS_OPERATOR');
 
-          return (
-            <div key={vendor.id} className="bg-white rounded-lg shadow p-6">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {vendor.firstName} {vendor.lastName}
-                  </h3>
-                  <p className="text-sm text-gray-500">{vendor.email}</p>
-                  <div className="mt-2 flex gap-2">
-                    {vendor.roles.map((role) => (
-                      <span
-                        key={role.name}
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800"
-                      >
-                        {role.name.replace('_', ' ')}
-                      </span>
-                    ))}
+            return (
+              <div
+                key={vendor.id}
+                className="group relative bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm transition-all duration-500 hover:shadow-2xl hover:border-indigo-500/10 overflow-hidden"
+              >
+                <div className="flex items-start justify-between mb-8">
+                  <div className="flex items-center gap-5">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-xl shadow-indigo-500/20">
+                      <BuildingStorefrontIcon className="w-8 h-8 stroke-[2.5]" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-gray-900 tracking-tight group-hover:text-indigo-600 transition-colors">
+                        {vendor.firstName} {vendor.lastName}
+                      </h3>
+                      <p className="text-xs text-gray-400 font-black uppercase tracking-widest">{vendor.email}</p>
+                    </div>
                   </div>
-                </div>
-                <span
-                  className={`ml-4 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-                    vendor.isActive
-                      ? 'bg-green-100 text-green-800'
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}
-                >
-                  {vendor.isActive ? 'Active' : 'Pending'}
-                </span>
-              </div>
-
-              {isCafeOwner && vendor.cafes && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-500 mb-2">Cafés:</p>
-                  <div className="flex gap-2">
-                    {vendor.cafes.map((cafe) => (
-                      <span
-                        key={cafe.id}
-                        className="inline-flex items-center px-2 py-1 rounded text-xs bg-yellow-50 text-yellow-700"
-                      >
-                        <BuildingStorefrontIcon className="mr-1 h-3 w-3" />
-                        {cafe.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {isBusOperator && vendor.busRoutes && (
-                <div className="mt-4">
-                  <p className="text-sm font-medium text-gray-500 mb-2">Bus Routes:</p>
-                  <div className="flex gap-2">
-                    {vendor.busRoutes.map((route) => (
-                      <span
-                        key={route.id}
-                        className="inline-flex items-center px-2 py-1 rounded text-xs bg-green-50 text-green-700"
-                      >
-                        <MapIcon className="mr-1 h-3 w-3" />
-                        {route.name}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {!vendor.isActive && (
-                <div className="mt-4">
-                  <button
-                    onClick={() => handleApproveVendor(vendor.id)}
-                    className="w-full inline-flex justify-center items-center rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+                  <span
+                    className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] shadow-sm border border-transparent ${vendor.isActive
+                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      : 'bg-amber-50 text-amber-600 border-amber-100 animate-pulse'
+                      }`}
                   >
-                    <CheckIcon className="mr-2 h-4 w-4" />
-                    Approve Vendor
-                  </button>
+                    {vendor.isActive ? 'OPERATIONAL' : 'VERIFICATION PENDING'}
+                  </span>
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+
+                <div className="flex flex-wrap gap-2 mb-8">
+                  {vendor.roles.map((role) => (
+                    <span
+                      key={role.name}
+                      className="px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-widest bg-gray-50 text-gray-500 border border-gray-100 group-hover:bg-indigo-50 group-hover:text-indigo-600 group-hover:border-indigo-100 transition-colors"
+                    >
+                      {role.name.replace('_', ' ')}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {isCafeOwner && vendor.cafes && vendor.cafes.length > 0 && (
+                    <div className="p-5 bg-[#fff8eb] rounded-2xl border border-[#fee9c3]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <BuildingStorefrontIcon className="h-4 w-4 text-[#b45309]" />
+                        <p className="text-[10px] font-black text-[#b45309] uppercase tracking-widest">Portfolio: Cafés</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {vendor.cafes.map((cafe) => (
+                          <span key={cafe.id} className="px-3 py-1 bg-white rounded-lg text-xs font-black text-[#92400e] border border-[#fde68a] shadow-sm">
+                            {cafe.name.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {isBusOperator && vendor.busRoutes && vendor.busRoutes.length > 0 && (
+                    <div className="p-5 bg-[#f0fdf4] rounded-2xl border border-[#bbf7d0]">
+                      <div className="flex items-center gap-2 mb-3">
+                        <MapIcon className="h-4 w-4 text-[#15803d]" />
+                        <p className="text-[10px] font-black text-[#15803d] uppercase tracking-widest">Operations: Routes</p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {vendor.busRoutes.map((route) => (
+                          <span key={route.id} className="px-3 py-1 bg-white rounded-lg text-xs font-black text-[#166534] border border-[#86efac] shadow-sm">
+                            {route.name.toUpperCase()}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {!vendor.isActive && (
+                  <div className="mt-8 pt-8 border-t border-gray-50">
+                    <button
+                      onClick={() => handleApproveVendor(vendor.id)}
+                      className="w-full flex items-center justify-center gap-3 px-6 py-4 rounded-2xl bg-indigo-600 text-white font-black shadow-xl shadow-indigo-600/20 hover:bg-black transition-all active:scale-[0.98]"
+                    >
+                      <ShieldCheckIcon className="h-6 w-6 stroke-[2.5]" />
+                      AUTHORIZE ACCESS
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {showModal && (
         <CreateVendorModal
           roles={roles}
-          onClose={() => {
-            setShowModal(false);
-          }}
+          onClose={() => setShowModal(false)}
           onSave={fetchVendors}
         />
       )}
@@ -246,7 +269,6 @@ function CreateVendorModal({
     e.preventDefault();
     setLoading(true);
     try {
-      // Create user first
       const user = await adminService.createUser({
         email: formData.email,
         firstName: formData.firstName,
@@ -257,119 +279,132 @@ function CreateVendorModal({
         isVerified: true,
       });
 
-      // Assign vendor role
       if (formData.roleId) {
         await adminService.assignRole(user.id, formData.roleId);
       }
 
-      toast.success('Vendor created successfully');
+      toast.success('Strategy partner onboarded');
       onSave();
       onClose();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to create vendor');
+      toast.error(error.message || 'Onboarding failed');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4">
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={onClose} />
-        <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-          <h2 className="text-xl font-bold mb-4 text-gray-900">Create Vendor</h2>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">First Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.firstName}
-                  onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-                />
+    <div className="fixed inset-0 z-[60] overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4 py-8">
+        <div className="fixed inset-0 bg-[#1a1b3b]/80 backdrop-blur-md" onClick={onClose} />
+        <div className="relative bg-white rounded-[40px] shadow-2xl max-w-2xl w-full p-8 md:p-10 border border-white/20 overflow-hidden text-gray-900">
+          <div className="absolute top-0 right-0 -m-8 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
+
+          <div className="relative z-10 space-y-8">
+            <div className="text-center md:text-left">
+              <h2 className="text-3xl font-black text-gray-900 tracking-tight">Onboard Strategic Partner</h2>
+              <p className="text-gray-400 font-medium italic mt-1 text-sm">Automated ecosystem integration</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Authorized Agent Name</label>
+                  <div className="flex gap-4">
+                    <input
+                      type="text"
+                      required
+                      placeholder="First"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                    />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Last"
+                      value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Corporate Intelligence</label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="partner@corporate.com"
+                    value={formData.email}
+                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Secure Access Key</label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Minimum 8 chars"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-black text-indigo-600 focus:ring-4 focus:ring-indigo-500/10 outline-none"
+                    minLength={6}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Partner Tier</label>
+                  <select
+                    required
+                    value={formData.roleId}
+                    onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-black text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="">SELECT SEGMENT...</option>
+                    {roles.map((role) => (
+                      <option key={role.id} value={role.id}>
+                        {role.name === 'PRINTER_SHOP_OWNER' ? 'PRINTSHOP OWNER' : role.name.replace('_', ' ')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-2 md:col-span-2">
+                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Organizational Jurisdiction</label>
+                  <select
+                    value={formData.universityId}
+                    onChange={(e) => setFormData({ ...formData, universityId: e.target.value })}
+                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-black text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="">GLOBAL JURISDICTION (NO ORG)</option>
+                    {universities.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name.toUpperCase()}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Name *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.lastName}
-                  onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-                />
-              </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Password *</label>
-              <input
-                type="password"
-                required
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
-                minLength={6}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Business Role *</label>
-                <select
-                  required
-                  value={formData.roleId}
-                  onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+
+              <div className="flex flex-col md:flex-row gap-4 pt-6">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 py-5 bg-gray-50 text-gray-400 rounded-[24px] font-black hover:bg-gray-100 hover:text-gray-900 transition-all active:scale-[0.98]"
                 >
-                  <option value="">Select role...</option>
-                  {roles.map((role) => (
-                    <option key={role.id} value={role.id}>
-                      {role.name === 'PRINTER_SHOP_OWNER' ? 'Printer Shop Owner' : role.name.replace('_', ' ')}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">University</label>
-                <select
-                  value={formData.universityId}
-                  onChange={(e) => setFormData({ ...formData, universityId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md text-gray-900"
+                  CANCEL
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-[2] py-5 bg-gradient-to-r from-indigo-600 to-indigo-800 text-white rounded-[24px] font-black shadow-2xl shadow-indigo-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
-                  <option value="">Select university...</option>
-                  {universities.map((u) => (
-                    <option key={u.id} value={u.id}>{u.name}</option>
-                  ))}
-                </select>
+                  {loading ? 'SYNCHRONIZING...' : 'ESTABLISH PARTNERSHIP'}
+                </button>
               </div>
-            </div>
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-gray-900"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400"
-              >
-                {loading ? 'Creating...' : 'Create Vendor'}
-              </button>
-            </div>
-          </form>
+            </form>
+          </div>
         </div>
       </div>
     </div>

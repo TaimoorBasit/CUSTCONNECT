@@ -7,6 +7,7 @@ import Header from '@/components/layout/Header';
 import RoleBasedSidebar from '@/components/layout/RoleBasedSidebar';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import Footer from '@/components/layout/Footer';
+import MobileNav from '@/components/layout/MobileNav';
 
 export default function DashboardLayout({
   children,
@@ -32,15 +33,12 @@ export default function DashboardLayout({
       const isVendor = isCafeOwner || isBusOperator;
       const isStudent = !isSuperAdmin && !isVendor;
 
-      // Redirect based on role
-      if (isSuperAdmin && pathname && !pathname.startsWith('/admin') && pathname !== '/dashboard' && !pathname.startsWith('/dashboard/')) {
+      // Primary Redirect Logic
+      if (isSuperAdmin && !pathname?.startsWith('/admin')) {
         router.push('/admin');
-      } else if (isVendor && pathname && !pathname.startsWith('/vendor') && !pathname.startsWith('/admin') && pathname !== '/dashboard' && !pathname.startsWith('/dashboard/')) {
+      } else if (isVendor && !pathname?.startsWith('/vendor')) {
         router.push('/vendor');
       } else if (isStudent && pathname === '/dashboard') {
-        // Redirect students from /dashboard to /dashboard/feed
-        router.push('/dashboard/feed');
-      } else if (!isSuperAdmin && !isVendor && pathname && (pathname.startsWith('/admin') || pathname.startsWith('/vendor'))) {
         router.push('/dashboard/feed');
       }
     }
@@ -48,39 +46,64 @@ export default function DashboardLayout({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="h-screen flex items-center justify-center bg-background">
         <LoadingSpinner size="lg" />
       </div>
     );
   }
 
-  if (!user) {
-    return null;
+  if (!user) return null;
+
+  const userRoles = user.roles?.map(r => r.name) || [];
+  const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
+  const isCafeOwner = userRoles.includes('CAFE_OWNER');
+  const isBusOperator = userRoles.includes('BUS_OPERATOR');
+  const isVendor = isCafeOwner || isBusOperator;
+
+  // If high-privilege user is in student area, suppress render and allow redirect to take over
+  if ((isSuperAdmin && !pathname?.startsWith('/admin')) || (isVendor && !pathname?.startsWith('/vendor'))) {
+    return (
+      <div className="h-screen flex items-center justify-center bg-background">
+        <LoadingSpinner size="lg" />
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Sidebar */}
+    <div className="h-screen flex flex-col bg-background overflow-hidden">
+      {/* Dynamic Header */}
+      <Header onMenuClick={() => setMobileSidebarOpen(true)} />
+
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block">
+          <RoleBasedSidebar
+            mobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
+          />
+        </div>
+
+        {/* Main Feed/Content Area */}
+        <main className="flex-1 overflow-y-auto no-scrollbar pb-20 md:pb-0 md:pl-72">
+          <div className="max-w-4xl mx-auto min-h-full">
+            {children}
+
+            {/* Footer only on desktop */}
+            <div className="hidden md:block py-8 mt-auto">
+              <Footer />
+            </div>
+          </div>
+        </main>
+      </div>
+
+      {/* Mobile Sidebar (Drawer) */}
       <RoleBasedSidebar
         mobileOpen={mobileSidebarOpen}
         onMobileClose={() => setMobileSidebarOpen(false)}
       />
 
-      {/* Main content */}
-      <div className="md:pl-72 flex flex-col min-h-screen transition-all duration-300">
-        {/* Header */}
-        <Header onMenuClick={() => setMobileSidebarOpen(true)} />
-
-        {/* Page content */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none">
-          <div className="py-8">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 md:px-8">
-              {children}
-            </div>
-          </div>
-          <Footer />
-        </main>
-      </div>
+      {/* Native-style Mobile Nav */}
+      <MobileNav />
     </div>
   );
 }

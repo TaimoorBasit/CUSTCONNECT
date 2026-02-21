@@ -3,98 +3,74 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
-import axios from 'axios';
+import { useSocket } from '@/contexts/SocketContext';
+import { chatService, Conversation, Message } from '@/services/chatService';
 import toast from 'react-hot-toast';
-import ChatBubbleLeftRightIcon from '@heroicons/react/24/outline/ChatBubbleLeftRightIcon';
-import UserCircleIcon from '@heroicons/react/24/solid/UserCircleIcon';
-import PaperAirplaneIcon from '@heroicons/react/24/solid/PaperAirplaneIcon';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
-
-interface User {
-    id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-    profileImage?: string;
-    roles?: { role: { name: string } }[];
-}
-
-interface Conversation {
-    partner: User;
-    lastMessage: string;
-    timestamp: string;
-    unreadCount: number;
-}
-
-interface Message {
-    id: string;
-    content: string;
-    senderId: string;
-    receiverId: string;
-    createdAt: string;
-}
+import {
+    ChatBubbleLeftRightIcon,
+    UserCircleIcon,
+    PaperAirplaneIcon,
+    PlusIcon,
+    UserGroupIcon,
+    ArrowLeftIcon,
+    MagnifyingGlassIcon,
+    XMarkIcon
+} from '@heroicons/react/24/outline';
+import { userService } from '@/services/userService';
 
 export default function ChatInterface() {
-    const { user } = useAuth();
+    const { user: currentUser } = useAuth();
+    const { socket } = useSocket();
     const [conversations, setConversations] = useState<Conversation[]>([]);
-    const [selectedPartner, setSelectedPartner] = useState<User | null>(null);
+    const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const [loading, setLoading] = useState(true);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [showCreateGroup, setShowCreateGroup] = useState(false);
+    const [groupName, setGroupName] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [selectedMembers, setSelectedMembers] = useState<any[]>([]);
 
+    const messagesEndRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
     const targetUserId = searchParams.get('userId');
 
     useEffect(() => {
-        fetchConversations();
+        loadConversations();
     }, []);
 
     useEffect(() => {
-        const initChat = async () => {
-            if (targetUserId) {
-                // Check if we already have a conversation
-                const existingConv = conversations.find(c => c.partner.id === targetUserId);
-                if (existingConv) {
-                    setSelectedPartner(existingConv.partner);
-                } else {
-                    // Fetch user details to start new conversation
-                    try {
-                        const token = localStorage.getItem('token');
-                        const response = await axios.get(`${API_URL}/users/${targetUserId}`, {
-                            headers: { Authorization: `Bearer ${token}` }
-                        });
-                        if (response.data.success) {
-                            setSelectedPartner(response.data.user);
-                        }
-                    } catch (error) {
-                        console.error('Error fetching user for chat:', error);
-                        toast.error('Could not load user details');
-                    }
-                }
+        if (targetUserId) {
+            handleDirectChat(targetUserId);
+        }
+    }, [targetUserId]);
+
+    useEffect(() => {
+        if (selectedConv) {
+            loadMessages(selectedConv.id);
+        }
+    }, [selectedConv?.id]);
+
+    useEffect(() => {
+        if (!socket || !selectedConv) return;
+
+        const handleNewMessage = (data: { conversationId: string, message: Message }) => {
+            if (data.conversationId === selectedConv.id) {
+                setMessages(prev => {
+                    const exists = prev.find(m => m.id === data.message.id);
+                    if (exists) return prev;
+                    return [...prev, data.message];
+                });
+                loadConversations(); // Refresh list to show last message
             }
         };
 
-        if (conversations.length > 0 || targetUserId) {
-            // If we have conversations loaded, check for target
-            // Or if we just mounted and have a target, try to fetch it independent of convos if needed? 
-            // Logic: run init if targetUserId exists. 
-            // Dependency on conversations ensures we check against loaded list.
-            initChat();
-        }
-    }, [targetUserId, conversations.length]); // Check when param changes or convos load
-
-    useEffect(() => {
-        if (selectedPartner) {
-            fetchMessages(selectedPartner.id);
-            // Optional: Set up polling or socket listener here
-            const interval = setInterval(() => {
-                fetchMessages(selectedPartner.id, true);
-            }, 5000);
-            return () => clearInterval(interval);
-        }
-    }, [selectedPartner]);
+        socket.on('new-message', handleNewMessage);
+        return () => {
+            socket.off('new-message', handleNewMessage);
+        };
+    }, [socket, selectedConv?.id]);
 
     useEffect(() => {
         scrollToBottom();
@@ -104,177 +80,240 @@ export default function ChatInterface() {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
-    const fetchConversations = async () => {
+    const loadConversations = async () => {
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/messages/conversations`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.data.success) {
-                setConversations(response.data.conversations);
-            }
+            setLoading(true);
+            const data = await chatService.getConversations();
+            setConversations(data);
         } catch (error) {
-            console.error('Error fetching conversations:', error);
+            console.error('Error loading conversations:', error);
         } finally {
             setLoading(false);
         }
     };
 
-    const fetchMessages = async (userId: string, background = false) => {
+    const loadMessages = async (convId: string, background = false) => {
         try {
-            if (!background) setLoading(true);
-            const token = localStorage.getItem('token');
-            const response = await axios.get(`${API_URL}/messages/${userId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-            if (response.data.success) {
-                setMessages(response.data.messages);
+            const data = await chatService.getConversation(convId);
+            if (data.messages) {
+                setMessages(data.messages);
             }
         } catch (error) {
-            console.error('Error fetching messages:', error);
-        } finally {
-            if (!background) setLoading(false);
+            console.error('Error loading messages:', error);
+        }
+    };
+
+    const handleDirectChat = async (userId: string) => {
+        try {
+            const conv = await chatService.getDirectConversation(userId);
+            setSelectedConv(conv);
+            loadConversations();
+        } catch (error) {
+            toast.error('Could not open chat');
         }
     };
 
     const handleSendMessage = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!selectedPartner || !newMessage.trim()) return;
+        if (!selectedConv || !newMessage.trim()) return;
 
         try {
-            const token = localStorage.getItem('token');
-            const response = await axios.post(`${API_URL}/messages`, {
-                receiverId: selectedPartner.id,
-                content: newMessage
-            }, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
-
-            if (response.data.success) {
-                setMessages([...messages, response.data.message]);
-                setNewMessage('');
-                fetchConversations(); // Update last message in sidebar
-            }
+            const msg = await chatService.sendMessage(selectedConv.id, newMessage);
+            setMessages([...messages, msg]);
+            setNewMessage('');
+            loadConversations(); // Refresh list to show last message
         } catch (error) {
-            console.error('Error sending message:', error);
-            toast.error('Failed to send message');
+            toast.error('Failed to send');
+        }
+    };
+
+    const handleUserSearch = async (query: string) => {
+        setSearchQuery(query);
+        if (query.length < 2) {
+            setSearchResults([]);
+            return;
+        }
+        try {
+            const results = await userService.searchUsers(query);
+            setSearchResults(results);
+        } catch (error) {
+            console.error('Search failed');
+        }
+    };
+
+    const handleCreateGroup = async () => {
+        if (!groupName || selectedMembers.length < 1) {
+            toast.error('Please provide a name and members');
+            return;
+        }
+        try {
+            const conv = await chatService.createGroup(groupName, selectedMembers.map(m => m.id));
+            toast.success('Group created!');
+            setShowCreateGroup(false);
+            setSelectedConv(conv);
+            loadConversations();
+        } catch (error) {
+            toast.error('Failed to create group');
         }
     };
 
     const formatDate = (dateString: string) => {
-        return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now.getTime() - date.getTime();
+        const hours = diff / (1000 * 60 * 60);
+
+        if (hours < 24) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
     };
 
-    if (loading && !selectedPartner) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-            </div>
-        );
-    }
-
     return (
-        <div className="bg-white shadow rounded-lg h-[calc(100vh-8rem)] min-h-[500px] flex overflow-hidden">
-            {/* Sidebar - Conversation List */}
-            <div className={`w-full md:w-1/3 border-r border-gray-200 flex flex-col ${selectedPartner ? 'hidden md:flex' : 'flex'}`}>
-                <div className="p-4 border-b border-gray-200 bg-gray-50">
-                    <h2 className="text-lg font-semibold text-gray-900 flex items-center">
-                        <ChatBubbleLeftRightIcon className="w-5 h-5 mr-2" />
-                        Messages
-                    </h2>
+        <div className="flex h-[calc(100vh-12rem)] min-h-[600px] bg-background/50 backdrop-blur-xl border border-border/10 rounded-[40px] overflow-hidden shadow-2xl">
+            {/* Conversations Sidebar */}
+            <div className={`w-full md:w-[380px] border-r border-border/10 flex flex-col ${selectedConv ? 'hidden md:flex' : 'flex'}`}>
+                <div className="p-8 border-b border-border/5">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-2xl font-black tracking-tight">Messages</h2>
+                        <button
+                            onClick={() => setShowCreateGroup(true)}
+                            className="w-10 h-10 bg-primary/10 text-primary rounded-2xl flex items-center justify-center hover:bg-primary hover:text-white transition-all active:scale-90"
+                        >
+                            <PlusIcon className="w-6 h-6 stroke-[3]" />
+                        </button>
+                    </div>
+                    <div className="relative group">
+                        <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
+                        <input
+                            type="text"
+                            placeholder="Search messages..."
+                            className="w-full bg-secondary/30 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/30"
+                        />
+                    </div>
                 </div>
-                <div className="overflow-y-auto flex-1">
-                    {conversations.length === 0 ? (
-                        <div className="p-4 text-center text-gray-500">
-                            No conversations yet
-                        </div>
-                    ) : (
-                        <ul className="divide-y divide-gray-200">
-                            {conversations.map((conv) => (
-                                <li
-                                    key={conv.partner.id}
-                                    onClick={() => setSelectedPartner(conv.partner)}
-                                    className={`p-4 hover:bg-gray-50 cursor-pointer ${selectedPartner?.id === conv.partner.id ? 'bg-indigo-50' : ''}`}
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <div className="flex-shrink-0">
-                                            {conv.partner.profileImage ? (
-                                                <img src={conv.partner.profileImage} alt="" className="h-10 w-10 rounded-full" />
-                                            ) : (
-                                                <UserCircleIcon className="h-10 w-10 text-gray-400" />
-                                            )}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex justify-between items-center mb-1">
-                                                <p className="text-sm font-medium text-gray-900 truncate">
-                                                    {conv.partner.firstName} {conv.partner.lastName}
-                                                </p>
-                                                <p className="text-xs text-gray-500">
-                                                    {formatDate(conv.timestamp)}
-                                                </p>
-                                            </div>
-                                            <p className="text-sm text-gray-500 truncate">
-                                                {conv.lastMessage}
-                                            </p>
-                                        </div>
-                                        {conv.unreadCount > 0 && (
-                                            <div className="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
-                                                {conv.unreadCount}
-                                            </div>
-                                        )}
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-            </div>
 
-            {/* Main Chat Area */}
-            <div className={`w-full md:w-2/3 flex flex-col ${!selectedPartner ? 'hidden md:flex' : 'flex'}`}>
-                {selectedPartner ? (
-                    <>
-                        {/* Chat Header */}
-                        <div className="p-4 border-b border-gray-200 flex items-center bg-white shadow-sm z-10">
-                            <button
-                                onClick={() => setSelectedPartner(null)}
-                                className="md:hidden mr-3 text-gray-500 hover:text-gray-700"
-                            >
-                                ← Back
-                            </button>
-                            <div className="flex-shrink-0 mr-3">
-                                {selectedPartner.profileImage ? (
-                                    <img src={selectedPartner.profileImage} alt="" className="h-10 w-10 rounded-full" />
-                                ) : (
-                                    <UserCircleIcon className="h-10 w-10 text-gray-400" />
+                <div className="flex-1 overflow-y-auto no-scrollbar py-2">
+                    {loading ? (
+                        Array(6).fill(0).map((_, i) => (
+                            <div key={i} className="px-8 py-4 flex items-center gap-4 animate-pulse">
+                                <div className="w-14 h-14 bg-secondary rounded-[22px]" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 bg-secondary rounded-full w-24" />
+                                    <div className="h-3 bg-secondary rounded-full w-full" />
+                                </div>
+                            </div>
+                        ))
+                    ) : conversations.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-20 px-10 text-center">
+                            <div className="w-20 h-20 bg-secondary/30 rounded-[30px] flex items-center justify-center mb-6">
+                                <ChatBubbleLeftRightIcon className="w-10 h-10 text-muted-foreground/20" />
+                            </div>
+                            <h3 className="text-lg font-black text-foreground mb-1">No chats yet</h3>
+                            <p className="text-sm text-muted-foreground font-medium">Messages from friends and vendors will appear here.</p>
+                        </div>
+                    ) : conversations.map((conv) => (
+                        <button
+                            key={conv.id}
+                            onClick={() => setSelectedConv(conv)}
+                            className={`w-full px-8 py-4 flex items-center gap-4 hover:bg-secondary/20 transition-all group relative ${selectedConv?.id === conv.id ? 'bg-secondary/40' : ''}`}
+                        >
+                            {selectedConv?.id === conv.id && (
+                                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-primary rounded-r-full" />
+                            )}
+                            <div className="relative">
+                                <div className="w-14 h-14 rounded-[22px] bg-secondary/50 overflow-hidden flex items-center justify-center border-2 border-transparent group-hover:border-primary/20 transition-all">
+                                    {conv.isGroup ? (
+                                        <UserGroupIcon className="w-8 h-8 text-primary/40" />
+                                    ) : conv.partner?.profileImage ? (
+                                        <img src={conv.partner.profileImage} className="w-full h-full object-cover" alt="" />
+                                    ) : (
+                                        <span className="text-xl font-black text-primary/40">{conv.partner?.firstName[0]}</span>
+                                    )}
+                                </div>
+                                {conv.unread && (
+                                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-4 border-background" />
                                 )}
                             </div>
-                            <div>
-                                <h3 className="text-lg font-medium text-gray-900">
-                                    {selectedPartner.firstName} {selectedPartner.lastName}
-                                </h3>
-                                <p className="text-xs text-gray-500">
-                                    {selectedPartner.email}
+                            <div className="flex-1 text-left min-w-0">
+                                <div className="flex justify-between items-center mb-1">
+                                    <h4 className="font-black text-sm truncate uppercase tracking-tight">
+                                        {conv.isGroup ? conv.name : `${conv.partner?.firstName} ${conv.partner?.lastName}`}
+                                    </h4>
+                                    <span className="text-[10px] font-black text-muted-foreground/40 uppercase">
+                                        {formatDate(conv.lastMessageAt)}
+                                    </span>
+                                </div>
+                                <p className={`text-xs truncate ${conv.unread ? 'font-black text-foreground' : 'font-medium text-muted-foreground/60'}`}>
+                                    {conv.lastMessage || 'Start a conversation'}
                                 </p>
+                            </div>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Chat Content */}
+            <div className={`flex-1 flex flex-col bg-secondary/5 ${!selectedConv ? 'hidden md:flex' : 'flex'}`}>
+                {selectedConv ? (
+                    <>
+                        {/* Header */}
+                        <div className="px-8 py-6 bg-background/50 backdrop-blur-md border-b border-border/5 flex items-center justify-between z-10">
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setSelectedConv(null)} className="md:hidden p-2 hover:bg-secondary rounded-full transition-all">
+                                    <ArrowLeftIcon className="w-6 h-6" />
+                                </button>
+                                <div className="w-12 h-12 rounded-[18px] bg-primary/10 flex items-center justify-center overflow-hidden">
+                                    {selectedConv.isGroup ? (
+                                        <UserGroupIcon className="w-6 h-6 text-primary" />
+                                    ) : selectedConv.partner?.profileImage ? (
+                                        <img src={selectedConv.partner.profileImage} className="w-full h-full object-cover" alt="" />
+                                    ) : (
+                                        <span className="font-black text-primary">{selectedConv.partner?.firstName[0]}</span>
+                                    )}
+                                </div>
+                                <div>
+                                    <h3 className="font-black text-lg uppercase tracking-tighter">
+                                        {selectedConv.isGroup ? selectedConv.name : `${selectedConv.partner?.firstName} ${selectedConv.partner?.lastName}`}
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                        <span className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">Active Now</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Messages List */}
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-gray-50">
-                            {messages.map((msg) => {
-                                const isMe = msg.senderId === user?.id;
+                        {/* Messages */}
+                        <div className="flex-1 overflow-y-auto no-scrollbar p-8 space-y-6">
+                            {messages.map((msg, idx) => {
+                                const isMe = msg.senderId === currentUser?.id;
+                                const showAvatar = idx === 0 || messages[idx - 1].senderId !== msg.senderId;
+
                                 return (
-                                    <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                        <div
-                                            className={`max-w-[70%] rounded-lg px-4 py-2 shadow-sm ${isMe
-                                                ? 'bg-indigo-600 text-white rounded-br-none'
-                                                : 'bg-white text-gray-900 border border-gray-200 rounded-bl-none'
-                                                }`}
-                                        >
-                                            <p className="text-sm break-words">{msg.content}</p>
-                                            <p className={`text-[10px] mt-1 text-right ${isMe ? 'text-indigo-200' : 'text-gray-400'}`}>
+                                    <div key={msg.id} className={`flex items-end gap-3 ${isMe ? 'flex-row-reverse' : 'flex-row'}`}>
+                                        {!isMe && (
+                                            <div className="w-8 h-8 rounded-[12px] bg-secondary/50 flex-shrink-0 flex items-center justify-center overflow-hidden">
+                                                {showAvatar && (
+                                                    msg.sender?.profileImage ? (
+                                                        <img src={msg.sender.profileImage} className="w-full h-full object-cover" alt="" />
+                                                    ) : (
+                                                        <span className="text-[10px] font-black">{msg.sender?.firstName[0]}</span>
+                                                    )
+                                                )}
+                                            </div>
+                                        )}
+                                        <div className={`max-w-[70%] space-y-1 ${isMe ? 'items-end' : 'items-start'}`}>
+                                            {!isMe && selectedConv.isGroup && showAvatar && (
+                                                <span className="text-[10px] font-black text-muted-foreground/40 ml-1 uppercase">{msg.sender?.firstName}</span>
+                                            )}
+                                            <div className={`px-5 py-3 rounded-[22px] text-sm font-medium shadow-sm transition-all hover:scale-[1.02] ${isMe ? 'bg-primary text-primary-foreground rounded-br-none' : 'bg-background text-foreground rounded-bl-none'
+                                                }`}>
+                                                {msg.content}
+                                            </div>
+                                            <span className="text-[9px] font-black text-muted-foreground/30 uppercase px-1">
                                                 {formatDate(msg.createdAt)}
-                                            </p>
+                                            </span>
                                         </div>
                                     </div>
                                 );
@@ -282,33 +321,121 @@ export default function ChatInterface() {
                             <div ref={messagesEndRef} />
                         </div>
 
-                        {/* Message Input */}
-                        <div className="p-4 border-t border-gray-200 bg-white">
-                            <form onSubmit={handleSendMessage} className="flex space-x-3">
+                        {/* Input */}
+                        <div className="px-8 py-8 bg-background/50 border-t border-border/5">
+                            <form
+                                onSubmit={handleSendMessage}
+                                className="bg-secondary/30 rounded-[28px] p-2 pr-4 flex items-center gap-2 group focus-within:ring-2 focus:ring-primary/20 transition-all border-2 border-transparent focus-within:border-primary/10"
+                            >
                                 <input
                                     type="text"
                                     value={newMessage}
                                     onChange={(e) => setNewMessage(e.target.value)}
                                     placeholder="Type a message..."
-                                    className="flex-1 rounded-full border border-gray-300 px-4 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    className="flex-1 bg-transparent border-none focus:ring-0 py-3 px-4 font-bold text-sm placeholder:text-muted-foreground/30"
                                 />
                                 <button
-                                    type="submit"
                                     disabled={!newMessage.trim()}
-                                    className="inline-flex items-center justify-center rounded-full bg-indigo-600 p-2 text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="w-12 h-12 bg-primary text-white rounded-[18px] flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-90 transition-all disabled:opacity-20 disabled:scale-100"
                                 >
-                                    <PaperAirplaneIcon className="h-5 w-5" />
+                                    <PaperAirplaneIcon className="w-5 h-5 -rotate-45 -translate-y-0.5 translate-x-0.5" />
                                 </button>
                             </form>
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex items-center justify-center flex-col text-gray-500 bg-gray-50">
-                        <ChatBubbleLeftRightIcon className="h-16 w-16 mb-4 text-gray-300" />
-                        <p className="text-lg font-medium">Select a conversation to start chatting</p>
+                    <div className="flex-1 flex flex-col items-center justify-center p-20 text-center opacity-40 group grayscale hover:grayscale-0 transition-all duration-700">
+                        <div className="w-32 h-32 bg-secondary rounded-[48px] flex items-center justify-center mb-10 group-hover:rotate-12 transition-transform duration-500">
+                            <ChatBubbleLeftRightIcon className="w-16 h-16 text-muted-foreground/20" />
+                        </div>
+                        <h2 className="text-2xl font-black uppercase tracking-widest mb-4">Your Inbox</h2>
+                        <p className="max-w-xs font-black text-muted-foreground/60 leading-relaxed tracking-tight">Select a conversation or start a new group to connect with your campus colleagues.</p>
                     </div>
                 )}
             </div>
+
+            {/* Create Group Modal */}
+            {showCreateGroup && (
+                <div className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-xl flex items-center justify-center p-4 animate-in fade-in duration-300">
+                    <div className="bg-background rounded-[40px] w-full max-w-md p-10 shadow-2xl relative">
+                        <button onClick={() => setShowCreateGroup(false)} className="absolute top-8 right-8 p-2 hover:bg-secondary rounded-full transition-all">
+                            <XMarkIcon className="w-6 h-6" />
+                        </button>
+
+                        <h3 className="text-3xl font-black uppercase tracking-tighter mb-2">New Group</h3>
+                        <p className="text-muted-foreground text-sm font-medium mb-8">Create a multi-user conversation.</p>
+
+                        <div className="space-y-6">
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Group Name</label>
+                                <input
+                                    type="text"
+                                    value={groupName}
+                                    onChange={(e) => setGroupName(e.target.value)}
+                                    placeholder="Campus Study Group..."
+                                    className="w-full bg-secondary/30 border-none rounded-2xl py-4 px-6 text-sm font-bold focus:ring-2 focus:ring-primary/20"
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60 ml-1">Search Members</label>
+                                <div className="relative">
+                                    <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => handleUserSearch(e.target.value)}
+                                        placeholder="Type a name..."
+                                        className="w-full bg-secondary/30 border-none rounded-2xl py-3 pl-11 pr-4 text-sm font-bold focus:ring-2 focus:ring-primary/20"
+                                    />
+                                    {searchResults.length > 0 && (
+                                        <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border/10 rounded-2xl shadow-xl overflow-hidden z-20">
+                                            {searchResults.map(user => (
+                                                <button
+                                                    key={user.id}
+                                                    onClick={() => {
+                                                        if (!selectedMembers.find(m => m.id === user.id)) {
+                                                            setSelectedMembers([...selectedMembers, user]);
+                                                        }
+                                                        setSearchQuery('');
+                                                        setSearchResults([]);
+                                                    }}
+                                                    className="w-full px-4 py-3 flex items-center gap-3 hover:bg-secondary/40 text-left"
+                                                >
+                                                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
+                                                        {user.profileImage ? <img src={user.profileImage} className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold">{user.firstName[0]}</span>}
+                                                    </div>
+                                                    <span className="text-xs font-black uppercase tracking-tight">{user.firstName} {user.lastName}</span>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {selectedMembers.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                    {selectedMembers.map(m => (
+                                        <div key={m.id} className="bg-primary/10 text-primary pl-3 pr-1 py-1 rounded-full flex items-center gap-2">
+                                            <span className="text-[10px] font-black uppercase tracking-widest">{m.firstName}</span>
+                                            <button onClick={() => setSelectedMembers(selectedMembers.filter(sm => sm.id !== m.id))} className="p-1 hover:bg-primary/20 rounded-full transition-all">
+                                                <XMarkIcon className="w-3 h-3" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            <button
+                                onClick={handleCreateGroup}
+                                className="w-full py-5 bg-primary text-primary-foreground rounded-[24px] font-black shadow-xl shadow-primary/30 active:scale-95 transition-all mt-4"
+                            >
+                                CREATE GROUP
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

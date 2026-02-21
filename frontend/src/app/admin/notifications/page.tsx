@@ -5,6 +5,11 @@ import BellIcon from '@heroicons/react/24/outline/BellIcon';
 import PlusIcon from '@heroicons/react/24/outline/PlusIcon';
 import TrashIcon from '@heroicons/react/24/outline/TrashIcon';
 import UserCircleIcon from '@heroicons/react/24/outline/UserCircleIcon';
+import AcademicCapIcon from '@heroicons/react/24/outline/AcademicCapIcon';
+import ClockIcon from '@heroicons/react/24/outline/ClockIcon';
+import CheckCircleIcon from '@heroicons/react/24/outline/CheckCircleIcon';
+import ExclamationTriangleIcon from '@heroicons/react/24/outline/ExclamationTriangleIcon';
+import XMarkIcon from '@heroicons/react/24/outline/XMarkIcon';
 import toast from 'react-hot-toast';
 import { adminService } from '@/services/adminService';
 
@@ -82,7 +87,7 @@ export default function AdminNotificationsPage() {
         userId: formData.userId || undefined,
         universityId: formData.universityId || undefined,
       });
-      toast.success('Notification(s) sent successfully');
+      toast.success('Broadcast sent successfully');
       setShowCreateModal(false);
       setFormData({
         title: '',
@@ -101,7 +106,7 @@ export default function AdminNotificationsPage() {
     if (!selectedNotification) return;
     try {
       await adminService.deleteNotification(selectedNotification.id);
-      toast.success('Notification deleted successfully');
+      toast.success('Notification removed');
       setShowDeleteModal(false);
       setSelectedNotification(null);
       fetchNotifications();
@@ -110,178 +115,231 @@ export default function AdminNotificationsPage() {
     }
   };
 
-  const getTypeColor = (type: string) => {
+  const getTypeStyle = (type: string) => {
     switch (type) {
       case 'INFO':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-blue-100 text-blue-700 ring-1 ring-blue-700/10';
       case 'WARNING':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-amber-100 text-amber-700 ring-1 ring-amber-700/10';
       case 'SUCCESS':
-        return 'bg-green-100 text-green-800';
+        return 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-700/10';
       case 'ERROR':
-        return 'bg-red-100 text-red-800';
+        return 'bg-rose-100 text-rose-700 ring-1 ring-rose-700/10';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-700 ring-1 ring-gray-700/10';
     }
   };
 
   if (loading) {
-    return <div className="text-center py-12 text-gray-900">Loading...</div>;
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
+        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-gray-500 font-medium animate-pulse">Scanning broadcast logs...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Notifications Management</h1>
-          <p className="text-gray-500">View and send notifications to users.</p>
+    <div className="max-w-7xl mx-auto space-y-8 pb-12 px-4 sm:px-0">
+      {/* Premium Header */}
+      <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#1a1b3b] to-indigo-900 p-8 shadow-2xl">
+        <div className="absolute top-0 right-0 -m-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]"></div>
+        <div className="absolute bottom-0 left-0 -m-12 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px]"></div>
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="space-y-2">
+            <h1 className="text-4xl font-black tracking-tight text-white mb-2">
+              Broadcast <span className="text-indigo-400">Center</span>
+            </h1>
+            <p className="text-indigo-100/60 font-medium max-w-md">
+              Deploy system bulletins, emergency alerts, and community updates to your entire campus network.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="group flex items-center justify-center gap-3 px-8 py-5 bg-white/10 backdrop-blur-xl hover:bg-white/20 text-white rounded-[24px] font-black transition-all border border-white/10 shadow-xl active:scale-95"
+          >
+            <PlusIcon className="h-6 w-6 text-indigo-400 group-hover:rotate-90 transition-transform duration-300" />
+            Launch Broadcast
+          </button>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
-        >
-          <PlusIcon className="mr-2 h-5 w-5" />
-          Send Notification
-        </button>
       </div>
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-md">
-        <ul className="divide-y divide-gray-200">
+      <div className="bg-white rounded-[32px] border border-gray-100 shadow-sm overflow-hidden">
+        <div className="px-8 py-6 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+          <h2 className="text-lg font-black text-gray-900 tracking-tight">Recent Dispatches</h2>
+          <span className="px-3 py-1 bg-white rounded-xl text-xs font-black text-gray-500 shadow-sm border border-gray-100 uppercase tracking-widest">
+            {notifications.length} Sent
+          </span>
+        </div>
+
+        <div className="divide-y divide-gray-100">
           {notifications.length === 0 ? (
-            <li className="px-4 py-8 text-center text-gray-500">
-              No notifications found
-            </li>
+            <div className="px-8 py-20 text-center flex flex-col items-center space-y-4">
+              <div className="p-6 bg-gray-50 rounded-full">
+                <BellIcon className="h-12 w-12 text-gray-200" />
+              </div>
+              <p className="text-gray-400 font-medium tracking-tight text-lg">Airwaves are clear. No recent broadcasts.</p>
+            </div>
           ) : (
             notifications.map((notification) => (
-              <li key={notification.id} className="px-4 py-4 sm:px-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-3">
-                      <BellIcon className="h-6 w-6 text-gray-400" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-lg font-medium text-gray-900">{notification.title}</h3>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getTypeColor(notification.type)}`}>
-                            {notification.type}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-gray-600">{notification.message}</p>
-                        <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-2">
-                            <UserCircleIcon className="h-4 w-4" />
-                            <span>{notification.user.firstName} {notification.user.lastName} ({notification.user.email || notification.user.username || 'No contact info'})</span>
-                          </div>
-                          {notification.user.university && (
-                            <span>({notification.user.university.name})</span>
-                          )}
-                          <span>• {new Date(notification.createdAt).toLocaleString()}</span>
-                          {notification.isRead && (
-                            <span className="text-green-600">✓ Read</span>
-                          )}
-                        </div>
+              <div
+                key={notification.id}
+                className="group px-8 py-6 hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1 space-y-3">
+                    <div className="flex flex-wrap items-center gap-3 font-black tracking-tight">
+                      <div className="p-2 bg-white rounded-xl shadow-sm border border-gray-100 group-hover:border-indigo-100 group-hover:bg-indigo-50 transition-colors">
+                        <BellIcon className="h-5 w-5 text-gray-400 group-hover:text-indigo-500" />
                       </div>
+                      <h3 className="text-lg text-gray-900 leading-tight truncate max-w-md">
+                        {notification.title}
+                      </h3>
+                      <span className={`px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-[0.1em] ${getTypeStyle(notification.type)}`}>
+                        {notification.type}
+                      </span>
+                    </div>
+
+                    <p className="text-gray-500 font-medium leading-relaxed max-w-3xl">
+                      {notification.message}
+                    </p>
+
+                    <div className="flex flex-wrap items-center gap-y-3 gap-x-6 text-xs text-gray-400 font-bold">
+                      <div className="flex items-center gap-2 group/author">
+                        <UserCircleIcon className="h-4 w-4 text-gray-300 group-hover/author:text-indigo-400" />
+                        <span className="group-hover/author:text-gray-600 transition-colors truncate max-w-[150px]">
+                          {notification.user.firstName} {notification.user.lastName}
+                        </span>
+                      </div>
+
+                      {notification.user.university && (
+                        <div className="flex items-center gap-2">
+                          <AcademicCapIcon className="h-4 w-4 text-gray-300" />
+                          <span className="truncate max-w-[120px]">{notification.user.university.name}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <ClockIcon className="h-4 w-4 text-gray-300" />
+                        <span>{new Date(notification.createdAt).toLocaleString(undefined, {
+                          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                        })}</span>
+                      </div>
+
+                      {notification.isRead && (
+                        <div className="flex items-center gap-1.5 px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md">
+                          <CheckCircleIcon className="h-3.5 w-3.5" />
+                          <span className="uppercase tracking-tighter text-[9px]">Viewed</span>
+                        </div>
+                      )}
                     </div>
                   </div>
+
                   <button
                     onClick={() => {
                       setSelectedNotification(notification);
                       setShowDeleteModal(true);
                     }}
-                    className="ml-4 inline-flex items-center px-3 py-1 border border-red-300 rounded-md shadow-sm text-sm font-medium text-red-700 bg-red-50 hover:bg-red-100"
+                    className="flex-shrink-0 p-3 bg-rose-50 text-rose-500 rounded-2xl opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500 hover:text-white shadow-sm"
                   >
-                    <TrashIcon className="h-4 w-4" />
+                    <TrashIcon className="h-5 w-5" />
                   </button>
                 </div>
-              </li>
+              </div>
             ))
           )}
-        </ul>
+        </div>
       </div>
 
-      {/* Create Notification Modal */}
+      {/* Create Broadcast Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
-          <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowCreateModal(false)} />
-            <div className="relative bg-white rounded-lg shadow-xl max-w-2xl w-full p-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-900">Send Notification</h2>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Title *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    placeholder="Notification title"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Message *</label>
-                  <textarea
-                    required
-                    value={formData.message}
-                    onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    rows={4}
-                    placeholder="Notification message"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                  <select
-                    value={formData.type}
-                    onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+        <div className="fixed inset-0 z-[60] overflow-y-auto">
+          <div className="flex items-center justify-center min-h-screen px-4 py-8">
+            <div
+              className="fixed inset-0 bg-[#1a1b3b]/80 backdrop-blur-md transition-opacity"
+              onClick={() => setShowCreateModal(false)}
+            />
+
+            <div className="relative bg-white rounded-[40px] shadow-2xl max-w-2xl w-full p-8 overflow-hidden transform transition-all border border-white/20">
+              <div className="absolute top-0 right-0 -m-12 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl"></div>
+
+              <div className="relative z-10 space-y-8">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1">
+                    <h2 className="text-3xl font-black text-gray-900 tracking-tight">Launch Broadcast</h2>
+                    <p className="text-gray-400 font-medium italic">Compose a message to your community</p>
+                  </div>
+                  <button
+                    onClick={() => setShowCreateModal(false)}
+                    className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-gray-600 transition-colors"
                   >
-                    <option value="INFO">Info</option>
-                    <option value="WARNING">Warning</option>
-                    <option value="SUCCESS">Success</option>
-                    <option value="ERROR">Error</option>
-                  </select>
+                    <XMarkIcon className="h-6 w-6" />
+                  </button>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">University (optional)</label>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Campaign Title</label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      className="w-full px-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[24px] font-black text-gray-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:bg-gray-50 transition-all outline-none"
+                      placeholder="e.g. System Maintenance Update"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Detailed Message</label>
+                    <textarea
+                      required
+                      value={formData.message}
+                      onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                      className="w-full px-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[24px] font-medium text-gray-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 hover:bg-gray-50 transition-all outline-none resize-none"
+                      rows={4}
+                      placeholder="Compose your bulletin here..."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Dispatch Level</label>
+                    <select
+                      value={formData.type}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                      className="w-full px-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[24px] font-black text-gray-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 appearance-none outline-none"
+                    >
+                      <option value="INFO">INFORMATION</option>
+                      <option value="WARNING">WARNING ALERT</option>
+                      <option value="SUCCESS">NETWORK SUCCESS</option>
+                      <option value="ERROR">SYSTEM ERROR</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Network Scope</label>
                     <select
                       value={formData.universityId}
                       onChange={(e) => setFormData({ ...formData, universityId: e.target.value, userId: '' })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                      className="w-full px-6 py-4 bg-gray-50/50 border border-gray-100 rounded-[24px] font-black text-gray-900 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 appearance-none outline-none"
                     >
-                      <option value="">Send to all users</option>
+                      <option value="">ALL UNIVERSITIES</option>
                       {universities.map((u) => (
-                        <option key={u.id} value={u.id}>{u.name}</option>
+                        <option key={u.id} value={u.id}>{u.name.toUpperCase()}</option>
                       ))}
                     </select>
-                    <p className="mt-1 text-xs text-gray-500">Leave empty to send to all users</p>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">User ID (optional)</label>
-                    <input
-                      type="text"
-                      value={formData.userId}
-                      onChange={(e) => setFormData({ ...formData, userId: e.target.value, universityId: '' })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      placeholder="Specific user ID"
-                    />
-                    <p className="mt-1 text-xs text-gray-500">Leave empty to send to all</p>
                   </div>
                 </div>
-              </div>
-              <div className="mt-6 flex justify-end gap-3">
-                <button
-                  onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleCreate}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                >
-                  Send Notification
-                </button>
+
+                <div className="pt-6">
+                  <button
+                    onClick={handleCreate}
+                    className="w-full py-5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-[24px] font-black shadow-xl shadow-indigo-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                  >
+                    Deploy Dispatch
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -290,29 +348,43 @@ export default function AdminNotificationsPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteModal && selectedNotification && (
-        <div className="fixed inset-0 z-50 overflow-y-auto">
+        <div className="fixed inset-0 z-[70] overflow-y-auto">
           <div className="flex items-center justify-center min-h-screen px-4">
-            <div className="fixed inset-0 bg-gray-500 bg-opacity-75" onClick={() => setShowDeleteModal(false)} />
-            <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full p-6">
-              <h2 className="text-xl font-bold mb-4 text-gray-900">Confirm Delete Notification</h2>
-              <p className="text-gray-700 mb-4">
-                Are you sure you want to delete this notification sent to{' '}
-                <span className="font-semibold">{selectedNotification.user.firstName} {selectedNotification.user.lastName}</span>?
-                This action cannot be undone.
-              </p>
-              <div className="flex justify-end gap-3">
-                <button
-                  onClick={() => setShowDeleteModal(false)}
-                  className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                >
-                  Delete
-                </button>
+            <div
+              className="fixed inset-0 bg-[#1a1b3b]/80 backdrop-blur-md transition-opacity"
+              onClick={() => setShowDeleteModal(false)}
+            />
+
+            <div className="relative bg-white rounded-[40px] shadow-2xl max-w-md w-full p-8 overflow-hidden transform transition-all border border-white/20">
+              <div className="absolute top-0 right-0 -m-8 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl"></div>
+
+              <div className="relative z-10 text-center space-y-6">
+                <div className="mx-auto flex items-center justify-center h-20 w-20 rounded-full bg-rose-100 shadow-inner">
+                  <ExclamationTriangleIcon className="h-10 w-10 text-rose-600" />
+                </div>
+
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-black text-gray-900 tracking-tight">Archive Dispatch?</h3>
+                  <p className="text-gray-500 font-medium leading-relaxed">
+                    You are removing the broadcast <span className="text-gray-900 font-black">"{selectedNotification.title}"</span>.
+                    This record will be permanently deleted from the logs.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 pt-4">
+                  <button
+                    onClick={handleDelete}
+                    className="w-full py-4 bg-rose-500 text-white rounded-[20px] font-black shadow-lg shadow-rose-500/20 hover:bg-rose-600 transition-all active:scale-[0.98]"
+                  >
+                    Confirm Deletion
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="w-full py-4 bg-gray-100 text-gray-600 rounded-[20px] font-black hover:bg-gray-200 transition-all"
+                  >
+                    Keep Record
+                  </button>
+                </div>
               </div>
             </div>
           </div>
