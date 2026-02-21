@@ -222,6 +222,9 @@ app.use('/api/print', authenticateToken, printRoutes);
 app.use('/api/messages', authenticateToken, messageRoutes);
 app.use('/api/stories', authenticateToken, storyRoutes);
 
+// Track online users
+const onlineUsers = new Map<string, string>(); // userId -> socketId
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
   console.log('User connected:', socket.id);
@@ -229,6 +232,13 @@ io.on('connection', (socket) => {
   socket.on('join-room', (room) => {
     socket.join(room);
     console.log(`User ${socket.id} joined room: ${room}`);
+
+    // If the room name looks like a CUID/ID (identity room), mark as online
+    if (room.length > 10) {
+      onlineUsers.set(room, socket.id);
+      socket.data.userId = room;
+      io.emit('presence-update', Array.from(onlineUsers.keys()));
+    }
   });
 
   socket.on('leave-room', (room) => {
@@ -237,8 +247,17 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnect', () => {
+    if (socket.data.userId) {
+      onlineUsers.delete(socket.data.userId);
+      io.emit('presence-update', Array.from(onlineUsers.keys()));
+    }
     console.log('User disconnected:', socket.id);
   });
+});
+
+// Endpoint to get all online users
+app.get('/api/users/online', (req, res) => {
+  res.json({ success: true, onlineUsers: Array.from(onlineUsers.keys()) });
 });
 
 // Make io available to other modules

@@ -20,7 +20,7 @@ import { userService } from '@/services/userService';
 
 export default function ChatInterface() {
     const { user: currentUser } = useAuth();
-    const { socket } = useSocket();
+    const { socket, onlineUsers } = useSocket();
     const [conversations, setConversations] = useState<Conversation[]>([]);
     const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -234,6 +234,9 @@ export default function ChatInterface() {
                                 {conv.unread && (
                                     <div className="absolute -top-1 -right-1 w-4 h-4 bg-primary rounded-full border-4 border-background" />
                                 )}
+                                {!conv.isGroup && conv.partner && onlineUsers.includes(conv.partner.id) && (
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-4 border-background" />
+                                )}
                             </div>
                             <div className="flex-1 text-left min-w-0">
                                 <div className="flex justify-between items-center mb-1">
@@ -276,10 +279,12 @@ export default function ChatInterface() {
                                     <h3 className="font-black text-lg uppercase tracking-tighter">
                                         {selectedConv.isGroup ? selectedConv.name : `${selectedConv.partner?.firstName} ${selectedConv.partner?.lastName}`}
                                     </h3>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                                        <span className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">Active Now</span>
-                                    </div>
+                                    {!selectedConv.isGroup && selectedConv.partner && onlineUsers.includes(selectedConv.partner.id) && (
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                            <span className="text-[10px] font-black text-muted-foreground/50 uppercase tracking-widest">Active Now</span>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         </div>

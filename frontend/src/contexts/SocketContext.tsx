@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 
 interface SocketContextType {
   socket: Socket | null;
+  onlineUsers: string[];
 }
 
 const SocketContext = createContext<SocketContextType | undefined>(undefined);
@@ -16,6 +17,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || 'http
 export function SocketProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -28,6 +30,10 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
         console.log('Socket connected');
         // Join private user room
         newSocket.emit('join-room', user.id);
+      });
+
+      newSocket.on('presence-update', (users: string[]) => {
+        setOnlineUsers(users);
       });
 
       newSocket.on('new-message', (data) => {
@@ -66,7 +72,7 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id]);
 
   return (
-    <SocketContext.Provider value={{ socket }}>
+    <SocketContext.Provider value={{ socket, onlineUsers }}>
       {children}
     </SocketContext.Provider>
   );

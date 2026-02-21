@@ -29,7 +29,7 @@ import { CameraIcon } from '@heroicons/react/24/solid';
 
 export default function SocialFeedPage() {
   const { user } = useAuth();
-  const { socket } = useSocket();
+  const { socket, onlineUsers } = useSocket();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -205,16 +205,21 @@ export default function SocialFeedPage() {
             ))
           ) : stories.map((item) => (
             <div key={item.author.id} className="flex flex-col items-center gap-2 flex-shrink-0">
-              <button
-                onClick={() => setSelectedStoryAuthor(item)}
-                className="w-16 h-16 rounded-[22px] p-0.5 border-2 border-primary bg-background shadow-md active:scale-95 transition-all overflow-hidden"
-              >
-                <div className="w-full h-full rounded-[18px] bg-secondary/30 flex items-center justify-center font-black text-primary overflow-hidden">
-                  {item.author.profileImage ? (
-                    <img src={item.author.profileImage} className="w-full h-full object-cover" alt="" />
-                  ) : item.author.firstName[0]}
-                </div>
-              </button>
+              <div className="relative">
+                <button
+                  onClick={() => setSelectedStoryAuthor(item)}
+                  className="w-16 h-16 rounded-[22px] p-0.5 border-2 border-primary bg-background shadow-md active:scale-95 transition-all overflow-hidden"
+                >
+                  <div className="w-full h-full rounded-[18px] bg-secondary/30 flex items-center justify-center font-black text-primary overflow-hidden">
+                    {item.author.profileImage ? (
+                      <img src={item.author.profileImage} className="w-full h-full object-cover" alt="" />
+                    ) : item.author.firstName[0]}
+                  </div>
+                </button>
+                {onlineUsers.includes(item.author.id) && (
+                  <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-green-500 rounded-full border-4 border-background" />
+                )}
+              </div>
               <span className="text-[10px] font-black uppercase text-foreground/60 tracking-tighter truncate w-16 text-center">
                 {item.author.firstName}
               </span>
