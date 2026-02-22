@@ -81,11 +81,13 @@ export default function SocialFeedPage() {
       setLoading(true);
       const data = await postService.getPosts({
         page: 1,
-        limit: 30, // Increased limit for combined feed
+        limit: 30,
       });
       setPosts(data?.posts || []);
     } catch (error: any) {
-      toast.error('Failed to load feed');
+      const msg = error?.response?.data?.message || error?.message || 'Failed to load feed';
+      toast.error(msg);
+      console.error('[Feed] Error:', error?.response?.data || error?.message);
     } finally {
       setLoading(false);
     }
