@@ -26,18 +26,25 @@ class EmailService {
     // Validate SMTP fallback
     this.hasSmtpConfig = Boolean(SMTP_EMAIL && SMTP_PASS);
     // Use SMTP_FROM if provided, otherwise fallback to SMTP_EMAIL
-    this.fromAddress = SMTP_FROM || SMTP_EMAIL || 'onboarding@resend.dev';
+    // Clean up quotes if present
+    const rawFrom = SMTP_FROM || SMTP_EMAIL || 'onboarding@resend.dev';
+    this.fromAddress = rawFrom.replace(/['"]/g, '');
     this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
 
     if (this.hasSmtpConfig) {
-      console.log(`[EmailService] Configuring SMTP for ${SMTP_EMAIL} using Gmail service...`);
+      console.log(`[EmailService] SUCCESS: SMTP credentials detected for ${SMTP_EMAIL}`);
+      console.log(`[EmailService] Target Host: smtp.gmail.com:465 (SSL)`);
+
       this.transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // Use SSL
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
         },
         tls: {
+          // Do not fail on invalid certs
           rejectUnauthorized: false
         }
       });
@@ -54,6 +61,9 @@ class EmailService {
    */
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
     const { INTERNAL_EMAIL_KEY, FRONTEND_URL, EMAIL_BRIDGE_ENABLED } = process.env;
+
+    console.log(`[EmailService] ATTEMPTING SEND: To=${to}, Subject=${subject}`);
+    console.log(`[EmailService] Config State: SMTP=${this.hasSmtpConfig}, Resend=${Boolean(this.resend)}`);
 
     // 1. Try Vercel Bridge (Most reliable for Railway)
     const bridgeEnabled = process.env.EMAIL_BRIDGE_ENABLED === 'true';

@@ -196,6 +196,8 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Send OTP email (Non-blocking)
+  console.log(`[Auth] Triggering OTP delivery for: ${finalEmail}`);
+  console.log(`[Auth] DEV-INFO: OTP code is: ${otp}`);
   emailService.sendOTP(finalEmail, otp).catch((emailError: any) => {
     console.warn('Failed to send OTP email:', emailError.message);
   });
@@ -511,6 +513,8 @@ router.post('/resend-otp', asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Send email (Non-blocking)
+  console.log(`[Auth] Resending OTP to: ${email}`);
+  console.log(`[Auth] DEV-INFO: New OTP code is: ${otp}`);
   setTimeout(() => {
     emailService.sendOTP(email, otp).catch((error) => {
       console.error('Failed to send OTP:', error);

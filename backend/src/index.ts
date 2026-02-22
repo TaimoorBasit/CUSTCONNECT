@@ -223,6 +223,20 @@ app.use('/api/orders', authenticateToken, orderRoutes);
 app.use('/api/lost-found', authenticateToken, lostFoundRoutes);
 app.use('/api/print', authenticateToken, printRoutes);
 app.use('/api/messages', authenticateToken, messageRoutes);
+app.get('/api/test-email', async (req, res) => {
+  try {
+    const { emailService } = await import('./services/emailService');
+    const to = (req.query.to as string) || process.env.SMTP_EMAIL;
+    if (!to) return res.status(400).json({ error: 'No recipient' });
+
+    console.log(`[Diagnostic] Triggering test email to ${to}`);
+    const success = await emailService.sendEmail(to, 'CustConnect Diagnostic', '<h1>Work!</h1><p>Test email successful.</p>');
+    return res.json({ success, message: success ? 'Sent' : 'Failed' });
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
 app.use('/api/stories', authenticateToken, storyRoutes);
 
 // Track online users
@@ -277,7 +291,10 @@ app.use((req, res) => {
 const PORT = Number(process.env.PORT) || 5000;
 
 server.listen(PORT, '0.0.0.0', () => {
+  console.log('--- SERVER STARTUP ---');
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 Environment: ${process.env.NODE_ENV}`);
+  console.log(`📧 SMTP Email Ready: ${process.env.SMTP_EMAIL ? 'YES' : 'NO'}`);
   console.log(`📊 Health check: http://0.0.0.0:${PORT}/health`);
 });
 
