@@ -33,11 +33,15 @@ class EmailService {
     if (this.hasSmtpConfig) {
       console.log(`[EmailService] SMTP Config: Email=${SMTP_EMAIL}, From=${this.fromAddress}`);
       this.transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true, // Use SMTPS
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
-        }
+        },
+        debug: true, // Enable full SMTP logs
+        logger: true  // Log the connection process
       });
     } else {
       console.warn('[EmailService] SMTP NOT CONFIGURED - Check Railway/Vercel variables!');

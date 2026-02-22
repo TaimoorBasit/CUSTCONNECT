@@ -1,10 +1,10 @@
 --- SMTP Diagnostic Test Results ---
-Time: 2026-02-22T18:30:00.617Z
+Time: 2026-02-22T19:42:31.542Z
 Email: spotifyuser725@gmail.com
 Pass: ********
-From: CustConnect <spotifyuser725@gmail.com>
+From: undefined
 
 Testing Gmail Service connection...
 ✅ Gmail Service connection successful!
 Sending test email...
-✅ Email sent! MessageID: <cc045b07-3741-ec39-7c28-0ecedcf96001@gmail.com>
+✅ Email sent! MessageID: <fb827a15-04e8-29e5-8ae4-8774dfab7740@gmail.com>
