@@ -7,7 +7,10 @@ export async function POST(req: Request) {
 
         // Basic security check
         const internalSecret = process.env.INTERNAL_EMAIL_KEY || 'custconnect_secret_2024';
+        console.log(`[Bridge] Incoming request. Target: ${to}. Subject: ${subject}`);
+
         if (secret !== internalSecret) {
+            console.warn(`[Bridge] AUTH FAILED. Received ${secret} but expected ${internalSecret}`);
             return NextResponse.json({ error: 'Unauthorized bridge access' }, { status: 401 });
         }
 
