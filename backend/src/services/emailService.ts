@@ -1,5 +1,11 @@
 import nodemailer from 'nodemailer';
 import { Resend } from 'resend';
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Ensure environment variables are loaded
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
+dotenv.config({ path: path.resolve(process.cwd(), 'backend', '.env') });
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -36,7 +42,7 @@ class EmailService {
         }
       });
     } else {
-      console.warn('[EmailService] SMTP not configured. Using mock transport.');
+      console.error('[EmailService] CRITICAL: SMTP not configured. Missing credentials.');
       this.transporter = nodemailer.createTransport({
         jsonTransport: true
       });
