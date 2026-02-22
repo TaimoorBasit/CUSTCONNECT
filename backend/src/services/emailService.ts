@@ -9,37 +9,36 @@ class EmailService {
   private readonly frontendUrl: string;
 
   constructor() {
-    const { SMTP_EMAIL, SMTP_PASS, FRONTEND_URL, RESEND_API_KEY } = process.env;
+    const { SMTP_EMAIL, SMTP_PASS, SMTP_FROM, FRONTEND_URL, RESEND_API_KEY } = process.env;
 
-    // Initialize Resend if API key is provided (Best for Railway/Cloud)
+    // Initialize Resend if API key is provided
     if (RESEND_API_KEY) {
-      console.log('[EmailService] Initializing with Resend API (Recommended)...');
+      console.log('[EmailService] Initializing with Resend API...');
       this.resend = new Resend(RESEND_API_KEY);
     }
 
     // Validate SMTP fallback
     this.hasSmtpConfig = Boolean(SMTP_EMAIL && SMTP_PASS);
-    this.fromAddress = SMTP_EMAIL || 'onboarding@resend.dev'; // Resend default for testing
+    // Use SMTP_FROM if provided, otherwise fallback to SMTP_EMAIL
+    this.fromAddress = SMTP_FROM || SMTP_EMAIL || 'onboarding@resend.dev';
     this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
 
     if (this.hasSmtpConfig) {
-      console.log(`[EmailService] Configuring SMTP Fallback for ${SMTP_EMAIL}...`);
+      console.log(`[EmailService] Configuring SMTP for ${SMTP_EMAIL}...`);
       this.transporter = nodemailer.createTransport({
         host: 'smtp.gmail.com',
         port: 587,
-        secure: false,
+        secure: false, // true for 465, false for other ports
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
         },
         tls: {
-          rejectUnauthorized: false
+          rejectUnauthorized: false // Helps with self-signed certs in dev/some hosting
         }
       });
-
-      // We don't verify SMTP here to avoid blocking startup since we know it might fail on Railway
     } else {
-      console.warn('[EmailService] SMTP fallback not configured. Using mock transport.');
+      console.warn('[EmailService] SMTP not configured. Using mock transport.');
       this.transporter = nodemailer.createTransport({
         jsonTransport: true
       });
@@ -48,50 +47,45 @@ class EmailService {
 
   /**
    * Generic send email function
-   * @param to Recipient email
-   * @param subject Email subject
-   * @param html Email body in HTML
    */
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
-    const { INTERNAL_EMAIL_KEY, FRONTEND_URL } = process.env;
+    const { INTERNAL_EMAIL_KEY, FRONTEND_URL, EMAIL_BRIDGE_ENABLED } = process.env;
 
-    // Clean URL: Remove trailing slash if present
-    const cleanBaseUrl = (FRONTEND_URL || 'https://custconnect.vercel.app').replace(/\/$/, '');
-    const finalBridgeUrl = (process.env.NODE_ENV === 'production' || cleanBaseUrl.includes('railway.app'))
-      ? 'https://custconnect.vercel.app/api/send-email'
-      : `${cleanBaseUrl}/api/send-email`;
+    // Only try Vercel Bridge if explicitly enabled or if we have a secret
+    if (EMAIL_BRIDGE_ENABLED === 'true' && INTERNAL_EMAIL_KEY) {
+      const bridgeUrl = `${(FRONTEND_URL || 'https://custconnect.vercel.app').replace(/\/$/, '')}/api/send-email`;
 
-    // 1. Try Vercel Bridge first (Works around Railway port blocks)
-    try {
-      console.log(`[EmailService] Calling Vercel Bridge: ${finalBridgeUrl} (to: ${to})`);
-      const response = await fetch(finalBridgeUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to,
-          subject,
-          html,
-          secret: INTERNAL_EMAIL_KEY || 'default_secret_please_change'
-        })
-      });
+      try {
+        console.log(`[EmailService] Attempting Vercel Bridge: ${bridgeUrl}...`);
+        const response = await fetch(bridgeUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to,
+            subject,
+            html,
+            secret: INTERNAL_EMAIL_KEY
+          })
+        });
 
-      if (response.ok) {
-        console.log('[EmailService] Email sent successfully via Vercel Bridge');
-        return true;
+        if (response.ok) {
+          console.log('[EmailService] Email sent successfully via Bridge');
+          return true;
+        }
+        console.warn('[EmailService] Bridge failed with status:', response.status);
+      } catch (vError: any) {
+        console.error('[EmailService] Bridge fetch failed:', vError.message);
       }
-
-      const resData: any = await response.json();
-      console.warn('[EmailService] Vercel Bridge returned error:', resData.error);
-    } catch (vError: any) {
-      console.error('[EmailService] Vercel Bridge failed:', vError.message);
     }
 
-    // 2. Try Resend API (Alternative Cloud provider)
+    // 2. Try Resend API
     if (this.resend) {
       try {
-        console.log(`[EmailService] Attempting to send via Resend API to ${to}...`);
+        console.log(`[EmailService] Attempting Resend API for ${to}...`);
+        const fromHeader = this.fromAddress.includes('<') ? this.fromAddress : `CustConnect <${this.fromAddress}>`;
+
         const { data, error } = await this.resend.emails.send({
-          from: this.fromAddress.includes('<') ? this.fromAddress : `CustConnect <${this.fromAddress}>`,
+          from: fromHeader,
           to,
           subject,
           html
@@ -107,22 +101,29 @@ class EmailService {
       }
     }
 
-    try {
-      console.log(`[EmailService] Falling back to SMTP for ${to}...`);
-      const info = await this.transporter.sendMail({
-        from: this.fromAddress,
-        to,
-        subject,
-        html
-      });
+    // 3. Fallback to SMTP
+    if (this.hasSmtpConfig) {
+      try {
+        console.log(`[EmailService] Using SMTP for ${to}...`);
+        const info = await this.transporter.sendMail({
+          from: this.fromAddress,
+          to,
+          subject,
+          html
+        });
 
-      console.log(`[EmailService] Email sent via SMTP: ${info.messageId}`);
-      return true;
-    } catch (error) {
-      console.error('[EmailService] SMTP Fallback failed:', error);
-      return false;
+        console.log(`[EmailService] Email sent via SMTP: ${info.messageId}`);
+        return true;
+      } catch (error: any) {
+        console.error('[EmailService] SMTP failed:', error.message);
+        return false;
+      }
     }
+
+    console.error('[EmailService] No valid email transport available');
+    return false;
   }
+
 
   // Legacy/Specific methods rewritten to use sendEmail or keep logic
   // Keeping dispatchMail logic but updating to use the configured transporter is fine, 
