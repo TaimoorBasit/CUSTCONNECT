@@ -1,5 +1,6 @@
 
 import express from 'express';
+import { MemberRole } from '@prisma/client';
 import { prisma } from '../index';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
 import { asyncHandler, createError } from '../middleware/errorHandler';
@@ -163,8 +164,8 @@ router.post('/group', authenticateToken, asyncHandler(async (req: AuthRequest, r
             isGroup: true,
             members: {
                 create: [
-                    { userId: currentUserId, role: 'ADMIN' },
-                    ...members.map((userId: string) => ({ userId, role: 'MEMBER' }))
+                    { userId: currentUserId, role: MemberRole.ADMIN },
+                    ...members.map((userId: string) => ({ userId, role: MemberRole.MEMBER }))
                 ]
             }
         },
