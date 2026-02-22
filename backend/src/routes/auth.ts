@@ -195,12 +195,14 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  // Send OTP email (Non-blocking)
+  // Send OTP email (Blocking for better error feedback)
   console.log(`[Auth] Triggering OTP delivery for: ${finalEmail}`);
-  console.log(`[Auth] DEV-INFO: OTP code is: ${otp}`);
-  emailService.sendOTP(finalEmail, otp).catch((emailError: any) => {
-    console.warn('Failed to send OTP email:', emailError.message);
-  });
+  try {
+    const emailSent = await emailService.sendOTP(finalEmail, otp);
+    console.log(`[Auth] OTP delivery status for ${finalEmail}: ${emailSent ? 'SUCCESS' : 'FAILED'}`);
+  } catch (emailError: any) {
+    console.warn('[Auth] Critical error during OTP send:', emailError.message);
+  }
 
   res.status(201).json({
     success: true,

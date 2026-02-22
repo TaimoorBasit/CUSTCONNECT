@@ -28,30 +28,20 @@ class EmailService {
 
     // Use SMTP_FROM or EMAIL_FROM if provided, otherwise fallback to SMTP_EMAIL
     // For Gmail, the 'from' email should ideally match the SMTP_EMAIL account
-    const rawFrom = SMTP_FROM || EMAIL_FROM || SMTP_EMAIL || 'onboarding@resend.dev';
-
-    // Extract just the email if it contains < > for better compatibility
-    const emailMatch = rawFrom.match(/<(.+?)>/);
-    const cleanEmail = emailMatch ? emailMatch[1] : rawFrom.replace(/['"]/g, '').trim();
-
-    this.fromAddress = cleanEmail;
+    this.fromAddress = SMTP_FROM || EMAIL_FROM || `"CustConnect" <${SMTP_EMAIL}>` || 'onboarding@resend.dev';
     this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
 
     if (this.hasSmtpConfig) {
       console.log(`[EmailService] SUCCESS: SMTP credentials detected for ${SMTP_EMAIL}`);
+      console.log(`[EmailService] From header will be: ${this.fromAddress}`);
       console.log(`[EmailService] Target: smtp.gmail.com:587 (STARTTLS)`);
 
       this.transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false, // Use STARTTLS
+        service: 'gmail', // Using 'gmail' shortcut is more reliable for Nodemailer
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
         },
-        connectionTimeout: 10000, // 10 seconds
-        greetingTimeout: 10000,
-        socketTimeout: 15000,
         tls: {
           rejectUnauthorized: false
         }
@@ -83,6 +73,9 @@ class EmailService {
       try {
         console.log(`[EmailService] Attempting Bridge: ${bridgeUrl}...`);
 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+
         const response = await fetch(bridgeUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -91,8 +84,10 @@ class EmailService {
             subject,
             html,
             secret: INTERNAL_EMAIL_KEY
-          })
+          }),
+          signal: controller.signal
         });
+        clearTimeout(timeoutId);
 
         if (response.ok) {
           console.log('[EmailService] Success: Email sent via Vercel Bridge');
@@ -201,7 +196,7 @@ class EmailService {
   // or kept if needed. The request asked for a reusable sendEmail function.
   // I will remove dispatchMail as it is redundant now.
 
-  async sendOTP(email: string, otp: string): Promise<void> {
+  async sendOTP(email: string, otp: string): Promise<boolean> {
     const subject = 'Your Verification Code';
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
@@ -217,7 +212,7 @@ class EmailService {
       </div>
     `;
 
-    await this.sendEmail(email, subject, html);
+    return await this.sendEmail(email, subject, html);
   }
 }
 
