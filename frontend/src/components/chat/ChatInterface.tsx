@@ -49,10 +49,17 @@ export default function ChatInterface() {
     }, [targetUserId]);
 
     useEffect(() => {
-        if (selectedConv) {
+        if (selectedConv && socket) {
+            loadMessages(selectedConv.id);
+            socket.emit('join-room', selectedConv.id);
+
+            return () => {
+                socket.emit('leave-room', selectedConv.id);
+            };
+        } else if (selectedConv) {
             loadMessages(selectedConv.id);
         }
-    }, [selectedConv?.id]);
+    }, [selectedConv?.id, socket]);
 
     useEffect(() => {
         if (!socket || !selectedConv) return;

@@ -35,20 +35,19 @@ export default function DashboardPage() {
       const userRoles = user.roles?.map(r => r.name) || [];
       const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
 
-      // Redirect Super Admins to the administrative control center
+      const isCafeOwner = userRoles.includes('CAFE_OWNER');
+      const isBusOperator = userRoles.includes('BUS_OPERATOR');
+      const isVendor = isCafeOwner || isBusOperator;
+
+      // Only fetch admin stats for super admins
       if (isSuperAdmin) {
         router.push('/admin');
         return;
       }
 
-      const isCafeOwner = userRoles.includes('CAFE_OWNER');
-      const isBusOperator = userRoles.includes('BUS_OPERATOR');
-      const isVendor = isCafeOwner || isBusOperator;
-      const isStudent = !isSuperAdmin && !isVendor;
-
-      // Redirect students away from dashboard overview if needed, or just show it
-      // Currently letting them see the overview
-      fetchStats();
+      // For students and vendors, we don't fetch admin analytics to avoid 403
+      // We could fetch public stats here if we had a non-admin route for them
+      setLoading(false);
     }
   }, [user, router]);
 

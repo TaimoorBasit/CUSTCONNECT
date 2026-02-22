@@ -116,31 +116,41 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
     where: { followerId: req.user!.id },
     select: { followingId: true }
   });
-  const followingIds = new Set(following.map(u => u.followingId));
+  const followingIdsArray = following.map(u => u.followingId);
+
+  // Build privacy OR conditions safely (avoid empty `in: []` which can cause DB issues)
+  const privacyOrConditions: any[] = [
+    { privacy: 'PUBLIC' },
+    { authorId: req.user!.id },
+  ];
+
+  // Only add FOLLOWERS_ONLY condition if user actually follows someone
+  if (followingIdsArray.length > 0) {
+    privacyOrConditions.push({
+      AND: [
+        { privacy: 'FOLLOWERS_ONLY' },
+        { authorId: { in: followingIdsArray } }
+      ]
+    });
+  }
 
   const whereClause: any = {
     isActive: true,
     AND: [
-      {
-        OR: [
-          { privacy: 'PUBLIC' },
-          { authorId: req.user!.id },
-          {
-            AND: [
-              { privacy: 'FOLLOWERS_ONLY' },
-              { authorId: { in: followingIds } }
-            ]
-          }
-        ]
-      }
+      { OR: privacyOrConditions }
     ]
   };
 
   // If follow-only filter is active
   if (followingOnly === 'true') {
-    whereClause.AND.push({
-      authorId: { in: [...Array.from(followingIds), req.user!.id] }
-    });
+    if (followingIdsArray.length > 0) {
+      whereClause.AND.push({
+        authorId: { in: [...followingIdsArray, req.user!.id] }
+      });
+    } else {
+      // User follows nobody — only show their own posts
+      whereClause.AND.push({ authorId: req.user!.id });
+    }
   } else if (universityOnly === 'true') {
     const userProfile = await prisma.user.findUnique({
       where: { id: req.user!.id },
@@ -153,62 +163,47 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
     }
   }
 
-  const posts = await prisma.post.findMany({
-    where: whereClause,
-    include: {
-      author: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          profileImage: true,
-          year: true,
-          university: {
-            select: {
-              name: true
+  const [posts, total] = await Promise.all([
+    prisma.post.findMany({
+      where: whereClause,
+      include: {
+        author: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            profileImage: true,
+            year: true,
+            university: {
+              select: { name: true }
             }
           }
-        }
-      },
-      _count: {
-        select: {
-          likes: true,
-          comments: true
-        }
-      },
-      likes: {
-        where: {
-          userId: req.user!.id
         },
-        select: {
-          id: true
+        _count: {
+          select: {
+            likes: true,
+            comments: true
+          }
+        },
+        likes: {
+          where: { userId: req.user!.id },
+          select: { id: true }
         }
-      }
-    },
-    skip: offset,
-    take: Number(limit),
-    orderBy: { createdAt: 'desc' }
-  });
+      },
+      skip: offset,
+      take: Number(limit),
+      orderBy: { createdAt: 'desc' }
+    }),
+    prisma.post.count({ where: whereClause })
+  ]);
 
   // Get user roles to check if super admin
   const user = await prisma.user.findUnique({
     where: { id: req.user!.id },
-    include: {
-      roles: {
-        include: {
-          role: true
-        }
-      }
-    }
+    select: { roles: { include: { role: true } } }
   });
-
   const isSuperAdmin = user?.roles.some(ur => ur.role.name === 'SUPER_ADMIN') || false;
-
-  const total = await prisma.post.count({
-    where: whereClause
-  });
-
-
+  const followingSet = new Set(followingIdsArray);
 
   res.json({
     success: true,
@@ -223,7 +218,7 @@ router.get('/', asyncHandler(async (req: AuthRequest, res) => {
       updatedAt: post.updatedAt,
       author: post.author,
       isLiked: post.likes.length > 0,
-      isFollowing: followingIds.has(post.author.id),
+      isFollowing: followingSet.has(post.author.id),
       likes: post._count.likes,
       comments: post._count.comments,
       canEdit: post.author.id === req.user!.id || isSuperAdmin,

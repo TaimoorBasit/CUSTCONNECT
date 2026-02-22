@@ -68,6 +68,10 @@ router.get('/direct/:userId', authenticateToken, asyncHandler(async (req: AuthRe
     const currentUserId = req.user!.id;
     const targetUserId = req.params.userId;
 
+    if (currentUserId === targetUserId) {
+        throw createError('You cannot message yourself', 400);
+    }
+
     console.log(`Checking direct conversation between ${currentUserId} and ${targetUserId}`);
 
     try {
@@ -186,6 +190,57 @@ router.post('/group', authenticateToken, asyncHandler(async (req: AuthRequest, r
     });
 }));
 
+// Get a single conversation with messages
+router.get('/:conversationId', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
+    const { conversationId } = req.params;
+    const userId = req.user!.id;
+
+    const conversation = await prisma.conversation.findUnique({
+        where: { id: conversationId },
+        include: {
+            messages: {
+                orderBy: { createdAt: 'asc' },
+                include: {
+                    sender: {
+                        select: { id: true, firstName: true, lastName: true, profileImage: true }
+                    }
+                }
+            },
+            members: {
+                include: {
+                    user: {
+                        select: { id: true, firstName: true, lastName: true, profileImage: true }
+                    }
+                }
+            }
+        }
+    });
+
+    if (!conversation) {
+        throw createError('Conversation not found', 404);
+    }
+
+    // Check if user is member
+    const isMember = conversation.members.some(m => m.userId === userId);
+    if (!isMember) {
+        throw createError('You are not a member of this conversation', 403);
+    }
+
+    // Update last read
+    await prisma.conversationMember.update({
+        where: { userId_conversationId: { userId, conversationId } },
+        data: { lastReadAt: new Date() }
+    });
+
+    res.json({
+        success: true,
+        conversation: {
+            ...conversation,
+            partner: !conversation.isGroup ? conversation.members.find(m => m.userId !== userId)?.user : null
+        }
+    });
+}));
+
 // Send a message to a conversation
 router.post('/:conversationId', authenticateToken, asyncHandler(async (req: AuthRequest, res) => {
     const senderId = req.user!.id;
@@ -219,21 +274,34 @@ router.post('/:conversationId', authenticateToken, asyncHandler(async (req: Auth
     });
 
     // Update conversation updatedAt
-    await prisma.conversation.update({
+    const updatedConversation = await prisma.conversation.update({
         where: { id: conversationId },
-        data: { updatedAt: new Date() }
+        data: { updatedAt: new Date() },
+        include: { members: true }
     });
 
-    // Update last read for current user (since they sent it)
+    // Update last read for current user
     await prisma.conversationMember.update({
         where: { userId_conversationId: { userId: senderId, conversationId } },
         data: { lastReadAt: new Date() }
     });
 
-    // Emit real-time message
+    // Emit real-time message to the room
     io.to(conversationId).emit('new-message', {
         conversationId,
         message
+    });
+
+    // Also emit to individual members for notifications
+    updatedConversation.members.forEach(member => {
+        if (member.userId !== senderId) {
+            io.to(member.userId).emit('notification', {
+                type: 'NEW_MESSAGE',
+                title: 'New Message',
+                message: `${message.sender.firstName}: ${content}`,
+                data: { conversationId, messageId: message.id }
+            });
+        }
     });
 
     res.status(201).json({
