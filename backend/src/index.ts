@@ -1,10 +1,14 @@
+import dotenv from 'dotenv';
+import path from 'path';
+
+// Load environment variables immediately
+dotenv.config();
+
 import express from 'express';
 import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import dotenv from 'dotenv';
-import path from 'path';
 import fs from 'fs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -34,8 +38,7 @@ import { ensureDirectories } from './utils/upload';
 import { errorHandler } from './middleware/errorHandler';
 import { authenticateToken } from './middleware/auth';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables already called at the top of the file
 
 const app = express();
 const server = createServer(app);
