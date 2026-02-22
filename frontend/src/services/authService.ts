@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+﻿import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import axiosRetry from 'axios-retry';
 import { User, RegisterData, ApiResponse } from '@/types';
 
@@ -28,11 +28,10 @@ class AuthService {
 
     // Add token to requests with retry logic
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      // Read from new key (cc_token) or fall back to legacy key (token)
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (token) {
-        // Clean token (remove any whitespace)
-        const cleanToken = token.trim();
-        config.headers.Authorization = `Bearer ${cleanToken}`;
+        config.headers.Authorization = `Bearer ${token.trim()}`;
       }
       return config;
     }, (error) => {
@@ -45,7 +44,7 @@ class AuthService {
       (error) => {
         // Handle network errors
         if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
-          console.error('❌ Network error:', {
+          console.error('âŒ Network error:', {
             message: error.message,
             code: error.code,
             baseURL: this.api.defaults.baseURL,
@@ -171,7 +170,7 @@ class AuthService {
 
   async getCurrentUser(): Promise<User> {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
       }
@@ -297,6 +296,7 @@ class AuthService {
 }
 
 export const authService = new AuthService();
+
 
 
 

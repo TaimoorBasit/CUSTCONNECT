@@ -4,13 +4,8 @@ import { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import LoadingSpinner from '@/components/LoadingSpinner';
 import toast from 'react-hot-toast';
-import Image from 'next/image';
 import Link from 'next/link';
-
-const BACKGROUND_IMAGE =
-  'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=1600&q=80';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,17 +18,13 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
       await login(email, password);
-      toast.success('Login successful!');
       router.push('/dashboard');
     } catch (error: any) {
-      if (error.data && error.data.isVerified === false) {
-        toast.error('Email not verified. Redirecting...');
-        setTimeout(() => {
-          router.push(`/auth/verify-email?email=${encodeURIComponent(error.data.email)}`);
-        }, 1500);
+      if (error.data?.isVerified === false) {
+        toast.error('Email not verified. Redirecting…');
+        setTimeout(() => router.push(`/auth/verify-email?email=${encodeURIComponent(error.data.email)}`), 1500);
       } else {
         toast.error(error.message || 'Login failed');
       }
@@ -43,139 +34,89 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex bg-gray-900">
-      <div className="hidden lg:block relative w-1/2 bg-blue-900">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url(${BACKGROUND_IMAGE})` }}
-        />
-        <div className="absolute inset-0 bg-blue-900/70" />
-        <div className="relative z-10 flex h-full flex-col justify-center p-12 text-white">
-          <div className="mb-6">
-            <Image
-              src="/logo.png"
-              alt="CustConnect"
-              width={600}
-              height={200}
-              className="h-64 w-auto object-contain brightness-125"
-              priority
-            />
-          </div>
-          <p className="text-lg text-blue-100 max-w-lg">
-            Your all-in-one digital hub for campus life. Connect with friends, stay up to date with
-            events, and access the services you need to thrive at university.
-          </p>
-        </div>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center px-6">
+      {/* Logo / wordmark */}
+      <div className="mb-10 text-center">
+        <h1 className="text-3xl font-bold tracking-tight text-neutral-900">
+          Cust<span className="text-indigo-700">Connect</span>
+        </h1>
+        <p className="mt-2 text-sm text-neutral-500">Your digital campus hub</p>
       </div>
 
-      <div className="flex-1 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
-        <div className="max-w-md w-full space-y-8">
+      {/* Card */}
+      <div className="w-full max-w-sm">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
           <div>
-            <div className="mt-6 text-center">
-              <Image
-                src="/logo.png"
-                alt="CustConnect"
-                width={500}
-                height={150}
-                className="h-48 w-auto object-contain mx-auto mb-6"
-                priority
-              />
-              <h2 className="text-3xl font-extrabold text-gray-900">
-                Sign in to your account
-              </h2>
-            </div>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              Your digital student hub
-            </p>
+            <label htmlFor="email" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+              Email
+            </label>
+            <input
+              id="email"
+              type="text"
+              autoComplete="username"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@university.edu"
+              className="w-full px-4 py-3 text-sm bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition"
+            />
           </div>
-          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
-            <div className="rounded-md shadow-sm -space-y-px">
-              <div>
-                <label htmlFor="email" className="sr-only">
-                  Email or Username
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="text"
-                  autoComplete="username"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Email or Username"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="relative">
-                <label htmlFor="password" className="sr-only">
-                  Password
-                </label>
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete="current-password"
-                  required
-                  className="appearance-none rounded-none relative block w-full px-3 py-2 pr-10 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
-                  placeholder="Password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-                <button
-                  type="button"
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5 text-gray-400" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5 text-gray-400" />
-                  )}
-                </button>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="text-sm">
-                <Link
-                  href="/auth/forgot-password"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Forgot your password?
-                </Link>
-              </div>
-            </div>
-
-            <div>
+          {/* Password */}
+          <div>
+            <label htmlFor="password" className="block text-xs font-semibold text-neutral-500 uppercase tracking-wider mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 pr-11 text-sm bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-indigo-600/20 focus:border-indigo-600 transition"
+              />
               <button
-                type="submit"
-                disabled={loading}
-                className="login-btn group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 px-3.5 flex items-center text-neutral-400 hover:text-neutral-600 transition"
               >
-                {loading ? <LoadingSpinner size="sm" /> : 'Sign in'}
+                {showPassword ? <EyeSlashIcon className="w-4 h-4" /> : <EyeIcon className="w-4 h-4" />}
               </button>
             </div>
-
-            <div className="form-footer">
-              <span className="text-sm text-gray-600">
-                Don't have an account?{' '}
-                <Link
-                  href="/auth/register"
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Sign up
-                </Link>
-              </span>
+            <div className="mt-2 text-right">
+              <Link href="/auth/forgot-password" className="text-xs text-indigo-600 hover:text-indigo-800 font-medium transition">
+                Forgot password?
+              </Link>
             </div>
-          </form>
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 bg-indigo-700 hover:bg-indigo-800 disabled:opacity-50 text-white text-sm font-semibold rounded-xl transition active:scale-[0.98]"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Signing in…
+              </span>
+            ) : 'Sign in'}
+          </button>
+        </form>
+
+        {/* Divider */}
+        <div className="mt-6 text-center text-sm text-neutral-500">
+          Don&apos;t have an account?{' '}
+          <Link href="/auth/register" className="text-indigo-700 font-semibold hover:text-indigo-900 transition">
+            Sign up
+          </Link>
         </div>
       </div>
     </div>
   );
 }
-
-
-
-
-
-

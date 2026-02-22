@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+﻿import axios, { AxiosInstance } from 'axios';
 
 export interface LostFoundItem {
   id: string;
@@ -42,7 +42,7 @@ class LostFoundService {
 
     // Add token to requests
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -98,4 +98,5 @@ class LostFoundService {
 }
 
 export const lostFoundService = new LostFoundService();
+
 

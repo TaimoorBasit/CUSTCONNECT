@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from 'axios';
+﻿import axios, { AxiosInstance, AxiosResponse } from 'axios';
 import { ApiResponse } from '@/types';
 
 class AdminService {
@@ -14,7 +14,7 @@ class AdminService {
 
     // Add token to requests
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -258,4 +258,5 @@ class AdminService {
 }
 
 export const adminService = new AdminService();
+
 

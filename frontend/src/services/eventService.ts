@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+﻿import axios, { AxiosResponse } from 'axios';
 import { ApiResponse, Event } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -14,7 +14,7 @@ class EventService {
   constructor() {
     // Add token to requests
     this.api.interceptors.request.use((config) => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -133,4 +133,5 @@ class EventService {
 }
 
 export const eventService = new EventService();
+
 

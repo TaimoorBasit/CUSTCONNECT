@@ -5,9 +5,11 @@ const config: CapacitorConfig = {
   appName: 'CustConnect',
   webDir: 'out',
   server: {
+    // Point to live Vercel deployment so token/localStorage persists correctly
+    url: 'https://cust-connect.vercel.app',
+    cleartext: false,
     androidScheme: 'https',
-    cleartext: false
-  }
+  },
 };
 
 export default config;

@@ -28,8 +28,38 @@ interface RegisterData {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// ---------------------------------------------------------------------------
+// Persistent storage helpers
+// localStorage is persisted across Capacitor app restarts automatically.
+// We also cache the user object so the app shows content immediately
+// while the network call to verify the token is in-flight.
+// ---------------------------------------------------------------------------
+const TOKEN_KEY = 'cc_token';
+const USER_KEY = 'cc_user';
+
+function saveToken(token: string) {
+  try { localStorage.setItem(TOKEN_KEY, token); } catch { }
+}
+function getToken(): string | null {
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+}
+function clearToken() {
+  try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); } catch { }
+}
+function saveUser(user: User) {
+  try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch { }
+}
+function loadCachedUser(): User | null {
+  try {
+    const raw = localStorage.getItem(USER_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+// ---------------------------------------------------------------------------
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  // Start from cached user so the app shows content immediately — no flicker
+  const [user, setUser] = useState<User | null>(loadCachedUser);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,126 +67,83 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAuth = async () => {
+    const token = getToken();
+    if (!token) {
+      setUser(null);
+      setLoading(false);
+      return;
+    }
+
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        setLoading(false);
-        return;
-      }
+      // Validate token against the server
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+      saveUser(userData);           // keep cache fresh
+    } catch (error: any) {
+      const isNetworkError =
+        !error.response ||
+        error.message?.includes('Network') ||
+        error.message?.includes('Unable to connect') ||
+        error.code === 'ERR_NETWORK' ||
+        error.code === 'ECONNABORTED';
 
-      // Only remove token if it's a 401 (unauthorized) - means token is invalid/expired
-      try {
-        const userData = await authService.getCurrentUser();
-        setUser(userData);
-      } catch (error: any) {
-        // Handle network errors gracefully
-        if (error.message?.includes('Unable to connect') || error.message?.includes('Network error') || !error.response) {
-          console.error('Auth check failed - network error:', error.message);
-          // Don't clear token on network errors - user might just be offline or server is down
-          // Set user to null temporarily but keep token
-          setUser(null);
-          return; // Exit early, don't clear token
-        }
-
-        // Only clear token if it's an authentication error (401)
-        if (error.response?.status === 401 || error.message?.includes('Authentication') || error.message?.includes('Session expired')) {
-          console.error('Auth check failed - invalid token:', error);
-          localStorage.removeItem('token');
-          setUser(null);
-        } else {
-          // For other errors, log but don't clear token
-          console.error('Auth check failed - unknown error:', error);
-          setUser(null);
-        }
+      if (isNetworkError) {
+        // Offline / server cold-starting — trust the cached user so the
+        // user stays logged in and the app remains usable.
+        console.warn('[Auth] Network error during checkAuth — keeping cached session');
+        // user state already set from loadCachedUser, leave it
+      } else if (error.response?.status === 401) {
+        // Token is genuinely invalid/expired — force re-login
+        console.warn('[Auth] Token rejected (401) — logging out');
+        clearToken();
+        setUser(null);
+      } else {
+        // Other server error (5xx etc.) — keep cached session
+        console.warn('[Auth] Server error during checkAuth — keeping cached session');
       }
-    } catch (error) {
-      console.error('Auth check error:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const login = async (email: string, password: string) => {
-    try {
-      // Clear any existing invalid token
-      localStorage.removeItem('token');
+    clearToken(); // Clear stale token first
+    const response = await authService.login(email, password);
 
-      const response = await authService.login(email, password);
+    if (!response.token?.trim()) throw new Error('Invalid token received from server');
+    if (!response.user?.id) throw new Error('Invalid user data received from server');
 
-      // Validate token before storing
-      if (!response.token || response.token.trim().length === 0) {
-        throw new Error('Invalid token received from server');
-      }
-
-      // Store token securely
-      localStorage.setItem('token', response.token.trim());
-
-      // Validate user data
-      if (!response.user || !response.user.id) {
-        throw new Error('Invalid user data received from server');
-      }
-
-      setUser(response.user);
-    } catch (error: any) {
-      // Clear token on any error
-      localStorage.removeItem('token');
-      setUser(null);
-      throw error;
-    }
+    saveToken(response.token.trim());
+    saveUser(response.user);
+    setUser(response.user);
   };
 
   const register = async (userData: RegisterData) => {
-    try {
-      const response = await authService.register(userData);
-      // Don't auto-login after registration, user needs to verify email
-    } catch (error) {
-      throw error;
-    }
+    await authService.register(userData);
+    // Don't auto-login — user must verify email first
   };
 
   const logout = () => {
-    localStorage.removeItem('token');
+    clearToken();
     setUser(null);
   };
 
   const updateProfile = async (data: Partial<User>) => {
-    try {
-      const updatedUser = await authService.updateProfile(data);
-      setUser(updatedUser);
-    } catch (error) {
-      throw error;
-    }
+    const updatedUser = await authService.updateProfile(data);
+    setUser(updatedUser);
+    saveUser(updatedUser);
   };
 
   const verifyEmail = async (email: string, otp: string) => {
-    try {
-      await authService.verifyEmail(email, otp);
-    } catch (error) {
-      throw error;
-    }
+    await authService.verifyEmail(email, otp);
   };
 
   const resendOTP = async (email: string) => {
-    try {
-      await authService.resendOTP(email);
-    } catch (error) {
-      throw error;
-    }
-  };
-
-  const value = {
-    user,
-    loading,
-    login,
-    register,
-    logout,
-    updateProfile,
-    verifyEmail,
-    resendOTP
+    await authService.resendOTP(email);
   };
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile, verifyEmail, resendOTP }}>
       {children}
     </AuthContext.Provider>
   );
@@ -164,17 +151,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!context) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 }
-
-
-
-
-
-
-
-
-

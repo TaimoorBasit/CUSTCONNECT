@@ -1,4 +1,4 @@
-import axios, { AxiosResponse } from 'axios';
+﻿import axios, { AxiosResponse } from 'axios';
 import { User } from '@/types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
@@ -13,7 +13,7 @@ class UserService {
 
     constructor() {
         this.api.interceptors.request.use((config) => {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
             if (token) {
                 config.headers.Authorization = `Bearer ${token}`;
             }
@@ -83,3 +83,4 @@ class UserService {
 }
 
 export const userService = new UserService();
+
