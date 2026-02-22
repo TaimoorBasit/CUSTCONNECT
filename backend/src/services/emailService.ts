@@ -3,9 +3,7 @@ import { Resend } from 'resend';
 import dotenv from 'dotenv';
 import path from 'path';
 
-// Ensure environment variables are loaded
-dotenv.config({ path: path.resolve(process.cwd(), '.env') });
-dotenv.config({ path: path.resolve(process.cwd(), 'backend', '.env') });
+// Environment variables are loaded in index.ts
 
 class EmailService {
   private transporter: nodemailer.Transporter;
@@ -17,9 +15,11 @@ class EmailService {
   constructor() {
     const { SMTP_EMAIL, SMTP_PASS, SMTP_FROM, EMAIL_FROM, FRONTEND_URL, RESEND_API_KEY } = process.env;
 
+    console.log('[EmailService] Scanning environment for credentials...');
+
     // Initialize Resend if API key is provided
     if (RESEND_API_KEY) {
-      console.log('[EmailService] Initializing with Resend API...');
+      console.log('[EmailService] Resend API Key found.');
       this.resend = new Resend(RESEND_API_KEY);
     }
 
@@ -27,27 +27,20 @@ class EmailService {
     this.hasSmtpConfig = Boolean(SMTP_EMAIL && SMTP_PASS);
 
     // Use SMTP_FROM or EMAIL_FROM if provided, otherwise fallback to SMTP_EMAIL
-    // For Gmail, the 'from' email should ideally match the SMTP_EMAIL account
     this.fromAddress = SMTP_FROM || EMAIL_FROM || `"CustConnect" <${SMTP_EMAIL}>` || 'onboarding@resend.dev';
-    this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
+    this.frontendUrl = FRONTEND_URL || 'https://custconnect.vercel.app';
 
     if (this.hasSmtpConfig) {
-      console.log(`[EmailService] SUCCESS: SMTP credentials detected for ${SMTP_EMAIL}`);
-      console.log(`[EmailService] From header will be: ${this.fromAddress}`);
-      console.log(`[EmailService] Target: smtp.gmail.com:587 (STARTTLS)`);
-
+      console.log(`[EmailService] SMTP Config: Email=${SMTP_EMAIL}, From=${this.fromAddress}`);
       this.transporter = nodemailer.createTransport({
-        service: 'gmail', // Using 'gmail' shortcut is more reliable for Nodemailer
+        service: 'gmail',
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
-        },
-        tls: {
-          rejectUnauthorized: false
         }
       });
     } else {
-      console.error('[EmailService] CRITICAL: SMTP not configured. Missing credentials.');
+      console.warn('[EmailService] SMTP NOT CONFIGURED - Check Railway/Vercel variables!');
       this.transporter = nodemailer.createTransport({
         jsonTransport: true
       });
