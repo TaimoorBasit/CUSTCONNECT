@@ -515,6 +515,7 @@ interface PostCardProps {
 function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: PostCardProps) {
   const router = useRouter();
   const [followLoading, setFollowLoading] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const isMe = post.author.id === currentUserId;
 
   const handleFollowToggle = async () => {
@@ -535,7 +536,13 @@ function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: Po
     }
   };
 
-  const getImageUrl = (path: string) => path.startsWith('http') ? path : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${path}`;
+  const getImageUrl = (filePath: string) => {
+    if (!filePath) return '';
+    if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
+    // Construct full URL using the backend base URL
+    const base = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
+    return `${base}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
+  };
 
   return (
     <div className="bg-card border-y md:border md:rounded-[24px] border-border/10 overflow-hidden shadow-sm hover:shadow-md transition-all">
@@ -579,19 +586,21 @@ function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: Po
       </div>
 
       {/* Content Image/Video */}
-      {(post.imageUrl || post.videoUrl) && (
+      {(post.imageUrl || post.videoUrl) && !imageError && (
         <div className="aspect-square bg-secondary/10 flex items-center justify-center overflow-hidden">
           {post.videoUrl || (post.imageUrl && (post.imageUrl.toLowerCase().endsWith('.mp4') || post.imageUrl.toLowerCase().endsWith('.mov'))) ? (
             <video
               src={getImageUrl(post.videoUrl || post.imageUrl!)}
               className="w-full h-full object-cover"
               controls
+              onError={() => setImageError(true)}
             />
           ) : post.imageUrl ? (
             <img
               src={getImageUrl(post.imageUrl)}
               className="w-full h-full object-cover"
               alt="Post content"
+              onError={() => setImageError(true)}
             />
           ) : null}
         </div>
@@ -611,9 +620,11 @@ function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: Po
             <button className="group transition-transform active:scale-125">
               <ChatBubbleOvalLeftIcon className="w-7 h-7 text-foreground hover:text-muted-foreground" />
             </button>
-            <button onClick={() => onMessage(post.author.id)} className="group transition-transform active:scale-125">
-              <PaperAirplaneIcon className="w-7 h-7 text-foreground -rotate-45 hover:text-muted-foreground mr-1" />
-            </button>
+            {!isMe && (
+              <button onClick={() => onMessage(post.author.id)} className="group transition-transform active:scale-125">
+                <PaperAirplaneIcon className="w-7 h-7 text-foreground -rotate-45 hover:text-muted-foreground mr-1" />
+              </button>
+            )}
           </div>
           <button className="group">
             <ShareIcon className="w-7 h-7 text-foreground hover:text-muted-foreground" />
@@ -629,18 +640,22 @@ function PostCard({ post, onLike, currentUserId, onMessage, onFollowChange }: Po
             <span className="text-[13px] font-black">{post.likes.toLocaleString()} likes</span>
           </div>
 
-          <div className="text-[14px]">
-            <Link href={`/dashboard/profile?id=${post.author.id}`} className="font-black mr-2 hover:text-primary transition-colors">
-              {post.author.firstName}
-            </Link>
-            <span className="text-foreground/80 font-medium leading-relaxed">{post.content}</span>
-          </div>
+          {post.content && (
+            <div className="text-[14px] mt-1">
+              <Link href={`/dashboard/profile?id=${post.author.id}`} className="font-black mr-1.5 hover:text-primary transition-colors">
+                {post.author.firstName}
+              </Link>
+              <span className="text-foreground/80 font-medium leading-relaxed">{post.content}</span>
+            </div>
+          )}
 
-          <button className="text-[13px] font-bold text-muted-foreground hover:text-foreground transition-colors mt-1 block">
-            View all {post.comments} comments
-          </button>
+          {post.comments > 0 && (
+            <button className="text-[13px] font-bold text-muted-foreground hover:text-foreground transition-colors mt-1 block">
+              View all {post.comments} comments
+            </button>
+          )}
 
-          <span className="text-[10px] text-muted-foreground/60 font-black uppercase tracking-widest mt-1 block">
+          <span className="text-[11px] text-muted-foreground/50 font-medium mt-1.5 block">
             {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
           </span>
         </div>
