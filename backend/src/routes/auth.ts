@@ -196,7 +196,9 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Send OTP email (Non-blocking to prevent frontend timeouts)
-  console.log(`[Auth] OTP for ${finalEmail} is: ${otp} (Logged for recovery)`);
+  console.log('******************************************');
+  console.log(`  CRITICAL: OTP FOR ${finalEmail} IS: ${otp}`);
+  console.log('******************************************');
   console.log(`[Auth] Triggering OTP delivery for: ${finalEmail}`);
   emailService.sendOTP(finalEmail, otp).then(sent => {
     console.log(`[Auth] OTP delivery result for ${finalEmail}: ${sent ? 'SUCCESS' : 'FAILED'}`);
