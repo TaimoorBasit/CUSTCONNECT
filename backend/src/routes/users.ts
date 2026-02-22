@@ -184,6 +184,39 @@ router.post('/profile/picture', uploadLostFound.single('image'), asyncHandler(as
   });
 }));
 
+// Search users (MUST be before /:id to avoid being swallowed by the wildcard route)
+router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
+  const { q } = req.query;
+  if (!q || typeof q !== 'string') {
+    return res.json({ success: true, users: [] });
+  }
+
+  const users = await prisma.user.findMany({
+    where: {
+      OR: [
+        { firstName: { contains: q, mode: 'insensitive' } },
+        { lastName: { contains: q, mode: 'insensitive' } },
+        { email: { contains: q, mode: 'insensitive' } }
+      ],
+      isActive: true,
+      NOT: { id: req.user!.id }
+    },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      profileImage: true,
+      email: true
+    },
+    take: 10
+  });
+
+  res.json({
+    success: true,
+    users
+  });
+}));
+
 // Get user by ID
 router.get('/:id', asyncHandler(async (req: AuthRequest, res) => {
   const { id } = req.params as any;
@@ -414,38 +447,8 @@ router.get('/:id/following', asyncHandler(async (req: AuthRequest, res) => {
   });
 }));
 
-// Search users
-router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
-  const { q } = req.query;
-  if (!q || typeof q !== 'string') {
-    return res.json({ success: true, users: [] });
-  }
-
-  const users = await prisma.user.findMany({
-    where: {
-      OR: [
-        { firstName: { contains: q } },
-        { lastName: { contains: q } },
-        { email: { contains: q } }
-      ],
-      isActive: true,
-      NOT: { id: req.user!.id }
-    },
-    select: {
-      id: true,
-      firstName: true,
-      lastName: true,
-      profileImage: true,
-      email: true
-    },
-    take: 10
-  });
-
-  res.json({
-    success: true,
-    users
-  });
-}));
+// Search users route is now defined before /:id — see above
+// (Removed duplicate search route from here to avoid route conflicts)
 
 export default router;
 

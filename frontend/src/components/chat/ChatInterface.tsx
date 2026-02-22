@@ -33,6 +33,10 @@ export default function ChatInterface() {
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [selectedMembers, setSelectedMembers] = useState<any[]>([]);
+    // Sidebar DM search (separate from group creation search)
+    const [dmSearchQuery, setDmSearchQuery] = useState('');
+    const [dmSearchResults, setDmSearchResults] = useState<any[]>([]);
+    const [dmSearching, setDmSearching] = useState(false);
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const searchParams = useSearchParams();
@@ -150,6 +154,23 @@ export default function ChatInterface() {
         }
     };
 
+    const handleDmSearch = async (query: string) => {
+        setDmSearchQuery(query);
+        if (query.length < 2) {
+            setDmSearchResults([]);
+            return;
+        }
+        setDmSearching(true);
+        try {
+            const results = await userService.searchUsers(query);
+            setDmSearchResults(results);
+        } catch (error) {
+            console.error('DM search failed');
+        } finally {
+            setDmSearching(false);
+        }
+    };
+
     const handleCreateGroup = async () => {
         if (!groupName || selectedMembers.length < 1) {
             toast.error('Please provide a name and members');
@@ -192,13 +213,46 @@ export default function ChatInterface() {
                             <PlusIcon className="w-6 h-6 stroke-[3]" />
                         </button>
                     </div>
+                    {/* Search box */}
                     <div className="relative group">
                         <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/40 group-focus-within:text-primary transition-colors" />
                         <input
                             type="text"
-                            placeholder="Search messages..."
+                            value={dmSearchQuery}
+                            onChange={(e) => handleDmSearch(e.target.value)}
+                            placeholder="Search people..."
                             className="w-full bg-secondary/30 border-none rounded-2xl py-4 pl-12 pr-4 text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all placeholder:text-muted-foreground/30"
                         />
+                        {dmSearchResults.length > 0 && (
+                            <div className="absolute top-full left-0 right-0 mt-2 bg-background border border-border/10 rounded-2xl shadow-xl overflow-hidden z-30">
+                                {dmSearchResults.map(u => (
+                                    <button
+                                        key={u.id}
+                                        onClick={() => {
+                                            setDmSearchQuery('');
+                                            setDmSearchResults([]);
+                                            handleDirectChat(u.id);
+                                        }}
+                                        className="w-full px-4 py-3 flex items-center gap-3 hover:bg-secondary/40 text-left transition-colors"
+                                    >
+                                        <div className="w-9 h-9 rounded-[14px] bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
+                                            {u.profileImage
+                                                ? <img src={u.profileImage} className="w-full h-full object-cover" alt="" />
+                                                : <span className="text-xs font-black text-primary">{u.firstName[0]}</span>}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <span className="text-sm font-black truncate">{u.firstName} {u.lastName}</span>
+                                            <span className="text-[10px] text-muted-foreground font-medium truncate">{u.email}</span>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        {dmSearching && (
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            </div>
+                        )}
                     </div>
                 </div>
 
