@@ -233,7 +233,12 @@ app.get('/api/test-email', async (req, res) => {
     const success = await emailService.sendEmail(to, 'CustConnect Diagnostic', '<h1>Work!</h1><p>Test email successful.</p>');
     return res.json({ success, message: success ? 'Sent' : 'Failed' });
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error('[Diagnostic] Test email error:', error);
+    return res.status(500).json({
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      details: error.code || 'No error code'
+    });
   }
 });
 

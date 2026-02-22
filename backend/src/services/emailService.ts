@@ -15,7 +15,7 @@ class EmailService {
   private readonly frontendUrl: string;
 
   constructor() {
-    const { SMTP_EMAIL, SMTP_PASS, SMTP_FROM, FRONTEND_URL, RESEND_API_KEY } = process.env;
+    const { SMTP_EMAIL, SMTP_PASS, SMTP_FROM, EMAIL_FROM, FRONTEND_URL, RESEND_API_KEY } = process.env;
 
     // Initialize Resend if API key is provided
     if (RESEND_API_KEY) {
@@ -25,9 +25,9 @@ class EmailService {
 
     // Validate SMTP fallback
     this.hasSmtpConfig = Boolean(SMTP_EMAIL && SMTP_PASS);
-    // Use SMTP_FROM if provided, otherwise fallback to SMTP_EMAIL
+    // Use SMTP_FROM or EMAIL_FROM if provided, otherwise fallback to SMTP_EMAIL
     // Clean up quotes if present
-    const rawFrom = SMTP_FROM || SMTP_EMAIL || 'onboarding@resend.dev';
+    const rawFrom = SMTP_FROM || EMAIL_FROM || SMTP_EMAIL || 'onboarding@resend.dev';
     this.fromAddress = rawFrom.replace(/['"]/g, '');
     this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
 
@@ -139,7 +139,12 @@ class EmailService {
         console.log(`[EmailService] Email sent via SMTP: ${info.messageId}`);
         return true;
       } catch (error: any) {
-        console.error('[EmailService] SMTP failed:', error.message);
+        console.error('[EmailService] SMTP failed. Error details:', {
+          message: error.message,
+          code: error.code,
+          command: error.command,
+          response: error.response
+        });
         return false;
       }
     }
