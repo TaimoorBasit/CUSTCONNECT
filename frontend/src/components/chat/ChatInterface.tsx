@@ -13,7 +13,8 @@ import {
     UserGroupIcon,
     ArrowLeftIcon,
     MagnifyingGlassIcon,
-    XMarkIcon
+    XMarkIcon,
+    EllipsisHorizontalIcon,
 } from '@heroicons/react/24/outline';
 import { userService } from '@/services/userService';
 import Link from 'next/link';
@@ -154,21 +155,26 @@ export default function ChatInterface() {
         }
     };
 
-    const handleDmSearch = async (query: string) => {
+    const handleDmSearch = (query: string) => {
         setDmSearchQuery(query);
         if (query.length < 2) {
             setDmSearchResults([]);
+            setDmSearching(false);
             return;
         }
         setDmSearching(true);
-        try {
-            const results = await userService.searchUsers(query);
-            setDmSearchResults(results);
-        } catch (error) {
-            console.error('DM search failed');
-        } finally {
-            setDmSearching(false);
-        }
+        // Debounce: wait 350ms after user stops typing
+        clearTimeout((handleDmSearch as any)._timer);
+        (handleDmSearch as any)._timer = setTimeout(async () => {
+            try {
+                const results = await userService.searchUsers(query);
+                setDmSearchResults(results);
+            } catch {
+                console.error('DM search failed');
+            } finally {
+                setDmSearching(false);
+            }
+        }, 350);
     };
 
     const handleCreateGroup = async () => {

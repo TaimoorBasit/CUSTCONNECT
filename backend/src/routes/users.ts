@@ -187,16 +187,18 @@ router.post('/profile/picture', uploadLostFound.single('image'), asyncHandler(as
 // Search users (MUST be before /:id to avoid being swallowed by the wildcard route)
 router.get('/search', asyncHandler(async (req: AuthRequest, res) => {
   const { q } = req.query;
-  if (!q || typeof q !== 'string') {
+  if (!q || typeof q !== 'string' || q.trim().length < 1) {
     return res.json({ success: true, users: [] });
   }
+
+  const searchTerm = q.trim();
 
   const users = await prisma.user.findMany({
     where: {
       OR: [
-        { firstName: { contains: q, mode: 'insensitive' } },
-        { lastName: { contains: q, mode: 'insensitive' } },
-        { email: { contains: q, mode: 'insensitive' } }
+        { firstName: { contains: searchTerm } },
+        { lastName: { contains: searchTerm } },
+        { email: { contains: searchTerm } }
       ],
       isActive: true,
       NOT: { id: req.user!.id }
