@@ -63,45 +63,10 @@ class EmailService {
     console.log(`[EmailService] ATTEMPTING SEND: To=${to}, Subject=${subject}`);
     console.log(`[EmailService] Config State: SMTP=${this.hasSmtpConfig}, Resend=${Boolean(this.resend)}`);
 
-    // 1. Try Vercel Bridge (Most reliable for Railway/Cloud)
-    // Automatically try bridge if keys are present, unless explicitly disabled
-    const bridgeDisabled = process.env.EMAIL_BRIDGE_ENABLED === 'false';
-    if (!bridgeDisabled && INTERNAL_EMAIL_KEY) {
-      const cleanBaseUrl = (FRONTEND_URL || 'https://custconnect.vercel.app').replace(/\/$/, '');
-      const bridgeUrl = `${cleanBaseUrl}/api/send-email`;
+    // Vercel Bridge is disabled because the frontend is using 'output: export'
+    // which prevents API routes from functioning on Vercel.
 
-      try {
-        console.log(`[EmailService] Attempting Bridge: ${bridgeUrl}...`);
-
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
-
-        const response = await fetch(bridgeUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to,
-            subject,
-            html,
-            secret: INTERNAL_EMAIL_KEY
-          }),
-          signal: controller.signal
-        });
-        clearTimeout(timeoutId);
-
-        if (response.ok) {
-          console.log('[EmailService] Success: Email sent via Vercel Bridge');
-          return true;
-        }
-
-        const errorData = await response.json().catch(() => ({}));
-        console.warn(`[EmailService] Bridge failed (${response.status}):`, (errorData as any).error || 'Unknown error');
-      } catch (vError: any) {
-        console.warn('[EmailService] Bridge error:', vError.message);
-      }
-    }
-
-    // 2. Try Resend API (Alternative Cloud Provider)
+    // 1. Try Resend API (Alternative Cloud Provider)
     if (this.resend) {
       try {
         console.log(`[EmailService] Attempting Resend API for ${to}...`);
