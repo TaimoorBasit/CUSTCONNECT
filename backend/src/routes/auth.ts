@@ -195,12 +195,10 @@ router.post('/register', asyncHandler(async (req: Request, res: Response) => {
     }
   });
 
-  // Send OTP email (Non-blocking: ensure it runs on next tick)
-  setTimeout(() => {
-    emailService.sendOTP(finalEmail, otp).catch((emailError: any) => {
-      console.warn('Failed to send OTP email:', emailError.message);
-    });
-  }, 0);
+  // Send OTP email (Non-blocking)
+  emailService.sendOTP(finalEmail, otp).catch((emailError: any) => {
+    console.warn('Failed to send OTP email:', emailError.message);
+  });
 
   res.status(201).json({
     success: true,

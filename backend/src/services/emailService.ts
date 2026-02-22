@@ -24,17 +24,15 @@ class EmailService {
     this.frontendUrl = FRONTEND_URL || 'http://localhost:3000';
 
     if (this.hasSmtpConfig) {
-      console.log(`[EmailService] Configuring SMTP for ${SMTP_EMAIL}...`);
+      console.log(`[EmailService] Configuring SMTP for ${SMTP_EMAIL} using Gmail service...`);
       this.transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 587,
-        secure: false, // true for 465, false for other ports
+        service: 'gmail',
         auth: {
           user: SMTP_EMAIL,
           pass: SMTP_PASS
         },
         tls: {
-          rejectUnauthorized: false // Helps with self-signed certs in dev/some hosting
+          rejectUnauthorized: false
         }
       });
     } else {
@@ -51,12 +49,19 @@ class EmailService {
   async sendEmail(to: string, subject: string, html: string): Promise<boolean> {
     const { INTERNAL_EMAIL_KEY, FRONTEND_URL, EMAIL_BRIDGE_ENABLED } = process.env;
 
-    // Only try Vercel Bridge if explicitly enabled or if we have a secret
-    if (EMAIL_BRIDGE_ENABLED === 'true' && INTERNAL_EMAIL_KEY) {
-      const bridgeUrl = `${(FRONTEND_URL || 'https://custconnect.vercel.app').replace(/\/$/, '')}/api/send-email`;
+    // 1. Try Vercel Bridge (Most reliable for Railway)
+    const bridgeEnabled = process.env.EMAIL_BRIDGE_ENABLED === 'true';
+    if (bridgeEnabled && INTERNAL_EMAIL_KEY) {
+      const cleanBaseUrl = (FRONTEND_URL || 'https://custconnect.vercel.app').replace(/\/$/, '');
+      const bridgeUrl = `${cleanBaseUrl}/api/send-email`;
 
       try {
-        console.log(`[EmailService] Attempting Vercel Bridge: ${bridgeUrl}...`);
+        console.log(`[EmailService] Attempting Bridge: ${bridgeUrl}...`);
+
+        // Add a 5 second timeout to the bridge fetch
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
         const response = await fetch(bridgeUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -65,16 +70,19 @@ class EmailService {
             subject,
             html,
             secret: INTERNAL_EMAIL_KEY
-          })
+          }),
+          signal: controller.signal
         });
 
+        clearTimeout(timeoutId);
+
         if (response.ok) {
-          console.log('[EmailService] Email sent successfully via Bridge');
+          console.log('[EmailService] Sent via Bridge');
           return true;
         }
-        console.warn('[EmailService] Bridge failed with status:', response.status);
+        console.warn('[EmailService] Bridge failed:', response.status);
       } catch (vError: any) {
-        console.error('[EmailService] Bridge fetch failed:', vError.message);
+        console.warn('[EmailService] Bridge skipped:', vError.name === 'AbortError' ? 'Timeout' : vError.message);
       }
     }
 
