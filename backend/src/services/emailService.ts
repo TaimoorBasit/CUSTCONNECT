@@ -73,18 +73,15 @@ class EmailService {
     console.log(`[EmailService] ATTEMPTING SEND: To=${to}, Subject=${subject}`);
     console.log(`[EmailService] Config State: SMTP=${this.hasSmtpConfig}, Resend=${Boolean(this.resend)}`);
 
-    // 1. Try Vercel Bridge (Most reliable for Railway)
-    const bridgeEnabled = process.env.EMAIL_BRIDGE_ENABLED === 'true';
-    if (bridgeEnabled && INTERNAL_EMAIL_KEY) {
+    // 1. Try Vercel Bridge (Most reliable for Railway/Cloud)
+    // Automatically try bridge if keys are present, unless explicitly disabled
+    const bridgeDisabled = process.env.EMAIL_BRIDGE_ENABLED === 'false';
+    if (!bridgeDisabled && INTERNAL_EMAIL_KEY) {
       const cleanBaseUrl = (FRONTEND_URL || 'https://custconnect.vercel.app').replace(/\/$/, '');
       const bridgeUrl = `${cleanBaseUrl}/api/send-email`;
 
       try {
         console.log(`[EmailService] Attempting Bridge: ${bridgeUrl}...`);
-
-        // Add a 5 second timeout to the bridge fetch
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
 
         const response = await fetch(bridgeUrl, {
           method: 'POST',
@@ -94,27 +91,26 @@ class EmailService {
             subject,
             html,
             secret: INTERNAL_EMAIL_KEY
-          }),
-          signal: controller.signal
+          })
         });
 
-        clearTimeout(timeoutId);
-
         if (response.ok) {
-          console.log('[EmailService] Sent via Bridge');
+          console.log('[EmailService] Success: Email sent via Vercel Bridge');
           return true;
         }
-        console.warn('[EmailService] Bridge failed:', response.status);
+
+        const errorData = await response.json().catch(() => ({}));
+        console.warn(`[EmailService] Bridge failed (${response.status}):`, (errorData as any).error || 'Unknown error');
       } catch (vError: any) {
-        console.warn('[EmailService] Bridge skipped:', vError.name === 'AbortError' ? 'Timeout' : vError.message);
+        console.warn('[EmailService] Bridge error:', vError.message);
       }
     }
 
-    // 2. Try Resend API
+    // 2. Try Resend API (Alternative Cloud Provider)
     if (this.resend) {
       try {
         console.log(`[EmailService] Attempting Resend API for ${to}...`);
-        const fromHeader = this.fromAddress.includes('<') ? this.fromAddress : `CustConnect <${this.fromAddress}>`;
+        const fromHeader = `CustConnect <${this.fromAddress}>`;
 
         const { data, error } = await this.resend.emails.send({
           from: fromHeader,
@@ -124,7 +120,7 @@ class EmailService {
         });
 
         if (!error && data) {
-          console.log(`[EmailService] Email sent via Resend: ${data.id}`);
+          console.log(`[EmailService] Success: Email sent via Resend: ${data.id}`);
           return true;
         }
         console.error('[EmailService] Resend API Error:', error);
@@ -133,10 +129,10 @@ class EmailService {
       }
     }
 
-    // 3. Fallback to SMTP
+    // 3. Fallback to SMTP (Direct Connect)
     if (this.hasSmtpConfig) {
       try {
-        console.log(`[EmailService] Using SMTP for ${to}...`);
+        console.log(`[EmailService] Final Fallback: Attempting Direct SMTP for ${to}...`);
         const info = await this.transporter.sendMail({
           from: this.fromAddress,
           to,
@@ -144,13 +140,12 @@ class EmailService {
           html
         });
 
-        console.log(`[EmailService] Email sent via SMTP: ${info.messageId}`);
+        console.log(`[EmailService] Success: Email sent via SMTP: ${info.messageId}`);
         return true;
       } catch (error: any) {
-        console.error('[EmailService] SMTP failed. Error details:', {
+        console.error('[EmailService] Direct SMTP Failed (Common on Railway/Cloud):', {
           message: error.message,
           code: error.code,
-          command: error.command,
           response: error.response
         });
         return false;
