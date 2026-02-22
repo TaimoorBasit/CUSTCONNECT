@@ -58,18 +58,17 @@ class EmailService {
     const { INTERNAL_EMAIL_KEY, FRONTEND_URL, EMAIL_BRIDGE_ENABLED } = process.env;
 
     console.log(`[EmailService] ATTEMPTING SEND: To=${to}, Subject=${subject}`);
-    console.log(`[EmailService] Config State: SMTP=${this.hasSmtpConfig}, Resend=${Boolean(this.resend)}`);
 
     // 1. Try Vercel Bridge (Recommended for Railway)
-    const bridgeDisabled = process.env.EMAIL_BRIDGE_ENABLED === 'false';
-    const INTERNAL_EMAIL_KEY = process.env.INTERNAL_EMAIL_KEY;
+    const bridgeEnabled = EMAIL_BRIDGE_ENABLED !== 'false' && !!INTERNAL_EMAIL_KEY;
 
-    if (!bridgeDisabled && INTERNAL_EMAIL_KEY) {
-      const cleanBaseUrl = (this.frontendUrl || 'https://custconnect.vercel.app').replace(/\/$/, '');
+    if (bridgeEnabled) {
+      const baseUrl = FRONTEND_URL || 'https://custconnect.vercel.app';
+      const cleanBaseUrl = baseUrl.replace(/\/$/, '');
       const bridgeUrl = `${cleanBaseUrl}/api/send-email`;
 
       try {
-        console.log(`[EmailService] Attempting Vercel Bridge: ${bridgeUrl}...`);
+        console.log(`[EmailService] Calling Vercel Bridge: ${bridgeUrl}`);
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000);
