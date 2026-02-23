@@ -38,7 +38,7 @@ export const chatService = {
     getConversations: async (): Promise<Conversation[]> => {
         const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
         const response = await axios.get(`${API_URL}/messages/conversations`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token?.trim()}` }
         });
         return response.data.conversations;
     },
@@ -46,7 +46,7 @@ export const chatService = {
     getDirectConversation: async (userId: string): Promise<Conversation> => {
         const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
         const response = await axios.get(`${API_URL}/messages/direct/${userId}`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token?.trim()}` }
         });
         return response.data.conversation;
     },
@@ -54,7 +54,7 @@ export const chatService = {
     getConversation: async (id: string): Promise<Conversation> => {
         const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
         const response = await axios.get(`${API_URL}/messages/${id}`, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token?.trim()}` }
         });
         return response.data.conversation;
     },
@@ -62,7 +62,7 @@ export const chatService = {
     createGroup: async (name: string, members: string[]): Promise<Conversation> => {
         const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
         const response = await axios.post(`${API_URL}/messages/group`, { name, members }, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token?.trim()}` }
         });
         return response.data.conversation;
     },
@@ -70,7 +70,7 @@ export const chatService = {
     sendMessage: async (conversationId: string, content: string): Promise<Message> => {
         const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
         const response = await axios.post(`${API_URL}/messages/${conversationId}`, { content }, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token?.trim()}` }
         });
         return response.data.message;
     },
@@ -79,7 +79,7 @@ export const chatService = {
     sendDirectMessage: async (userId: string, content: string): Promise<Message> => {
         const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
         const response = await axios.post(`${API_URL}/messages`, { userId, content }, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token?.trim()}` }
         });
         return response.data.message;
     }

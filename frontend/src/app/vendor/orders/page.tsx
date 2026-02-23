@@ -98,7 +98,7 @@ export default function VendorOrdersPage() {
 
   const fetchCafes = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (!token) {
         toast.error('Please login to continue');
         return;
@@ -114,6 +114,7 @@ export default function VendorOrdersPage() {
       // Handle 401 - token expired or invalid
       if (response.status === 401) {
         console.error('❌ Authentication failed - token expired or invalid');
+        localStorage.removeItem('cc_token');
         localStorage.removeItem('token');
         if (typeof window !== 'undefined') {
           window.location.href = '/auth/login';
@@ -139,7 +140,7 @@ export default function VendorOrdersPage() {
       }
     } catch (error: any) {
       console.error('❌ Failed to fetch cafe:', error);
-      
+
       // Handle network errors
       if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
         console.error('❌ Network error - backend server may be down', error);
@@ -166,6 +167,7 @@ export default function VendorOrdersPage() {
         setCafes([]);
       } else if (error.response?.status === 401) {
         console.error('❌ Authentication failed');
+        localStorage.removeItem('cc_token');
         localStorage.removeItem('token');
         if (typeof window !== 'undefined') {
           window.location.href = '/auth/login';
@@ -181,14 +183,14 @@ export default function VendorOrdersPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
+
       if (!token) {
         toast.error('Please login to continue');
         setLoading(false);
         return;
       }
-      
+
       // Use vendor endpoint to get orders (works even if cafe is deleted)
       const response = await axios.get(
         `${API_URL}/orders/vendor?status=${statusFilter === 'all' ? '' : statusFilter}`,
@@ -201,7 +203,7 @@ export default function VendorOrdersPage() {
 
       if (response.data.success) {
         setOrders(response.data.orders || []);
-        
+
         // If we have orders but no cafe selected, try to get cafe info from orders
         if (response.data.orders && response.data.orders.length > 0 && !selectedCafeId) {
           const firstOrder = response.data.orders[0];
@@ -233,7 +235,7 @@ export default function VendorOrdersPage() {
       }
     } catch (error: any) {
       console.error('❌ Failed to fetch orders:', error);
-      
+
       // Handle network errors
       if (error.code === 'ECONNABORTED' || error.message === 'Network Error' || !error.response) {
         console.error('❌ Network error - backend server may be down', error);
@@ -257,6 +259,7 @@ export default function VendorOrdersPage() {
         setOrders([]);
       } else if (error.response?.status === 401) {
         console.error('❌ Authentication failed');
+        localStorage.removeItem('cc_token');
         localStorage.removeItem('token');
         if (typeof window !== 'undefined') {
           window.location.href = '/auth/login';
@@ -272,7 +275,7 @@ export default function VendorOrdersPage() {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       await axios.put(
         `${API_URL}/orders/${orderId}/status`,
         { status: newStatus },
@@ -364,11 +367,10 @@ export default function VendorOrdersPage() {
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              statusFilter === status
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${statusFilter === status
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
-            }`}
+              }`}
           >
             {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
           </button>

@@ -84,7 +84,7 @@ export default function DashboardLayout({
         </div>
 
         {/* Main Feed/Content Area */}
-        <main className="flex-1 overflow-y-auto no-scrollbar pb-20 md:pb-0 md:pl-72">
+        <main className="flex-1 overflow-y-auto no-scrollbar pb-20 md:pb-0 md:pl-64">
           <div className="max-w-4xl mx-auto min-h-full">
             {children}
 

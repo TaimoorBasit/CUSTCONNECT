@@ -64,7 +64,7 @@ export default function MobileNav() {
 
     return (
         <nav
-            className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-neutral-100"
+            className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200"
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
             <div className="flex justify-around items-stretch h-16 px-2">
@@ -79,8 +79,8 @@ export default function MobileNav() {
                             href={item.href}
                             className="flex flex-col items-center justify-center flex-1 gap-1 py-2 transition-all"
                         >
-                            <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-indigo-700' : 'text-neutral-400'}`} />
-                            <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-indigo-700' : 'text-neutral-400'}`}>
+                            <Icon className={`w-5 h-5 transition-colors ${isActive ? 'text-[#A51C30]' : 'text-gray-400'}`} />
+                            <span className={`text-[10px] font-semibold transition-colors ${isActive ? 'text-[#A51C30]' : 'text-gray-400'}`}>
                                 {item.name}
                             </span>
                         </Link>

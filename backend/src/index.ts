@@ -9,6 +9,7 @@ import cors from 'cors';
 import bcrypt from 'bcryptjs';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import compression from 'compression';
 import fs from 'fs';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
@@ -66,13 +67,7 @@ prisma.$connect()
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-
-// Request logger for debugging
-app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  console.log('Origin:', req.headers.origin);
-  next();
-});
+app.use(compression());
 
 app.use(cors({
   origin: true, // Allow all origins temporarily to fix crash

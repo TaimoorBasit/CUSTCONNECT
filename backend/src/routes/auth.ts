@@ -232,61 +232,31 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
       message: 'Email and password are required and must be strings'
     });
   }
-
   // Normalize email
   const normalizedEmail = email.trim().toLowerCase();
 
   try {
-    // Test database connection first
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (dbConnError: any) {
-      console.error('❌ Database connection error:', dbConnError);
-      return res.status(503).json({
-        success: false,
-        message: 'Database connection failed. Please try again later.'
-      });
-    }
-
-    // Check if input is email or username
-    const isEmail = normalizedEmail.includes('@');
+    console.log(`🔑 [Login Attempt] Input: ${email} | Normalized: ${normalizedEmail}`);
 
     let user: any;
+    // Search for user by email OR username
     try {
-      if (isEmail) {
-        user = await prisma.user.findUnique({
-          where: { email: normalizedEmail },
-          include: {
-            roles: {
-              include: {
-                role: true
-              }
-            }
-          }
-        });
-      } else {
-        // Search by username - check both exactly as typed and lowercased for flexibility
-        const users: any[] = await prisma.$queryRaw`
-          SELECT * FROM users WHERE username = ${email.trim()} OR username = ${normalizedEmail} LIMIT 1
-        `;
-
-        if (users && users.length > 0) {
-          user = users[0];
-
-          // Fetch roles separately since raw query doesn't include relations
-          const userRoles = await prisma.userRole.findMany({
-            where: { userId: user.id },
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: normalizedEmail },
+            { username: email.trim() },
+            { username: normalizedEmail }
+          ]
+        },
+        include: {
+          roles: {
             include: {
               role: true
             }
-          });
-
-          // Attach roles to user object match typical structure
-          user.roles = userRoles;
-        } else {
-          user = null;
+          }
         }
-      }
+      });
     } catch (dbError: any) {
       console.error('❌ Database query error:', dbError);
       return res.status(500).json({
@@ -296,11 +266,15 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
     }
 
     if (!user) {
+      console.warn(`❌ [Login Fail] No user found for: ${email}`);
       return res.status(401).json({
         success: false,
         message: 'Account not registered or invalid password'
       });
     }
+
+    console.log(`✅ [User Found] ID: ${user.id} | Email: ${user.email} | Verified: ${user.isVerified}`);
+
 
     // Check if email is verified - NEW CHECK
     if (!user.isVerified) {
@@ -658,7 +632,7 @@ router.post('/change-password', authenticateToken, asyncHandler(async (req: Auth
 }));
 
 // Logout
-router.post('/logout', authenticateToken, asyncHandler(async (req: AuthRequest, res: Response) => {
+router.post('/logout', asyncHandler(async (req: Request, res: Response) => {
   // In a stateless JWT system, logout is handled client-side by removing the token
   // But we can log the logout action for audit purposes
   res.json({

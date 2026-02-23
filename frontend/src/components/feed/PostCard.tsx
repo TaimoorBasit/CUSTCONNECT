@@ -18,6 +18,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { postService } from '@/services/postService';
 import { userService } from '@/services/userService';
+import { getImageUrl, getUiAvatarUrl } from '@/utils/url';
 import { Post } from '@/types';
 
 interface PostCardProps {
@@ -96,12 +97,6 @@ export default function PostCard({ post, onLike, currentUserId, onMessage, onFol
         }
     };
 
-    const getImageUrl = (filePath: string) => {
-        if (!filePath) return '';
-        if (filePath.startsWith('http://') || filePath.startsWith('https://')) return filePath;
-        const base = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api').replace(/\/api$/, '');
-        return `${base}${filePath.startsWith('/') ? '' : '/'}${filePath}`;
-    };
 
     if (deleting) return null;
 
@@ -115,7 +110,14 @@ export default function PostCard({ post, onLike, currentUserId, onMessage, onFol
                             <div className="w-full h-full rounded-full bg-background p-0.5">
                                 <div className="w-full h-full rounded-full bg-secondary/30 flex items-center justify-center font-black text-primary overflow-hidden">
                                     {post.author.profileImage
-                                        ? <img src={post.author.profileImage} className="w-full h-full object-cover" alt="" />
+                                        ? <img
+                                            src={getImageUrl(post.author.profileImage) || ''}
+                                            className="w-full h-full object-cover"
+                                            alt=""
+                                            onError={(e) => {
+                                                (e.target as HTMLImageElement).src = getUiAvatarUrl(post.author.firstName, post.author.lastName);
+                                            }}
+                                        />
                                         : post.author.firstName[0]}
                                 </div>
                             </div>

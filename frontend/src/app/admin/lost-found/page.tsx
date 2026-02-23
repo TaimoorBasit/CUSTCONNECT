@@ -17,6 +17,7 @@ import {
   ArrowPathIcon
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { getImageUrl } from '@/utils/url';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -74,11 +75,6 @@ export default function AdminLostFoundPage() {
     }
   };
 
-  const getImageUrl = (imagePath?: string) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    return `${API_URL.replace('/api', '')}${imagePath}`;
-  };
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {

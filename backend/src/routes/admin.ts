@@ -210,8 +210,18 @@ router.put('/users/:id/suspend', requireRole(['SUPER_ADMIN', 'UNIVERSITY_ADMIN']
 }));
 
 // Delete user
-router.delete('/users/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler(async (req: AuthRequest, res) => {
+router.delete('/users/:id', auditLog, asyncHandler(async (req: AuthRequest, res) => {
+  // Manual role check for better debugging
+  const userRoles = req.user?.roles || [];
+  const isAdmin = userRoles.includes('SUPER_ADMIN') || userRoles.includes('UNIVERSITY_ADMIN');
+
+  if (!isAdmin) {
+    console.warn(`❌ 403: User ${req.user?.id} attempted deletion without admin roles. Roles: [${userRoles}]`);
+    throw createError('Insufficient permissions to delete users', 403);
+  }
+
   const { id } = req.params as any;
+  console.log(`🔍 [Admin Delete] Target: ${id} | Admin: ${req.user?.id} | Roles: [${userRoles}]`);
 
   const user = await prisma.user.findUnique({
     where: { id },
@@ -226,85 +236,108 @@ router.delete('/users/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler
     throw createError('User not found', 404);
   }
 
+  // Debug logging for 403 error
+  console.log(`🗑️ Deletion Attempt: Admin(${req.user!.id}, roles: ${req.user!.roles}) -> Target(${user.id}, roles: ${user.roles.map((ur: any) => ur.role.name)})`);
+
   // Prevent deleting SUPER_ADMIN
   const isSuperAdmin = user.roles.some(ur => ur.role.name === 'SUPER_ADMIN');
   if (isSuperAdmin) {
+    console.warn(`❌ 403: Attempted to delete SUPER_ADMIN user ${id}`);
     throw createError('Cannot delete SUPER_ADMIN user', 403);
   }
 
   // Prevent deleting yourself
   if (user.id === req.user!.id) {
+    console.warn(`❌ 403: Admin ${req.user!.id} attempted to delete themselves`);
     throw createError('Cannot delete your own account', 403);
   }
 
   // Delete related data first to avoid foreign key constraints
-  await prisma.$transaction(async (tx) => {
-    // 1. Roles
-    await tx.userRole.deleteMany({ where: { userId: id } });
+  try {
+    await prisma.$transaction(async (tx) => {
+      // 1. Roles
+      await tx.userRole.deleteMany({ where: { userId: id } });
 
-    // 2. Social follows / notifications
-    await tx.follow.deleteMany({ where: { OR: [{ followerId: id }, { followingId: id }] } });
-    await tx.notification.deleteMany({ where: { userId: id } });
+      // 2. Social follows / notifications
+      await tx.follow.deleteMany({ where: { OR: [{ followerId: id }, { followingId: id }] } });
+      await tx.notification.deleteMany({ where: { userId: id } });
 
-    // 3. Likes, comments, post reports
-    await tx.like.deleteMany({ where: { userId: id } });
-    await tx.comment.deleteMany({ where: { authorId: id } });
-    await tx.postReport.deleteMany({ where: { reporterId: id } });
+      // 3. Likes, comments, post reports
+      await tx.like.deleteMany({ where: { userId: id } });
+      await tx.comment.deleteMany({ where: { authorId: id } });
+      await tx.postReport.deleteMany({ where: { reporterId: id } });
 
-    // 4. Posts (delete posts authored by user, cleaning up their children first)
-    const userPosts = await tx.post.findMany({ where: { authorId: id }, select: { id: true } });
-    const postIds = userPosts.map((p: any) => p.id);
-    if (postIds.length > 0) {
-      await tx.comment.deleteMany({ where: { postId: { in: postIds } } });
-      await tx.like.deleteMany({ where: { postId: { in: postIds } } });
-      await tx.postReport.deleteMany({ where: { postId: { in: postIds } } });
-      await tx.post.deleteMany({ where: { id: { in: postIds } } });
-    }
+      // 4. Posts (delete posts authored by user, cleaning up their children first)
+      const userPosts = await tx.post.findMany({ where: { authorId: id }, select: { id: true } });
+      const postIds = userPosts.map((p: any) => p.id);
+      if (postIds.length > 0) {
+        await tx.comment.deleteMany({ where: { postId: { in: postIds } } });
+        await tx.like.deleteMany({ where: { postId: { in: postIds } } });
+        await tx.postReport.deleteMany({ where: { postId: { in: postIds } } });
+        await tx.post.deleteMany({ where: { id: { in: postIds } } });
+      }
 
-    // 5. Academic
-    await tx.academicResource.deleteMany({ where: { uploaderId: id } });
-    const gpaRecords = await tx.gPARecord.findMany({ where: { userId: id }, select: { id: true } });
-    const gpaIds = gpaRecords.map((r: any) => r.id);
-    if (gpaIds.length > 0) {
-      await tx.gPASubject.deleteMany({ where: { gpaRecordId: { in: gpaIds } } });
-      await tx.gPARecord.deleteMany({ where: { id: { in: gpaIds } } });
-    }
+      // 5. Academic
+      await tx.academicResource.deleteMany({ where: { uploaderId: id } });
+      const gpaRecords = await tx.gPARecord.findMany({ where: { userId: id }, select: { id: true } });
+      const gpaIds = gpaRecords.map((r: any) => r.id);
+      if (gpaIds.length > 0) {
+        await tx.gPASubject.deleteMany({ where: { gpaRecordId: { in: gpaIds } } });
+        await tx.gPARecord.deleteMany({ where: { id: { in: gpaIds } } });
+      }
 
-    // 6. Events - organizerId is required, so delete events (and their RSVPs) owned by this user
-    const userEvents = await tx.event.findMany({ where: { organizerId: id }, select: { id: true } });
-    const eventIds = userEvents.map((e: any) => e.id);
-    if (eventIds.length > 0) {
-      await tx.eventRSVP.deleteMany({ where: { eventId: { in: eventIds } } });
-      await tx.event.deleteMany({ where: { id: { in: eventIds } } });
-    }
-    await tx.eventRSVP.deleteMany({ where: { userId: id } });
+      // 6. Events - organizerId is required, so delete events (and their RSVPs) owned by this user
+      const userEvents = await tx.event.findMany({ where: { organizerId: id }, select: { id: true } });
+      const eventIds = userEvents.map((e: any) => e.id);
+      if (eventIds.length > 0) {
+        await tx.eventRSVP.deleteMany({ where: { eventId: { in: eventIds } } });
+        await tx.event.deleteMany({ where: { id: { in: eventIds } } });
+      }
+      await tx.eventRSVP.deleteMany({ where: { userId: id } });
 
-    // 7. Bus / Transport
-    await tx.busSubscription.deleteMany({ where: { userId: id } });
-    // Null out resolvedBy reference using raw SQL (field is optional in DB but Prisma types are strict)
-    await tx.$executeRawUnsafe(`UPDATE bus_emergencies SET resolvedBy = NULL WHERE resolvedBy = '${id}'`);
-    await tx.busEmergency.deleteMany({ where: { userId: id } });
-    await tx.busRoute.updateMany({ where: { operatorId: id }, data: { operatorId: null } });
+      // 7. Bus / Transport
+      await tx.busSubscription.deleteMany({ where: { userId: id } });
+      // Null out resolvedBy reference using raw SQL (field is optional in DB but Prisma types are strict)
+      await tx.$executeRawUnsafe(`UPDATE bus_emergencies SET resolvedBy = NULL WHERE resolvedBy = '${id}'`);
+      await tx.busEmergency.deleteMany({ where: { userId: id } });
+      await tx.busRoute.updateMany({ where: { operatorId: id }, data: { operatorId: null } });
 
-    // 8. Cafes & Printers
-    await tx.cafeRating.deleteMany({ where: { userId: id } });
-    await tx.cafeOrder.deleteMany({ where: { userId: id } });
-    await tx.cafe.updateMany({ where: { ownerId: id }, data: { ownerId: null } });
-    await tx.printRequest.deleteMany({ where: { userId: id } });
-    await tx.printerShop.updateMany({ where: { ownerId: id }, data: { ownerId: null } });
+      // 8. Cafes & Printers
+      await tx.cafeRating.deleteMany({ where: { userId: id } });
+      // First find orders to delete their items
+      const userOrders = await tx.cafeOrder.findMany({ where: { userId: id }, select: { id: true } });
+      const orderIds = userOrders.map((o: any) => o.id);
+      if (orderIds.length > 0) {
+        await tx.cafeOrderItem.deleteMany({ where: { orderId: { in: orderIds } } });
+        await tx.cafeOrder.deleteMany({ where: { id: { in: orderIds } } });
+      }
+      await tx.cafe.updateMany({ where: { ownerId: id }, data: { ownerId: null } });
+      await tx.printRequest.deleteMany({ where: { userId: id } });
+      await tx.printerShop.updateMany({ where: { ownerId: id }, data: { ownerId: null } });
 
-    // 9. Lost & Found
-    await tx.lostFound.deleteMany({ where: { userId: id } });
+      // 9. Lost & Found
+      await tx.lostFound.deleteMany({ where: { userId: id } });
 
-    // 10. Stories & Messaging
-    await tx.storyView.deleteMany({ where: { userId: id } });
-    await tx.story.deleteMany({ where: { authorId: id } });
-    await tx.message.deleteMany({ where: { senderId: id } });
-    await tx.conversationMember.deleteMany({ where: { userId: id } });
+      // 10. Stories & Messaging
+      await tx.storyView.deleteMany({ where: { userId: id } });
+      // Also delete views for stories owned by this user
+      const userStoryIds = (await tx.story.findMany({ where: { authorId: id }, select: { id: true } })).map((s: any) => s.id);
+      if (userStoryIds.length > 0) {
+        await tx.storyView.deleteMany({ where: { storyId: { in: userStoryIds } } });
+        await tx.story.deleteMany({ where: { id: { in: userStoryIds } } });
+      }
+      await tx.message.deleteMany({ where: { senderId: id } });
+      await tx.conversationMember.deleteMany({ where: { userId: id } });
 
-    // 11. Finally delete the user
-    await tx.user.delete({ where: { id } });
-  });
+      // 11. Finally delete the user
+      await tx.user.delete({ where: { id } });
+    }, {
+      timeout: 30000 // Increase timeout to 30 seconds for large accounts
+    });
+  } catch (error: any) {
+    console.error('❌ Deletion transaction failed:', error);
+    throw createError(`Deletion failed: ${error.message}`, 500);
+  }
 
   res.json({
     success: true,

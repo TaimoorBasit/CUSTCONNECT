@@ -9,28 +9,12 @@ import PencilIcon from '@heroicons/react/24/outline/PencilIcon';
 import TrashIcon from '@heroicons/react/24/outline/TrashIcon';
 import PhotoIcon from '@heroicons/react/24/outline/PhotoIcon';
 import axios from 'axios';
+import { getImageUrl } from '@/utils/url';
 import toast from 'react-hot-toast';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
-// Helper function to construct image URL - SIMPLIFIED
-const getImageUrl = (imagePath: string | undefined | null): string | null => {
-  if (!imagePath) return null;
 
-  // If already a full URL, return as is
-  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
-    return imagePath;
-  }
-
-  // Get base URL (remove /api from API_URL)
-  const baseUrl = API_URL.replace('/api', '').replace(/\/$/, '');
-
-  // Ensure path starts with /
-  const cleanPath = imagePath.startsWith('/') ? imagePath : `/${imagePath}`;
-
-  // Construct full URL
-  return `${baseUrl}${cleanPath}`;
-};
 
 interface Cafe {
   id: string;
@@ -294,7 +278,7 @@ function MenuManagementModal({
   const handleMenuImageUpload = async (menuId: string, file: File) => {
     try {
       setUploadingMenuImages(prev => ({ ...prev, [menuId]: true }));
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       const formData = new FormData();
       formData.append('image', file);
 
@@ -303,7 +287,7 @@ function MenuManagementModal({
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token?.trim()}`,
             // Don't set Content-Type - axios will set it automatically with boundary
           },
           timeout: 30000, // 30 second timeout for file uploads
@@ -745,7 +729,7 @@ function CafeImageUpload({
 
     try {
       setUploading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       const formData = new FormData();
       formData.append('image', file);
 
@@ -754,7 +738,7 @@ function CafeImageUpload({
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
+            Authorization: `Bearer ${token?.trim()}`,
             // Don't set Content-Type - axios will set it automatically with boundary
           },
           timeout: 30000, // 30 second timeout for file uploads

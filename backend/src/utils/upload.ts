@@ -8,30 +8,18 @@ const CAFE_UPLOAD_DIR = path.join(UPLOAD_BASE_DIR, 'cafes');
 const LOST_FOUND_UPLOAD_DIR = path.join(UPLOAD_BASE_DIR, 'lost-found');
 const PRINT_UPLOAD_DIR = path.join(UPLOAD_BASE_DIR, 'prints');
 const POST_UPLOAD_DIR = path.join(UPLOAD_BASE_DIR, 'posts');
+const RESOURCE_UPLOAD_DIR = path.join(UPLOAD_BASE_DIR, 'resources');
 
-// Create directories if they don't exist - EXPORTED for use in other modules
+// Create directories if they don't exist
 export const ensureDirectories = () => {
   try {
-    if (!fs.existsSync(UPLOAD_BASE_DIR)) {
-      fs.mkdirSync(UPLOAD_BASE_DIR, { recursive: true });
-      console.log('✅ Created uploads base directory:', UPLOAD_BASE_DIR);
-    }
-    if (!fs.existsSync(CAFE_UPLOAD_DIR)) {
-      fs.mkdirSync(CAFE_UPLOAD_DIR, { recursive: true });
-      console.log('✅ Created cafes upload directory:', CAFE_UPLOAD_DIR);
-    }
-    if (!fs.existsSync(LOST_FOUND_UPLOAD_DIR)) {
-      fs.mkdirSync(LOST_FOUND_UPLOAD_DIR, { recursive: true });
-      console.log('✅ Created lost-found upload directory:', LOST_FOUND_UPLOAD_DIR);
-    }
-    if (!fs.existsSync(PRINT_UPLOAD_DIR)) {
-      fs.mkdirSync(PRINT_UPLOAD_DIR, { recursive: true });
-      console.log('✅ Created prints upload directory:', PRINT_UPLOAD_DIR);
-    }
-    if (!fs.existsSync(POST_UPLOAD_DIR)) {
-      fs.mkdirSync(POST_UPLOAD_DIR, { recursive: true });
-      console.log('✅ Created posts upload directory:', POST_UPLOAD_DIR);
-    }
+    const dirs = [UPLOAD_BASE_DIR, CAFE_UPLOAD_DIR, LOST_FOUND_UPLOAD_DIR, PRINT_UPLOAD_DIR, POST_UPLOAD_DIR, RESOURCE_UPLOAD_DIR];
+    dirs.forEach(dir => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+        console.log('✅ Created directory:', dir);
+      }
+    });
     return true;
   } catch (error: any) {
     console.error('❌ Failed to create upload directories:', error.message);
@@ -39,58 +27,40 @@ export const ensureDirectories = () => {
   }
 };
 
-// Initialize directories on module load
 ensureDirectories();
 
-// Multer storage configuration for cafes
-const cafeStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    ensureDirectories(); // Ensure directories exist before saving
-    cb(null, CAFE_UPLOAD_DIR);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const random = Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    const filename = `cafe-${timestamp}-${random}${ext}`;
-    cb(null, filename);
-  }
-});
-
-// Multer storage configuration for lost-found
-const lostFoundStorage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    ensureDirectories(); // Ensure directories exist before saving
-    cb(null, LOST_FOUND_UPLOAD_DIR);
-  },
-  filename: (req, file, cb) => {
-    const timestamp = Date.now();
-    const random = Math.round(Math.random() * 1E9);
-    const ext = path.extname(file.originalname).toLowerCase();
-    const filename = `lost-found-${timestamp}-${random}${ext}`;
-    cb(null, filename);
-  }
-});
-
-// Multer storage configuration for posts
-const postStorage = multer.diskStorage({
+const createStorage = (dir: string, prefix: string) => multer.diskStorage({
   destination: (req, file, cb) => {
     ensureDirectories();
-    cb(null, POST_UPLOAD_DIR);
+    cb(null, dir);
   },
   filename: (req, file, cb) => {
     const timestamp = Date.now();
     const random = Math.round(Math.random() * 1E9);
     const ext = path.extname(file.originalname).toLowerCase();
-    const filename = `post-${timestamp}-${random}${ext}`;
-    cb(null, filename);
+    cb(null, `${prefix}-${timestamp}-${random}${ext}`);
   }
 });
 
-// File filter - only allow images
+const cafeStorage = createStorage(CAFE_UPLOAD_DIR, 'cafe');
+const lostFoundStorage = createStorage(LOST_FOUND_UPLOAD_DIR, 'lost-found');
+const postStorage = createStorage(POST_UPLOAD_DIR, 'post');
+const resourceStorage = createStorage(RESOURCE_UPLOAD_DIR, 'resource');
+
 const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'video/mp4', 'video/quicktime', 'video/x-msvideo'];
-  const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.avi'];
+  const allowedMimes = [
+    'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+    'video/mp4', 'video/quicktime', 'video/x-msvideo',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    'text/plain',
+    'application/zip',
+    'application/x-zip-compressed'
+  ];
+  const allowedExts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.mp4', '.mov', '.avi', '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.zip'];
 
   const ext = path.extname(file.originalname).toLowerCase();
   const isValidMime = allowedMimes.includes(file.mimetype);
@@ -99,74 +69,31 @@ const fileFilter = (req: any, file: Express.Multer.File, cb: multer.FileFilterCa
   if (isValidMime && isValidExt) {
     cb(null, true);
   } else {
-    cb(new Error(`Invalid file type. Allowed: ${allowedExts.join(', ')}`));
+    cb(new Error(`Invalid file type: ${ext}. Allowed: ${allowedExts.join(', ')}`));
   }
 };
 
-// Create multer instances
-export const upload = multer({
-  storage: cafeStorage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // Increased to 10MB
-  },
-  fileFilter: fileFilter
-});
+export const upload = multer({ storage: cafeStorage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter });
+export const uploadLostFound = multer({ storage: lostFoundStorage, limits: { fileSize: 10 * 1024 * 1024 }, fileFilter });
+export const uploadPost = multer({ storage: postStorage, limits: { fileSize: 50 * 1024 * 1024 }, fileFilter });
+export const uploadResource = multer({ storage: resourceStorage, limits: { fileSize: 100 * 1024 * 1024 }, fileFilter });
 
-export const uploadLostFound = multer({
-  storage: lostFoundStorage,
-  limits: {
-    fileSize: 10 * 1024 * 1024 // Increased to 10MB
-  },
-  fileFilter: fileFilter
-});
-
-export const uploadPost = multer({
-  storage: postStorage,
-  limits: {
-    fileSize: 50 * 1024 * 1024 // 50MB for posts (to support video)
-  },
-  fileFilter: fileFilter
-});
-
-// Generate URL path for uploaded file
-export const getFileUrl = (filename: string, type: 'cafe' | 'lost-found' | 'post' = 'cafe'): string => {
+export const getFileUrl = (filename: string, type: 'cafe' | 'lost-found' | 'post' | 'resource' = 'cafe'): string => {
   if (!filename) return '';
-
-  // If already a full URL, return as is
-  if (filename.startsWith('http://') || filename.startsWith('https://')) {
-    return filename;
-  }
-
-  // Remove any leading slashes
+  if (filename.startsWith('http://') || filename.startsWith('https://')) return filename;
   const cleanFilename = path.basename(filename);
-
-  // Construct the path based on type
-  let uploadPath = 'cafes';
-  if (type === 'lost-found') uploadPath = 'lost-found';
-  if (type === 'post') uploadPath = 'posts';
-
+  const uploadPath = type === 'resource' ? 'resources' : type === 'post' ? 'posts' : type === 'lost-found' ? 'lost-found' : 'cafes';
   return `/uploads/${uploadPath}/${cleanFilename}`;
 };
 
-// Verify file exists on disk
-export const verifyFileExists = (filename: string, type: 'cafe' | 'lost-found' | 'post' = 'cafe'): boolean => {
-  if (!filename) return false;
-  const cleanFilename = path.basename(filename);
-  let dir = CAFE_UPLOAD_DIR;
-  if (type === 'lost-found') dir = LOST_FOUND_UPLOAD_DIR;
-  if (type === 'post') dir = POST_UPLOAD_DIR;
-
-  const filePath = path.join(dir, cleanFilename);
-  return fs.existsSync(filePath);
+export const verifyFileExists = (filename: string, type: 'cafe' | 'lost-found' | 'post' | 'resource' = 'cafe'): boolean => {
+  const filePath = getFilePath(filename, type);
+  return filePath ? fs.existsSync(filePath) : false;
 };
 
-// Get full file path
-export const getFilePath = (filename: string, type: 'cafe' | 'lost-found' | 'post' = 'cafe'): string => {
+export const getFilePath = (filename: string, type: 'cafe' | 'lost-found' | 'post' | 'resource' = 'cafe'): string => {
   if (!filename) return '';
   const cleanFilename = path.basename(filename);
-  let dir = CAFE_UPLOAD_DIR;
-  if (type === 'lost-found') dir = LOST_FOUND_UPLOAD_DIR;
-  if (type === 'post') dir = POST_UPLOAD_DIR;
-
+  const dir = type === 'resource' ? RESOURCE_UPLOAD_DIR : type === 'post' ? POST_UPLOAD_DIR : type === 'lost-found' ? LOST_FOUND_UPLOAD_DIR : CAFE_UPLOAD_DIR;
   return path.join(dir, cleanFilename);
 };

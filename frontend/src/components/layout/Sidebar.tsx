@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { getImageUrl, getUiAvatarUrl } from '@/utils/url';
 import HomeIcon from '@heroicons/react/24/outline/HomeIcon';
 import UserGroupIcon from '@heroicons/react/24/outline/UserGroupIcon';
 import BuildingStorefrontIcon from '@heroicons/react/24/outline/BuildingStorefrontIcon';
@@ -105,9 +106,16 @@ export default function Sidebar({ mobileOpen = false, onMobileClose }: SidebarPr
     <div className="flex-shrink-0 flex border-t border-white border-opacity-20 p-4">
       <Link href={`/dashboard/profile?id=${user?.id}`} className="flex items-center group cursor-pointer">
         <div className="flex-shrink-0">
-          <div className="h-10 w-10 rounded-full bg-white bg-opacity-20 flex items-center justify-center border-2 border-white border-opacity-30 group-hover:border-opacity-100 transition-all">
+          <div className="h-10 w-10 rounded-full bg-white bg-opacity-20 flex items-center justify-center border-2 border-white border-opacity-30 group-hover:border-opacity-100 transition-all overflow-hidden">
             {user?.profileImage ? (
-              <img src={user.profileImage} className="w-full h-full object-cover rounded-full" alt="" />
+              <img
+                src={getImageUrl(user.profileImage) || ''}
+                className="w-full h-full object-cover"
+                alt=""
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = getUiAvatarUrl(user.firstName, user.lastName);
+                }}
+              />
             ) : (
               <span className="text-sm font-medium text-white">
                 {user?.firstName?.[0]}

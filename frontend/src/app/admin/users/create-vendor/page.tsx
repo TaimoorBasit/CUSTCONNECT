@@ -41,13 +41,13 @@ export default function CreateVendorPage() {
     try {
       // Generate temporary password if not provided
       const tempPassword = formData.password || generateTempPassword();
-      
+
       // Create user account
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/admin/vendors/create`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${(localStorage.getItem('cc_token') || localStorage.getItem('token'))?.trim()}`,
         },
         body: JSON.stringify({
           firstName: formData.firstName,
@@ -83,7 +83,7 @@ export default function CreateVendorPage() {
 
   return (
     <div className="space-y-6">
-        <div>
+      <div>
         <h1 className="text-2xl font-semibold text-gray-900">Create Vendor Account</h1>
         <p className="text-gray-500">Create a new vendor account (Cafe Owner, Bus Operator, or Printer Shop Owner).</p>
       </div>

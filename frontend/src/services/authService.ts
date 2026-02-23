@@ -75,6 +75,7 @@ class AuthService {
           // Don't redirect if already on login/register pages or if it's an auth endpoint
           if (!currentPath.startsWith('/auth/') && !requestUrl.includes('/auth/login') && !requestUrl.includes('/auth/register')) {
             // Clear invalid token
+            localStorage.removeItem('cc_token');
             localStorage.removeItem('token');
             // Only redirect if not already on login page
             if (currentPath !== '/auth/login' && currentPath !== '/login') {
@@ -95,13 +96,10 @@ class AuthService {
       throw new Error('Email and password are required');
     }
 
-    // Normalize email
-    const normalizedEmail = email.trim().toLowerCase();
-
     let response: AxiosResponse<ApiResponse<{ user: User; token: string }>>;
     try {
       response = await this.api.post('/auth/login', {
-        email: normalizedEmail,
+        email: email.trim(),
         password: password.trim()
       }, {
         timeout: 15000,
@@ -209,6 +207,7 @@ class AuthService {
 
       // If it's a 401, clear token and redirect to login
       if (error.response?.status === 401) {
+        localStorage.removeItem('cc_token');
         localStorage.removeItem('token');
         if (typeof window !== 'undefined') {
           window.location.href = '/login';

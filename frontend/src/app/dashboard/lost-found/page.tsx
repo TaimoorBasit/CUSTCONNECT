@@ -3,9 +3,11 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { lostFoundService, LostFoundItem } from '@/services/lostFoundService';
-import { PlusIcon, MagnifyingGlassIcon, PhotoIcon, CheckCircleIcon, XMarkIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, MagnifyingGlassIcon, PhotoIcon, CheckCircleIcon, XMarkIcon, TrashIcon, MapPinIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { getImageUrl } from '@/utils/url';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -42,12 +44,8 @@ export default function LostFoundPage() {
     try {
       setLoading(true);
       const params: any = {};
-      if (selectedCategory !== 'all') {
-        params.category = selectedCategory;
-      }
-      if (selectedStatus !== 'all') {
-        params.status = selectedStatus;
-      }
+      if (selectedCategory !== 'all') params.category = selectedCategory;
+      if (selectedStatus !== 'all') params.status = selectedStatus;
       const data = await lostFoundService.getItems(params);
       setItems(data);
     } catch (error: any) {
@@ -60,11 +58,7 @@ export default function LostFoundPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      toast.error('Title is required');
-      return;
-    }
-
+    if (!formData.title.trim()) { toast.error('Title is required'); return; }
     try {
       setSubmitting(true);
       const newItem = await lostFoundService.createItem({
@@ -75,8 +69,6 @@ export default function LostFoundPage() {
         location: formData.location || undefined,
         contactInfo: formData.contactInfo || undefined,
       });
-
-      // Upload image if provided
       if (imageFile && newItem.id) {
         try {
           setUploadingImage(true);
@@ -88,8 +80,7 @@ export default function LostFoundPage() {
           setUploadingImage(false);
         }
       }
-
-      toast.success(`${formData.category} item posted successfully!`);
+      toast.success(`${formData.category} item posted!`);
       setShowModal(false);
       resetForm();
       fetchItems();
@@ -102,47 +93,30 @@ export default function LostFoundPage() {
   };
 
   const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      category: 'Lost',
-      itemType: 'Other',
-      location: '',
-      contactInfo: '',
-    });
+    setFormData({ title: '', description: '', category: 'Lost', itemType: 'Other', location: '', contactInfo: '' });
     setImageFile(null);
   };
 
   const handleResolve = async (itemId: string) => {
     if (!confirm('Mark this item as resolved?')) return;
-
     try {
       await lostFoundService.resolveItem(itemId);
       toast.success('Item marked as resolved');
       fetchItems();
     } catch (error: any) {
-      console.error('Error resolving item:', error);
       toast.error(error.response?.data?.message || 'Failed to resolve item');
     }
   };
 
   const handleDelete = async (itemId: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
-
     try {
       await lostFoundService.deleteItem(itemId);
-      toast.success('Item deleted successfully');
+      toast.success('Item deleted');
       fetchItems();
     } catch (error: any) {
-      console.error('Error deleting item:', error);
       toast.error(error.response?.data?.message || 'Failed to delete item');
     }
-  };
-
-  const getImageUrl = (imagePath?: string) => {
-    if (!imagePath) return null;
-    if (imagePath.startsWith('http')) return imagePath;
-    return `${API_URL.replace('/api', '')}${imagePath}`;
   };
 
   const formatDate = (dateString: string) => {
@@ -152,7 +126,6 @@ export default function LostFoundPage() {
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
-
     if (diffMins < 1) return 'Just now';
     if (diffMins < 60) return `${diffMins}m ago`;
     if (diffHours < 24) return `${diffHours}h ago`;
@@ -161,150 +134,128 @@ export default function LostFoundPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Lost & Found</h1>
-            <p className="text-gray-600 mt-1">Report lost items or share found items to help others</p>
-          </div>
+    <div className="min-h-screen bg-[#F8F7F4]">
+      <PageHeader
+        title="Lost &amp; Found"
+        subtitle="Report lost items or share found ones to help the campus community"
+        icon={MagnifyingGlassIcon}
+        iconColor="#D97706"
+        iconBg="#FFFBEB"
+        actions={
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#A51C30] hover:bg-[#8b1526] transition-colors shadow-sm"
           >
-            <PlusIcon className="w-5 h-5" />
+            <PlusIcon className="w-4 h-4" strokeWidth={2.5} />
             Post Item
           </button>
-        </div>
-
+        }
+      />
+      <div className="max-w-5xl mx-auto px-4 md:px-8 pb-16">
         {/* Filters */}
-        <div className="mb-6 flex flex-wrap gap-4">
-          <div className="flex gap-2">
+        <div className="mb-6 flex flex-wrap gap-3">
+          {(['all', 'Lost', 'Found'] as const).map((cat) => (
             <button
-              onClick={() => setSelectedCategory('all')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedCategory === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedCategory === cat
+                  ? cat === 'Lost'
+                    ? 'bg-[#A51C30] text-white border-[#A51C30]'
+                    : cat === 'Found'
+                      ? 'bg-[#059669] text-white border-[#059669]'
+                      : 'bg-[#1a2744] text-white border-[#1a2744]'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                }`}
             >
-              All
+              {cat === 'all' ? 'All Categories' : cat}
             </button>
+          ))}
+          <div className="w-px bg-gray-200 self-stretch" />
+          {(['all', 'ACTIVE', 'RESOLVED'] as const).map((status) => (
             <button
-              onClick={() => setSelectedCategory('Lost')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedCategory === 'Lost'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
+              key={status}
+              onClick={() => setSelectedStatus(status)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all border ${selectedStatus === status
+                  ? 'bg-[#1a2744] text-white border-[#1a2744]'
+                  : 'bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                }`}
             >
-              Lost
+              {status === 'all' ? 'All Status' : status.charAt(0) + status.slice(1).toLowerCase()}
             </button>
-            <button
-              onClick={() => setSelectedCategory('Found')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedCategory === 'Found'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              Found
-            </button>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setSelectedStatus('all')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedStatus === 'all'
-                  ? 'bg-gray-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              All Status
-            </button>
-            <button
-              onClick={() => setSelectedStatus('ACTIVE')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedStatus === 'ACTIVE'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              Active
-            </button>
-            <button
-              onClick={() => setSelectedStatus('RESOLVED')}
-              className={`px-4 py-2 rounded-lg transition-colors ${
-                selectedStatus === 'RESOLVED'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
-              }`}
-            >
-              Resolved
-            </button>
-          </div>
+          ))}
         </div>
 
         {/* Items Grid */}
         {loading ? (
-          <div className="text-center py-12">
-            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-            <p className="mt-2 text-gray-600">Loading items...</p>
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+            <div className="w-8 h-8 border-2 border-[#A51C30] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-400 font-medium">Loading items…</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="text-center py-12 bg-white rounded-lg">
-            <MagnifyingGlassIcon className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No items found. Be the first to post!</p>
+          <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-[#FFFBEB] flex items-center justify-center">
+              <MagnifyingGlassIcon className="w-8 h-8 text-[#D97706]" strokeWidth={1.5} />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-700">No items found</p>
+              <p className="text-sm text-gray-400 mt-1">Be the first to post a lost or found item</p>
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#A51C30] hover:bg-[#8b1526] transition-colors"
+            >
+              <PlusIcon className="w-4 h-4" strokeWidth={2.5} />
+              Post Item
+            </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {items.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
-                onClick={() => {
-                  setSelectedItem(item);
-                  setShowDetailModal(true);
-                }}
+                className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all overflow-hidden cursor-pointer"
+                onClick={() => { setSelectedItem(item); setShowDetailModal(true); }}
               >
+                {/* Category indicator bar */}
+                <div className={`h-1.5 ${item.category === 'Lost' ? 'bg-[#A51C30]' : 'bg-[#059669]'}`} />
                 {item.imageUrl && (
-                  <div className="h-48 bg-gray-200 relative">
+                  <div className="h-44 bg-gray-100 relative overflow-hidden">
                     <img
                       src={getImageUrl(item.imageUrl) || ''}
                       alt={item.title}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).style.display = 'none';
-                      }}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                     />
                   </div>
                 )}
                 <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                        item.category === 'Lost'
-                          ? 'bg-red-100 text-red-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}
-                    >
+                  <div className="flex items-start justify-between mb-2 gap-2">
+                    <span className={`text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg ${item.category === 'Lost' ? 'bg-[#FFF5F5] text-[#A51C30]' : 'bg-[#ECFDF5] text-[#059669]'
+                      }`}>
                       {item.category}
                     </span>
                     {item.isResolved && (
-                      <CheckCircleIcon className="w-5 h-5 text-green-600" />
+                      <span className="text-[10px] font-bold uppercase tracking-wide px-2.5 py-1 rounded-lg bg-[#ECFDF5] text-[#059669]">
+                        Resolved
+                      </span>
                     )}
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{item.title}</h3>
+                  <h3 className="text-sm font-bold text-gray-900 mb-1.5 group-hover:text-[#1a2744] transition-colors line-clamp-1">
+                    {item.title}
+                  </h3>
                   {item.description && (
-                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">{item.description}</p>
+                    <p className="text-xs text-gray-500 mb-2 line-clamp-2 leading-relaxed">{item.description}</p>
                   )}
-                  <div className="flex flex-wrap gap-2 text-xs text-gray-500 mb-2">
-                    {item.itemType && <span>Type: {item.itemType}</span>}
-                    {item.location && <span>• {item.location}</span>}
+                  <div className="flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-400 mb-3">
+                    {item.itemType && <span className="font-medium">{item.itemType}</span>}
+                    {item.location && (
+                      <span className="flex items-center gap-0.5">
+                        <MapPinIcon className="w-3 h-3" />{item.location}
+                      </span>
+                    )}
                   </div>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>By {item.user.firstName} {item.user.lastName}</span>
+                  <div className="flex items-center justify-between text-[11px] text-gray-400 pt-2 border-t border-gray-50">
+                    <span className="font-medium">{item.user.firstName} {item.user.lastName}</span>
                     <span>{formatDate(item.createdAt)}</span>
                   </div>
                 </div>
@@ -316,162 +267,132 @@ export default function LostFoundPage() {
 
       {/* Create Item Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Post Lost or Found Item</h2>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#1a2744]">Post Lost or Found Item</h2>
               <button
-                onClick={() => {
-                  setShowModal(false);
-                  resetForm();
-                }}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => { setShowModal(false); resetForm(); }}
+                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"
               >
-                <XMarkIcon className="w-6 h-6" />
+                <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Category *
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="Lost"
-                      checked={formData.category === 'Lost'}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value as 'Lost' | 'Found' })}
-                      className="mr-2"
-                    />
-                    <span className="text-red-600 font-semibold">Lost</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="Found"
-                      checked={formData.category === 'Found'}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value as 'Lost' | 'Found' })}
-                      className="mr-2"
-                    />
-                    <span className="text-green-600 font-semibold">Found</span>
-                  </label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Category *</label>
+                <div className="flex gap-3">
+                  {(['Lost', 'Found'] as const).map((cat) => (
+                    <label key={cat} className={`flex-1 flex items-center justify-center gap-2 p-3 rounded-xl border cursor-pointer transition-all ${formData.category === cat
+                        ? cat === 'Lost'
+                          ? 'border-[#A51C30] bg-[#FFF5F5] text-[#A51C30]'
+                          : 'border-[#059669] bg-[#ECFDF5] text-[#059669]'
+                        : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300'
+                      }`}>
+                      <input
+                        type="radio"
+                        value={cat}
+                        checked={formData.category === cat}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value as 'Lost' | 'Found' })}
+                        className="sr-only"
+                      />
+                      <span className="font-semibold text-sm">{cat}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Title *
-                </label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Title *</label>
                 <input
                   type="text"
                   value={formData.title}
                   onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/20 focus:border-[#1a2744]/30 transition"
                   placeholder="e.g., Lost iPhone 13"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Item Type
-                </label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Item Type</label>
                 <select
                   value={formData.itemType}
                   onChange={(e) => setFormData({ ...formData, itemType: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/20 focus:border-[#1a2744]/30 transition"
                 >
-                  {itemTypes.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
+                  {itemTypes.map((type) => (<option key={type} value={type}>{type}</option>))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Description</label>
                 <textarea
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   rows={3}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/20 focus:border-[#1a2744]/30 transition resize-none"
                   placeholder="Describe the item, its condition, distinctive features..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Location
-                </label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Location</label>
                 <input
                   type="text"
                   value={formData.location}
                   onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/20 focus:border-[#1a2744]/30 transition"
                   placeholder="Where was it lost/found?"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Contact Information
-                </label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Contact Info</label>
                 <input
                   type="text"
                   value={formData.contactInfo}
                   onChange={(e) => setFormData({ ...formData, contactInfo: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900"
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/20 focus:border-[#1a2744]/30 transition"
                   placeholder="Phone or email (defaults to your email)"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Photo (Optional)
-                </label>
+                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Photo (Optional)</label>
                 <div className="flex items-center gap-4">
-                  <label className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50">
-                    <PhotoIcon className="w-5 h-5 text-gray-600" />
-                    <span className="text-gray-700">Choose Image</span>
+                  <label className="flex items-center gap-2 px-4 py-2.5 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50 transition-colors bg-gray-50">
+                    <PhotoIcon className="w-5 h-5 text-gray-400" />
+                    <span className="text-sm text-gray-600">Choose Image</span>
                     <input
                       type="file"
                       accept="image/*"
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) {
-                          if (file.size > 5 * 1024 * 1024) {
-                            toast.error('Image size must be less than 5MB');
-                            return;
-                          }
+                          if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
                           setImageFile(file);
                         }
                       }}
                       className="hidden"
                     />
                   </label>
-                  {imageFile && (
-                    <span className="text-sm text-gray-600">{imageFile.name}</span>
-                  )}
+                  {imageFile && <span className="text-xs text-gray-500 font-medium">{imageFile.name}</span>}
                 </div>
               </div>
 
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-2">
                 <button
                   type="submit"
                   disabled={submitting || uploadingImage}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#A51C30] hover:bg-[#8b1526] disabled:opacity-50 transition-colors"
                 >
-                  {submitting ? 'Posting...' : uploadingImage ? 'Uploading...' : 'Post Item'}
+                  {submitting ? 'Posting…' : uploadingImage ? 'Uploading…' : 'Post Item'}
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowModal(false);
-                    resetForm();
-                  }}
-                  className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300"
+                  onClick={() => { setShowModal(false); resetForm(); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors"
                 >
                   Cancel
                 </button>
@@ -483,104 +404,87 @@ export default function LostFoundPage() {
 
       {/* Detail Modal */}
       {showDetailModal && selectedItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">Item Details</h2>
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h2 className="text-lg font-bold text-[#1a2744]">Item Details</h2>
               <button
-                onClick={() => {
-                  setShowDetailModal(false);
-                  setSelectedItem(null);
-                }}
-                className="text-gray-400 hover:text-gray-600"
+                onClick={() => { setShowDetailModal(false); setSelectedItem(null); }}
+                className="w-8 h-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"
               >
-                <XMarkIcon className="w-6 h-6" />
+                <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
             <div className="p-6 space-y-4">
               {selectedItem.imageUrl && (
-                <div className="w-full h-64 bg-gray-200 rounded-lg overflow-hidden">
+                <div className="w-full h-64 bg-gray-100 rounded-2xl overflow-hidden">
                   <img
                     src={getImageUrl(selectedItem.imageUrl) || ''}
                     alt={selectedItem.title}
                     className="w-full h-full object-cover"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 </div>
               )}
               <div className="flex items-center gap-2">
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                    selectedItem.category === 'Lost'
-                      ? 'bg-red-100 text-red-800'
-                      : 'bg-green-100 text-green-800'
-                  }`}
-                >
+                <span className={`text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-lg ${selectedItem.category === 'Lost' ? 'bg-[#FFF5F5] text-[#A51C30]' : 'bg-[#ECFDF5] text-[#059669]'
+                  }`}>
                   {selectedItem.category}
                 </span>
                 {selectedItem.isResolved && (
-                  <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
+                  <span className="text-xs font-bold uppercase tracking-wide px-3 py-1 rounded-lg bg-[#ECFDF5] text-[#059669]">
                     Resolved
                   </span>
                 )}
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">{selectedItem.title}</h3>
+              <h3 className="text-2xl font-bold text-[#1a2744]">{selectedItem.title}</h3>
               {selectedItem.description && (
-                <p className="text-gray-700">{selectedItem.description}</p>
+                <p className="text-gray-600 text-sm leading-relaxed">{selectedItem.description}</p>
               )}
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-2 gap-3">
                 {selectedItem.itemType && (
-                  <div>
-                    <span className="font-semibold text-gray-700">Type:</span>
-                    <span className="ml-2 text-gray-600">{selectedItem.itemType}</span>
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Type</p>
+                    <p className="text-sm font-semibold text-gray-900">{selectedItem.itemType}</p>
                   </div>
                 )}
                 {selectedItem.location && (
-                  <div>
-                    <span className="font-semibold text-gray-700">Location:</span>
-                    <span className="ml-2 text-gray-600">{selectedItem.location}</span>
+                  <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Location</p>
+                    <p className="text-sm font-semibold text-gray-900">{selectedItem.location}</p>
                   </div>
                 )}
-                <div>
-                  <span className="font-semibold text-gray-700">Posted by:</span>
-                  <span className="ml-2 text-gray-600">
-                    {selectedItem.user.firstName} {selectedItem.user.lastName}
-                  </span>
+                <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Posted by</p>
+                  <p className="text-sm font-semibold text-gray-900">{selectedItem.user.firstName} {selectedItem.user.lastName}</p>
                 </div>
-                <div>
-                  <span className="font-semibold text-gray-700">Posted:</span>
-                  <span className="ml-2 text-gray-600">{formatDate(selectedItem.createdAt)}</span>
+                <div className="bg-gray-50 rounded-xl p-3 border border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1">Posted</p>
+                  <p className="text-sm font-semibold text-gray-900">{formatDate(selectedItem.createdAt)}</p>
                 </div>
               </div>
               {selectedItem.contactInfo && (
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="text-sm font-semibold text-gray-700 mb-1">Contact Information:</p>
-                  <p className="text-blue-600">{selectedItem.contactInfo}</p>
+                <div className="bg-[#F0F3FA] p-4 rounded-xl border border-[#1a2744]/10">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Contact</p>
+                  <p className="text-sm font-semibold text-[#1a2744]">{selectedItem.contactInfo}</p>
                 </div>
               )}
-              <div className="flex gap-4 pt-4">
+              <div className="flex gap-3 pt-2">
                 {selectedItem.userId === user?.id && !selectedItem.isResolved && (
                   <button
-                    onClick={() => {
-                      handleResolve(selectedItem.id);
-                      setShowDetailModal(false);
-                    }}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                    onClick={() => { handleResolve(selectedItem.id); setShowDetailModal(false); }}
+                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#059669] hover:bg-[#047857] transition-colors"
                   >
                     Mark as Resolved
                   </button>
                 )}
                 {selectedItem.userId === user?.id && (
                   <button
-                    onClick={() => {
-                      handleDelete(selectedItem.id);
-                      setShowDetailModal(false);
-                    }}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                    onClick={() => { handleDelete(selectedItem.id); setShowDetailModal(false); }}
+                    className="px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#A51C30] hover:bg-[#8b1526] transition-colors flex items-center gap-1.5"
                   >
-                    <TrashIcon className="w-5 h-5" />
+                    <TrashIcon className="w-4 h-4" />
+                    Delete
                   </button>
                 )}
               </div>
@@ -591,8 +495,3 @@ export default function LostFoundPage() {
     </div>
   );
 }
-
-
-
-
-

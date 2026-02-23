@@ -7,20 +7,20 @@ import { useNotifications } from '@/contexts/NotificationContext';
 import { Notification } from '@/types';
 import toast from 'react-hot-toast';
 
-const getNotificationStyles = (type: string): string => {
+const getNotificationStyles = (type: string): { card: string; dot: string } => {
   switch (type) {
     case 'WARNING':
-      return 'border-orange-200 bg-orange-50 text-orange-900';
+      return { card: 'border-orange-100 bg-orange-50', dot: 'bg-orange-400' };
     case 'ERROR':
-      return 'border-red-200 bg-red-50 text-red-900';
+      return { card: 'border-[#A51C30]/20 bg-[#FFF5F5]', dot: 'bg-[#A51C30]' };
     case 'SUCCESS':
-      return 'border-green-200 bg-green-50 text-green-900';
+      return { card: 'border-emerald-100 bg-emerald-50', dot: 'bg-emerald-500' };
     case 'BUS_ALERT':
-      return 'border-blue-200 bg-blue-50 text-blue-900';
+      return { card: 'border-sky-100 bg-sky-50', dot: 'bg-sky-500' };
     case 'EVENT_UPDATE':
-      return 'border-purple-200 bg-purple-50 text-purple-900';
+      return { card: 'border-purple-100 bg-purple-50', dot: 'bg-purple-500' };
     default:
-      return 'border-gray-200 bg-gray-50 text-gray-900';
+      return { card: 'border-gray-100 bg-white', dot: 'bg-gray-400' };
   }
 };
 
@@ -31,7 +31,6 @@ const formatDate = (dateString: string) => {
   const minutes = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days = Math.floor(diff / 86400000);
-
   if (minutes < 1) return 'Just now';
   if (minutes < 60) return `${minutes}m ago`;
   if (hours < 24) return `${hours}h ago`;
@@ -44,7 +43,6 @@ export default function NotificationsPage() {
   const [hasRefreshed, setHasRefreshed] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // Only refresh once when component mounts
   useEffect(() => {
     if (!hasRefreshed) {
       setHasRefreshed(true);
@@ -54,101 +52,105 @@ export default function NotificationsPage() {
   }, []);
 
   const handleNotificationClick = async (notification: Notification) => {
-    if (!notification.isRead) {
-      await markAsRead(notification.id);
-    }
+    if (!notification.isRead) await markAsRead(notification.id);
   };
 
   const handleDeleteNotification = async (e: React.MouseEvent, notificationId: string) => {
-    e.stopPropagation(); // Prevent triggering the notification click
-    
-    if (!confirm('Are you sure you want to delete this notification?')) {
-      return;
-    }
-
+    e.stopPropagation();
+    if (!confirm('Delete this notification?')) return;
     try {
       setDeletingId(notificationId);
       await deleteNotification(notificationId);
-      toast.success('Notification deleted successfully');
+      toast.success('Notification deleted');
     } catch (error: any) {
-      console.error('Failed to delete notification:', error);
       toast.error(error.message || 'Failed to delete notification');
     } finally {
       setDeletingId(null);
     }
   };
 
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
   return (
     <div className="space-y-6">
+      {/* Page title row */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-blue-700">
-          <BellIcon className="h-5 w-5" />
-          <h1 className="text-2xl font-semibold text-gray-900">Notifications</h1>
-          {notifications.filter(n => !n.isRead).length > 0 && (
-            <span className="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-              {notifications.filter(n => !n.isRead).length} unread
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#FFF7ED] flex items-center justify-center">
+            <BellIcon className="h-5 w-5 text-orange-500" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-[#1a2744]">Notifications</h1>
+            {unreadCount > 0 && (
+              <p className="text-xs text-gray-500">{unreadCount} unread</p>
+            )}
+          </div>
+          {unreadCount > 0 && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FFF5F5] text-[#A51C30] border border-[#A51C30]/20">
+              {unreadCount}
             </span>
           )}
         </div>
-        {notifications.filter(n => !n.isRead).length > 0 && (
+        {unreadCount > 0 && (
           <button
             onClick={markAllAsRead}
-            className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+            className="text-sm font-semibold text-[#1a2744] hover:text-[#A51C30] transition-colors"
           >
             Mark all as read
           </button>
         )}
       </div>
 
+      {/* Content */}
       {isLoading ? (
-        <div className="text-center py-12">
-          <p className="text-gray-500">Loading notifications...</p>
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-3">
+          <div className="w-7 h-7 border-2 border-[#A51C30] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-400">Loading notifications…</p>
         </div>
       ) : notifications.length === 0 ? (
-        <div className="text-center py-12">
-          <BellIcon className="mx-auto h-12 w-12 text-gray-400" />
-          <p className="mt-4 text-gray-500">No notifications yet.</p>
+        <div className="flex flex-col items-center justify-center min-h-[300px] gap-4">
+          <div className="w-16 h-16 rounded-2xl bg-[#FFF7ED] flex items-center justify-center">
+            <BellIcon className="h-8 w-8 text-orange-300" strokeWidth={1.5} />
+          </div>
+          <div className="text-center">
+            <p className="font-semibold text-gray-700">All caught up!</p>
+            <p className="text-sm text-gray-400 mt-1">No notifications to show</p>
+          </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {notifications.map((notification) => (
-            <div
-              key={notification.id}
-              onClick={() => handleNotificationClick(notification)}
-              className={`rounded-xl border p-5 shadow-sm cursor-pointer transition-all hover:shadow-md relative ${
-                notification.isRead 
-                  ? getNotificationStyles(notification.type || 'INFO')
-                  : `${getNotificationStyles(notification.type || 'INFO')} ring-2 ring-blue-300`
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <div className="flex-1 pr-8">
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-semibold">{notification.title}</h3>
-                    {!notification.isRead && (
-                      <span className="h-2 w-2 rounded-full bg-blue-600"></span>
-                    )}
+        <div className="space-y-3">
+          {notifications.map((notification) => {
+            const style = getNotificationStyles(notification.type || 'INFO');
+            return (
+              <div
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`relative rounded-2xl border p-4 cursor-pointer transition-all hover:shadow-sm ${style.card} ${!notification.isRead ? 'shadow-sm' : 'opacity-75'
+                  }`}
+              >
+                <div className="flex items-start gap-3 pr-8">
+                  <div className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${!notification.isRead ? style.dot : 'bg-gray-300'}`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-semibold text-gray-900">{notification.title}</h3>
+                    </div>
+                    <p className="mt-1 text-sm text-gray-600 leading-relaxed">{notification.message}</p>
+                    <p className="mt-1.5 text-xs text-gray-400">{formatDate(notification.createdAt)}</p>
                   </div>
-                  <p className="mt-2 text-sm">{notification.message}</p>
-                  <p className="mt-2 text-xs text-gray-500">
-                    {formatDate(notification.createdAt)}
-                  </p>
                 </div>
                 <button
                   onClick={(e) => handleDeleteNotification(e, notification.id)}
                   disabled={deletingId === notification.id}
-                  className="absolute top-4 right-4 p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors disabled:opacity-50"
+                  className="absolute top-3.5 right-3.5 p-1.5 text-gray-300 hover:text-[#A51C30] rounded-lg hover:bg-[#FFF5F5] transition-colors disabled:opacity-50"
                   title="Delete notification"
                 >
                   <TrashIcon className="h-4 w-4" />
                 </button>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
   );
 }
-
-

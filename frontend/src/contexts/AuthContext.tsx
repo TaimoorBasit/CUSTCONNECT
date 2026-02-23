@@ -13,6 +13,8 @@ interface AuthContextType {
   updateProfile: (data: Partial<User>) => Promise<void>;
   verifyEmail: (email: string, otp: string) => Promise<void>;
   resendOTP: (email: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
 }
 
 interface RegisterData {
@@ -34,17 +36,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // We also cache the user object so the app shows content immediately
 // while the network call to verify the token is in-flight.
 // ---------------------------------------------------------------------------
-const TOKEN_KEY = 'token';
+const TOKEN_KEY = 'cc_token';
+const LEGACY_TOKEN_KEY = 'token';
 const USER_KEY = 'user';
 
 function saveToken(token: string) {
   try { localStorage.setItem(TOKEN_KEY, token); } catch { }
 }
 function getToken(): string | null {
-  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+  try { return localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY); } catch { return null; }
 }
 function clearToken() {
-  try { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(USER_KEY); } catch { }
+  try {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
+  } catch { }
 }
 function saveUser(user: User) {
   try { localStorage.setItem(USER_KEY, JSON.stringify(user)); } catch { }
@@ -142,8 +149,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await authService.resendOTP(email);
   };
 
+  const forgotPassword = async (email: string) => {
+    await authService.forgotPassword(email);
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    await authService.resetPassword(token, password);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile, verifyEmail, resendOTP }}>
+    <AuthContext.Provider value={{
+      user,
+      loading,
+      login,
+      register,
+      logout,
+      updateProfile,
+      verifyEmail,
+      resendOTP,
+      forgotPassword,
+      resetPassword
+    }}>
       {children}
     </AuthContext.Provider>
   );

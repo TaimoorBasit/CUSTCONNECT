@@ -3,11 +3,16 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
-import PrinterIcon from '@heroicons/react/24/outline/PrinterIcon';
-import DocumentArrowUpIcon from '@heroicons/react/24/outline/DocumentArrowUpIcon';
-import CheckCircleIcon from '@heroicons/react/24/solid/CheckCircleIcon';
-import ClockIcon from '@heroicons/react/24/solid/ClockIcon';
-import XCircleIcon from '@heroicons/react/24/solid/XCircleIcon';
+import {
+  PrinterIcon,
+  DocumentArrowUpIcon,
+  ChatBubbleLeftRightIcon,
+  MapPinIcon,
+  ClockIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+} from '@heroicons/react/24/outline';
+import PageHeader from '@/components/dashboard/PageHeader';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
@@ -30,13 +35,16 @@ interface PrintRequest {
   status: 'PENDING' | 'PROCESSING' | 'READY' | 'COMPLETED' | 'CANCELLED';
   price?: number;
   createdAt: string;
-  printerShop: {
-    id: string;
-    name: string;
-    location?: string;
-    phone?: string;
-  };
+  printerShop: { id: string; name: string; location?: string; phone?: string };
 }
+
+const STATUS_STYLES: Record<string, { text: string; bg: string; border: string }> = {
+  COMPLETED: { text: '#059669', bg: '#ECFDF5', border: '#059669' },
+  READY: { text: '#0369A1', bg: '#F0F9FF', border: '#0369A1' },
+  PROCESSING: { text: '#D97706', bg: '#FFFBEB', border: '#D97706' },
+  PENDING: { text: '#6B7280', bg: '#F9FAFB', border: '#D1D5DB' },
+  CANCELLED: { text: '#A51C30', bg: '#FFF5F5', border: '#A51C30' },
+};
 
 export default function PrintServicePage() {
   const [shops, setShops] = useState<PrinterShop[]>([]);
@@ -49,367 +57,286 @@ export default function PrintServicePage() {
   const [myRequests, setMyRequests] = useState<PrintRequest[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchShops();
-    fetchMyRequests();
-  }, []);
+  useEffect(() => { fetchShops(); fetchMyRequests(); }, []);
 
   const fetchShops = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/print/shops`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.success) {
-        setShops(response.data.shops || []);
-        if (response.data.shops && response.data.shops.length > 0) {
-          setSelectedShop(response.data.shops[0]);
-        }
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/print/shops`, { headers: { Authorization: `Bearer ${token?.trim()}` } });
+      if (res.data.success) {
+        setShops(res.data.shops || []);
+        if (res.data.shops?.length > 0) setSelectedShop(res.data.shops[0]);
       }
-    } catch (error: any) {
-      console.error('Error fetching shops:', error);
-      toast.error('Failed to load printer shops');
-    } finally {
-      setLoading(false);
-    }
+    } catch { toast.error('Failed to load printer shops'); }
+    finally { setLoading(false); }
   };
 
   const fetchMyRequests = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`${API_URL}/print/my-requests`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (response.data.success) {
-        setMyRequests(response.data.requests || []);
-      }
-    } catch (error: any) {
-      console.error('Error fetching requests:', error);
-    }
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/print/my-requests`, { headers: { Authorization: `Bearer ${token?.trim()}` } });
+      if (res.data.success) setMyRequests(res.data.requests || []);
+    } catch { }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      const maxSize = 10 * 1024 * 1024; // 10MB
-
-      if (selectedFile.size > maxSize) {
-        toast.error('File size must be less than 10MB');
-        return;
-      }
-
-      const allowedTypes = ['application/pdf', 'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'image/jpeg', 'image/png', 'image/gif', 'text/plain'];
-
-      if (!allowedTypes.includes(selectedFile.type)) {
-        toast.error('Invalid file type. Only PDF, DOC, DOCX, images, and TXT files are allowed.');
-        return;
-      }
-
-      setFile(selectedFile);
-    }
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { toast.error('File must be under 10MB'); return; }
+    const allowed = ['application/pdf', 'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'image/jpeg', 'image/png', 'image/gif', 'text/plain'];
+    if (!allowed.includes(f.type)) { toast.error('Only PDF, DOC, DOCX, image, and TXT files allowed'); return; }
+    setFile(f);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedShop) {
-      toast.error('Please select a printer shop');
-      return;
-    }
-
-    if (!file) {
-      toast.error('Please select a file to print');
-      return;
-    }
-
+    if (!selectedShop) { toast.error('Select a printer shop'); return; }
+    if (!file) { toast.error('Select a file to print'); return; }
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('token');
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('printerShopId', selectedShop.id);
-      formData.append('printType', printType);
-      formData.append('copies', copies.toString());
-      if (notes) {
-        formData.append('notes', notes);
-      }
-
-      const response = await axios.post(`${API_URL}/print/request`, formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('printerShopId', selectedShop.id);
+      fd.append('printType', printType);
+      fd.append('copies', copies.toString());
+      if (notes) fd.append('notes', notes);
+      const res = await axios.post(`${API_URL}/print/request`, fd, {
+        headers: { Authorization: `Bearer ${token?.trim()}`, 'Content-Type': 'multipart/form-data' }
       });
-
-      if (response.data.success) {
-        toast.success('Print request submitted successfully!');
-        setFile(null);
-        setCopies(1);
-        setNotes('');
-        setPrintType('BLACK_WHITE');
-        // Reset file input
-        const fileInput = document.getElementById('file-input') as HTMLInputElement;
-        if (fileInput) fileInput.value = '';
+      if (res.data.success) {
+        toast.success('Print request submitted!');
+        setFile(null); setCopies(1); setNotes(''); setPrintType('BLACK_WHITE');
+        const fi = document.getElementById('file-input') as HTMLInputElement;
+        if (fi) fi.value = '';
         fetchMyRequests();
       }
-    } catch (error: any) {
-      console.error('Error submitting print request:', error);
-      toast.error(error.response?.data?.message || 'Failed to submit print request');
-    } finally {
-      setSubmitting(false);
-    }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to submit');
+    } finally { setSubmitting(false); }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'COMPLETED': return 'text-green-600 bg-green-100';
-      case 'READY': return 'text-blue-600 bg-blue-100';
-      case 'PROCESSING': return 'text-yellow-600 bg-yellow-100';
-      case 'PENDING': return 'text-gray-600 bg-gray-100';
-      case 'CANCELLED': return 'text-red-600 bg-red-100';
-      default: return 'text-gray-600 bg-gray-100';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'COMPLETED': return <CheckCircleIcon className="w-5 h-5" />;
-      case 'READY': return <CheckCircleIcon className="w-5 h-5" />;
-      case 'PROCESSING': return <ClockIcon className="w-5 h-5" />;
-      case 'PENDING': return <ClockIcon className="w-5 h-5" />;
-      case 'CANCELLED': return <XCircleIcon className="w-5 h-5" />;
-      default: return <ClockIcon className="w-5 h-5" />;
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString();
-  };
-
-  const getFileUrl = (fileUrl: string) => {
-    if (fileUrl.startsWith('http')) return fileUrl;
-    const baseUrl = API_URL.replace('/api', '');
-    return `${baseUrl}${fileUrl}`;
-  };
+  const getFileUrl = (url: string) => url.startsWith('http') ? url : `${API_URL.replace('/api', '')}${url}`;
+  const formatDate = (ds: string) => new Date(ds).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-        <p className="mt-2 text-gray-600">Loading printer shops...</p>
+      <div className="min-h-screen bg-[#F8F7F4]">
+        <PageHeader title="Print Centre" subtitle="Submit documents to campus printer shops" icon={PrinterIcon} iconColor="#7C3AED" iconBg="#F5F3FF" />
+        <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+          <div className="w-8 h-8 border-2 border-[#A51C30] border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm text-gray-400 font-medium">Loading printer shops…</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Print Service</h1>
-        <p className="text-gray-500">Upload your documents and send them to printer shops for printing</p>
-      </div>
+    <div className="min-h-screen bg-[#F8F7F4]">
+      <PageHeader
+        title="Print Centre"
+        subtitle="Upload documents and send them to campus printer shops"
+        icon={PrinterIcon}
+        iconColor="#7C3AED"
+        iconBg="#F5F3FF"
+      />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Submit Print Request */}
-        <div className="lg:col-span-2">
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Submit Print Request</h2>
+      <div className="max-w-5xl mx-auto px-4 md:px-8 pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Printer Shop Selection */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Printer Shop *
-                </label>
-                <select
-                  value={selectedShop?.id || ''}
-                  onChange={(e) => {
-                    const shop = shops.find(s => s.id === e.target.value);
-                    setSelectedShop(shop || null);
-                  }}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  required
-                >
-                  <option value="">Select a printer shop</option>
-                  {shops.map((shop) => (
-                    <option key={shop.id} value={shop.id}>
-                      {shop.name} {shop.location && `- ${shop.location}`}
-                    </option>
-                  ))}
-                </select>
-                {selectedShop && selectedShop.description && (
-                  <p className="mt-1 text-sm text-gray-500">{selectedShop.description}</p>
-                )}
-                {selectedShop && selectedShop.ownerId && (
-                  <div className="mt-2">
-                    <a
-                      href={`/dashboard/messages?userId=${selectedShop.ownerId}`}
-                      className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-800 text-sm font-medium"
-                    >
-                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" />
-                      </svg>
-                      Message Shop Owner
-                    </a>
-                  </div>
-                )}
+          {/* Submit Request Form */}
+          <div className="lg:col-span-2 space-y-5">
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-100">
+                <h2 className="text-sm font-bold text-[#1a2744]">New Print Request</h2>
               </div>
-
-              {/* File Upload */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Upload Document *
-                </label>
-                <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-md hover:border-blue-400 transition-colors">
-                  <div className="space-y-1 text-center">
-                    <DocumentArrowUpIcon className="mx-auto h-12 w-12 text-gray-400" />
-                    <div className="flex text-sm text-gray-600">
-                      <label htmlFor="file-input" className="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500">
-                        <span>Upload a file</span>
-                        <input
-                          id="file-input"
-                          name="file"
-                          type="file"
-                          className="sr-only"
-                          onChange={handleFileChange}
-                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt"
-                        />
-                      </label>
-                      <p className="pl-1">or drag and drop</p>
-                    </div>
-                    <p className="text-xs text-gray-500">PDF, DOC, DOCX, images, TXT up to 10MB</p>
-                    {file && (
-                      <p className="text-sm text-gray-900 font-medium mt-2">{file.name}</p>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Print Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Print Type *
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="BLACK_WHITE"
-                      checked={printType === 'BLACK_WHITE'}
-                      onChange={(e) => setPrintType(e.target.value as 'BLACK_WHITE')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Black & White</span>
-                  </label>
-                  <label className="flex items-center">
-                    <input
-                      type="radio"
-                      value="COLOR"
-                      checked={printType === 'COLOR'}
-                      onChange={(e) => setPrintType(e.target.value as 'COLOR')}
-                      className="mr-2"
-                    />
-                    <span className="text-sm text-gray-700">Color</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* Copies */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Copies *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={copies}
-                  onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  required
-                />
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Special Instructions (Optional)
-                </label>
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  rows={3}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  placeholder="Any special instructions for printing..."
-                />
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={submitting || !file || !selectedShop}
-                className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <PrinterIcon className="w-5 h-5" />
-                {submitting ? 'Submitting...' : 'Submit Print Request'}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* My Requests */}
-        <div>
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">My Print Requests</h2>
-
-            {myRequests.length === 0 ? (
-              <p className="text-sm text-gray-500 text-center py-4">No print requests yet</p>
-            ) : (
-              <div className="space-y-3">
-                {myRequests.slice(0, 5).map((request) => (
-                  <div key={request.id} className="border border-gray-200 rounded-lg p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">{request.fileName}</p>
-                        <p className="text-xs text-gray-500">{request.printerShop.name}</p>
+              <form onSubmit={handleSubmit} className="p-6 space-y-5">
+                {/* Shop selector */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Printer Shop *</label>
+                  <select
+                    value={selectedShop?.id || ''}
+                    onChange={(e) => setSelectedShop(shops.find((s) => s.id === e.target.value) || null)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:border-[#7C3AED]/30 transition"
+                    required
+                  >
+                    <option value="">Select a printer shop</option>
+                    {shops.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name}{s.location ? ` · ${s.location}` : ''}</option>
+                    ))}
+                  </select>
+                  {selectedShop && (
+                    <div className="mt-3 flex items-start justify-between gap-3 p-3 bg-[#F5F3FF] rounded-xl border border-[#7C3AED]/10">
+                      <div>
+                        {selectedShop.description && <p className="text-xs text-gray-600">{selectedShop.description}</p>}
+                        {selectedShop.location && (
+                          <div className="flex items-center gap-1 text-xs text-gray-400 mt-1">
+                            <MapPinIcon className="w-3 h-3" /> {selectedShop.location}
+                          </div>
+                        )}
                       </div>
-                      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                        {getStatusIcon(request.status)}
-                        {request.status}
-                      </span>
-                    </div>
-                    <div className="text-xs text-gray-500 space-y-1">
-                      <p>{request.printType === 'COLOR' ? 'Color' : 'B&W'} • {request.copies} copy{request.copies > 1 ? 'ies' : ''}</p>
-                      <p>{formatDate(request.createdAt)}</p>
-                      {request.price && (
-                        <p className="font-medium text-gray-700">Price: ${Number(request.price).toFixed(2)}</p>
+                      {selectedShop.ownerId && (
+                        <a
+                          href={`/dashboard/messages?userId=${selectedShop.ownerId}`}
+                          className="flex-shrink-0 flex items-center gap-1 text-xs font-semibold text-[#7C3AED] hover:underline"
+                        >
+                          <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" /> Message
+                        </a>
                       )}
                     </div>
-                    {request.status === 'READY' && (
-                      <a
-                        href={getFileUrl(request.fileUrl)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-2 inline-block text-xs text-blue-600 hover:text-blue-700"
-                      >
-                        View Document →
-                      </a>
+                  )}
+                </div>
+
+                {/* File upload */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Document *</label>
+                  <label
+                    htmlFor="file-input"
+                    className={`flex flex-col items-center gap-3 p-6 border-2 border-dashed rounded-xl cursor-pointer transition-colors ${file ? 'border-[#7C3AED]/30 bg-[#F5F3FF]' : 'border-gray-200 bg-gray-50 hover:border-[#7C3AED]/30 hover:bg-[#F5F3FF]'
+                      }`}
+                  >
+                    <DocumentArrowUpIcon className={`w-8 h-8 ${file ? 'text-[#7C3AED]' : 'text-gray-300'}`} strokeWidth={1.5} />
+                    {file ? (
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-[#7C3AED]">{file.name}</p>
+                        <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(0)} KB — click to change</p>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <p className="text-sm font-semibold text-gray-500">Click to upload</p>
+                        <p className="text-xs text-gray-400 mt-0.5">PDF, DOC, DOCX, image, TXT · max 10 MB</p>
+                      </div>
                     )}
+                    <input id="file-input" name="file" type="file" className="sr-only" onChange={handleFileChange} accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt" />
+                  </label>
+                </div>
+
+                {/* Print type */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-2">Print Type *</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {(['BLACK_WHITE', 'COLOR'] as const).map((t) => (
+                      <label
+                        key={t}
+                        className={`flex items-center gap-3 p-3.5 rounded-xl border cursor-pointer transition-all ${printType === t
+                            ? 'border-[#7C3AED] bg-[#F5F3FF]'
+                            : 'border-gray-200 bg-gray-50 hover:border-gray-300'
+                          }`}
+                      >
+                        <input
+                          type="radio"
+                          value={t}
+                          checked={printType === t}
+                          onChange={() => setPrintType(t)}
+                          className="sr-only"
+                        />
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${printType === t ? 'border-[#7C3AED]' : 'border-gray-300'}`}>
+                          {printType === t && <div className="w-2 h-2 rounded-full bg-[#7C3AED]" />}
+                        </div>
+                        <span className="text-sm font-medium text-gray-700">{t === 'BLACK_WHITE' ? 'Black & White' : 'Colour'}</span>
+                      </label>
+                    ))}
                   </div>
-                ))}
+                </div>
+
+                {/* Copies */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Copies *</label>
+                  <input
+                    type="number" min={1} max={100}
+                    value={copies}
+                    onChange={(e) => setCopies(parseInt(e.target.value) || 1)}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:border-[#7C3AED]/30 transition"
+                    required
+                  />
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Special Instructions</label>
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={3}
+                    className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:border-[#7C3AED]/30 transition resize-none"
+                    placeholder="e.g., staple, double-sided, specific paper size…"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={submitting || !file || !selectedShop}
+                  className="w-full py-3 rounded-xl text-sm font-semibold text-white bg-[#7C3AED] hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+                >
+                  <PrinterIcon className="w-4 h-4" strokeWidth={2} />
+                  {submitting ? 'Submitting…' : 'Submit Print Request'}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* My Requests sidebar */}
+          <div>
+            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden sticky top-24">
+              <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 className="text-sm font-bold text-[#1a2744]">My Requests</h2>
+                {myRequests.length > 0 && (
+                  <span className="text-xs font-semibold text-[#7C3AED] bg-[#F5F3FF] px-2 py-0.5 rounded-full">
+                    {myRequests.length}
+                  </span>
+                )}
               </div>
-            )}
+              <div className="p-4">
+                {myRequests.length === 0 ? (
+                  <div className="text-center py-8">
+                    <ClockIcon className="w-8 h-8 text-gray-200 mx-auto mb-2" strokeWidth={1.5} />
+                    <p className="text-xs text-gray-400">No requests yet</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {myRequests.slice(0, 6).map((req) => {
+                      const s = STATUS_STYLES[req.status] || STATUS_STYLES.PENDING;
+                      return (
+                        <div key={req.id} className="p-3 rounded-xl border border-gray-100 bg-gray-50">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <p className="text-xs font-semibold text-gray-900 truncate flex-1">{req.fileName}</p>
+                            <span
+                              className="text-[10px] font-bold px-2 py-0.5 rounded-lg flex-shrink-0"
+                              style={{ color: s.text, background: s.bg }}
+                            >
+                              {req.status}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-500">{req.printerShop.name}</p>
+                          <div className="flex items-center justify-between mt-1.5">
+                            <p className="text-[10px] text-gray-400">
+                              {req.printType === 'COLOR' ? 'Colour' : 'B&W'} · {req.copies} copies
+                              {req.price ? ` · $${Number(req.price).toFixed(2)}` : ''}
+                            </p>
+                            <p className="text-[10px] text-gray-400">{formatDate(req.createdAt)}</p>
+                          </div>
+                          {req.status === 'READY' && (
+                            <a
+                              href={getFileUrl(req.fileUrl)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="mt-2 text-[11px] font-semibold text-[#7C3AED] hover:underline block"
+                            >
+                              View document →
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-
-
-
-

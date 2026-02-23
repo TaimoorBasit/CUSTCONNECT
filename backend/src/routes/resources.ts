@@ -4,6 +4,21 @@ import { asyncHandler, createError } from '../middleware/errorHandler';
 import { AuthRequest } from '../middleware/auth';
 
 const router = express.Router();
+import { uploadResource, getFileUrl } from '../utils/upload';
+
+// Upload academic resource file
+router.post('/upload', uploadResource.single('file'), asyncHandler(async (req: AuthRequest, res) => {
+  if (!req.file) {
+    throw createError('No file provided', 400);
+  }
+
+  const fileUrl = getFileUrl(req.file.path, 'resource' as any);
+
+  res.json({
+    success: true,
+    fileUrl
+  });
+}));
 
 // Get academic resources
 router.get('/', asyncHandler(async (req: AuthRequest, res) => {

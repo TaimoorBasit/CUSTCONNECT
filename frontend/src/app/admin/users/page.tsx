@@ -11,7 +11,8 @@ import ArrowPathIcon from '@heroicons/react/24/outline/ArrowPathIcon';
 import AcademicCapIcon from '@heroicons/react/24/outline/AcademicCapIcon';
 import KeyIcon from '@heroicons/react/24/outline/KeyIcon';
 import MagnifyingGlassIcon from '@heroicons/react/24/outline/MagnifyingGlassIcon';
-import FunnelIcon from '@heroicons/react/24/outline/FunnelIcon';
+import UsersIcon from '@heroicons/react/24/outline/UsersIcon';
+import ChevronDownIcon from '@heroicons/react/24/outline/ChevronDownIcon';
 import toast from 'react-hot-toast';
 import { adminService } from '@/services/adminService';
 
@@ -27,6 +28,43 @@ interface User {
   university?: { name: string };
 }
 
+const ROLE_COLORS: Record<string, { bg: string; text: string; border: string; label: string }> = {
+  STUDENT: { bg: '#EFF6FF', text: '#1D4ED8', border: '#BFDBFE', label: 'Student' },
+  SUPER_ADMIN: { bg: '#FEF2F2', text: '#991B1B', border: '#FECACA', label: 'Administrator' },
+  CAFE_OWNER: { bg: '#FFFBEB', text: '#92400E', border: '#FDE68A', label: 'Cafe Owner' },
+  BUS_OPERATOR: { bg: '#ECFDF5', text: '#065F46', border: '#A7F3D0', label: 'Bus Operator' },
+  PRINTER_SHOP_OWNER: { bg: '#F5F3FF', text: '#5B21B6', border: '#DDD6FE', label: 'Print Shop' },
+};
+
+function getRoleStyle(name: string) {
+  return ROLE_COLORS[name] ?? { bg: '#F9FAFB', text: '#374151', border: '#E5E7EB', label: name.replace(/_/g, ' ') };
+}
+
+function UserAvatar({ user }: { user: User }) {
+  const primaryRole = user.roles[0]?.name ?? 'STUDENT';
+  const colors: Record<string, string> = {
+    SUPER_ADMIN: '#A51C30',
+    STUDENT: '#1a2744',
+    CAFE_OWNER: '#D97706',
+    BUS_OPERATOR: '#059669',
+    PRINTER_SHOP_OWNER: '#7C3AED',
+  };
+  const bg = colors[primaryRole] ?? '#1a2744';
+  return (
+    <div
+      className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-white text-sm flex-shrink-0 shadow-sm relative"
+      style={{ background: bg }}
+    >
+      {user.firstName[0]}{user.lastName[0]}
+      {user.isVerified && (
+        <span className="absolute -bottom-1 -right-1 w-4 h-4 bg-white border-2 border-white rounded-full flex items-center justify-center shadow-sm">
+          <CheckIcon className="w-2.5 h-2.5 text-emerald-500" strokeWidth={3} />
+        </span>
+      )}
+    </div>
+  );
+}
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
@@ -39,46 +77,40 @@ export default function AdminUsersPage() {
   const [universities, setUniversities] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
-    fetchUsers();
     fetchRoles();
     fetchUniversities();
   }, []);
 
   useEffect(() => {
-    fetchUsers();
-  }, [roleFilter]);
-
-  const handleRefresh = () => {
-    fetchUsers();
-  };
+    const timer = setTimeout(() => {
+      fetchUsers(searchTerm, roleFilter !== 'all' ? roleFilter : undefined);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm, roleFilter]);
 
   const fetchUniversities = async () => {
     try {
       const data = await adminService.getUniversities();
-      if (Array.isArray(data)) {
-        setUniversities(data);
-      } else {
-        setUniversities([]);
-      }
-    } catch (error: any) {
+      setUniversities(Array.isArray(data) ? data : []);
+    } catch {
       setUniversities([]);
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = async (search?: string, role?: string) => {
     try {
       setLoading(true);
-      const data = await adminService.getUsers({ role: roleFilter !== 'all' ? roleFilter : undefined });
+      const data = await adminService.getUsers({ search, role, limit: 50 });
       setUsers(data.users.map((u: any) => ({
         ...u,
         roles: u.roles?.map((ur: any) => ({
           id: ur.role?.id || ur.id,
-          name: ur.role?.name || ur.name
-        })) || []
+          name: ur.role?.name || ur.name,
+        })) || [],
       })));
-      setLoading(false);
     } catch (error: any) {
       toast.error(error.message || 'Failed to load users');
+    } finally {
       setLoading(false);
     }
   };
@@ -92,11 +124,6 @@ export default function AdminUsersPage() {
     }
   };
 
-  const handleAssignRole = (user: User) => {
-    setSelectedUser(user);
-    setShowRoleModal(true);
-  };
-
   const handleToggleActive = async (userId: string, isActive: boolean) => {
     try {
       await adminService.toggleUserActive(userId, isActive);
@@ -108,8 +135,7 @@ export default function AdminUsersPage() {
   };
 
   const handleResetPassword = async (userId: string, identifier?: string | null) => {
-    const displayId = identifier || 'this user';
-    if (!confirm(`Reset password for ${displayId}?`)) return;
+    if (!confirm(`Reset password for ${identifier || 'this user'}?`)) return;
     try {
       const newPassword = await adminService.resetUserPassword(userId);
       toast.success(`Temporary Password: ${newPassword}`, { duration: 10000 });
@@ -119,8 +145,7 @@ export default function AdminUsersPage() {
   };
 
   const handleDeleteUser = async (userId: string, identifier?: string | null) => {
-    const displayId = identifier || 'this user';
-    if (!confirm(`Permanently delete ${displayId}?`)) return;
+    if (!confirm(`Permanently delete ${identifier || 'this user'}?`)) return;
     try {
       await adminService.deleteUser(userId);
       toast.success('User deleted');
@@ -130,218 +155,214 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    const matchesSearch =
-      (user.email?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (user.username?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (user.firstName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (user.lastName?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-    return matchesSearch;
-  });
-
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-medium animate-pulse">Syncing user directory...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-7xl mx-auto space-y-8 pb-12 px-4 sm:px-0">
-      {/* Premium Header */}
-      <div className="relative overflow-hidden rounded-[32px] bg-gradient-to-br from-[#1a1b3b] to-indigo-900 p-8 shadow-2xl transition-all duration-700">
-        <div className="absolute top-0 right-0 -m-12 w-96 h-96 bg-indigo-500/10 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-0 left-0 -m-12 w-64 h-64 bg-purple-500/10 rounded-full blur-[80px]"></div>
+    <div className="min-h-screen bg-[#F8F7F4]">
 
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-          <div className="space-y-3">
-            <h1 className="text-4xl md:text-5xl font-black tracking-tight text-white">
-              Identity <span className="text-indigo-400">Labs</span>
-            </h1>
-            <p className="text-indigo-100/60 font-medium max-w-xl leading-relaxed">
-              Orchestrate user permissions, access levels, and organizational structures across the entire ecosystem.
-            </p>
-          </div>
-
+      {/* ── PAGE HEADER ─────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-200 px-6 py-6 md:px-10">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-xl bg-[#1a2744] flex items-center justify-center flex-shrink-0 shadow-sm">
+              <UsersIcon className="w-6 h-6 text-white" strokeWidth={1.8} />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-[#1a2744] tracking-tight">User Management</h1>
+              <p className="text-sm text-gray-400 mt-0.5">
+                {loading ? 'Loading…' : `${users.length} user${users.length !== 1 ? 's' : ''} found`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
             <button
-              onClick={handleRefresh}
-              className="p-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl border border-white/10 transition-all hover:rotate-180 duration-500"
-              title="Refresh Directory"
+              onClick={() => fetchUsers(searchTerm, roleFilter !== 'all' ? roleFilter : undefined)}
+              className="p-2.5 rounded-xl border border-gray-200 text-gray-500 hover:bg-gray-50 hover:text-[#1a2744] transition-colors"
+              title="Refresh"
             >
-              <ArrowPathIcon className="h-6 w-6 text-indigo-300" />
+              <ArrowPathIcon className="w-5 h-5" />
             </button>
             <button
               onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-3 px-8 py-5 bg-indigo-500 hover:bg-indigo-600 text-white rounded-[24px] font-black shadow-xl shadow-indigo-500/20 transition-all active:scale-95"
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#A51C30] hover:bg-[#8b1526] transition-colors shadow-sm"
             >
-              <PlusIcon className="h-6 w-6" />
-              Onboard User
+              <PlusIcon className="w-4 h-4" strokeWidth={2.5} />
+              Add User
             </button>
           </div>
         </div>
       </div>
 
-      {/* Advanced Filtering */}
-      <div className="flex flex-col md:flex-row gap-4">
-        <div className="relative flex-1 group">
-          <MagnifyingGlassIcon className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
-          <input
-            type="text"
-            placeholder="Search by name, email, or username..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-16 pr-8 py-5 bg-white rounded-[24px] border border-gray-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm font-medium outline-none"
-          />
-        </div>
-        <div className="relative md:w-72">
-          <FunnelIcon className="absolute left-6 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="w-full pl-16 pr-8 py-5 bg-white rounded-[24px] border border-gray-100 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all shadow-sm font-black text-gray-900 outline-none appearance-none cursor-pointer"
-          >
-            <option value="all">ALL DEPARTMENTS</option>
-            <option value="STUDENT">STUDENTS</option>
-            <option value="CAFE_OWNER">CAFE OWNERS</option>
-            <option value="BUS_OPERATOR">BUS OPERATORS</option>
-            <option value="PRINTER_SHOP_OWNER">PRINTER SHOPS</option>
-            <option value="SUPER_ADMIN">ADMINISTRATORS</option>
-          </select>
+      {/* ── FILTERS ─────────────────────────────────────────────────── */}
+      <div className="bg-white border-b border-gray-100 px-6 py-4 md:px-10">
+        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row gap-3">
+          {/* Search */}
+          <div className="relative flex-1">
+            <MagnifyingGlassIcon className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by name, email, or username…"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/10 focus:border-[#1a2744]/30 bg-white"
+            />
+          </div>
+          {/* Role filter */}
+          <div className="relative sm:w-56">
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="w-full pl-4 pr-9 py-2.5 border border-gray-200 rounded-xl text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/10 focus:border-[#1a2744]/30 bg-white appearance-none cursor-pointer"
+            >
+              <option value="all">All Roles</option>
+              <option value="STUDENT">Students</option>
+              <option value="CAFE_OWNER">Cafe Owners</option>
+              <option value="BUS_OPERATOR">Bus Operators</option>
+              <option value="PRINTER_SHOP_OWNER">Print Shop Owners</option>
+              <option value="SUPER_ADMIN">Administrators</option>
+            </select>
+            <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+          </div>
         </div>
       </div>
 
-      {/* Modern User Grid */}
-      <div className="grid grid-cols-1 gap-4">
-        {filteredUsers.length === 0 ? (
-          <div className="py-20 bg-white rounded-[40px] border-2 border-dashed border-gray-100 flex flex-col items-center justify-center space-y-4">
-            <div className="p-6 bg-gray-50 rounded-full">
-              <UserCircleIcon className="h-12 w-12 text-gray-200" />
+      {/* ── USER TABLE ──────────────────────────────────────────────── */}
+      <div className="max-w-6xl mx-auto px-4 md:px-10 py-6">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3">
+            <div className="w-8 h-8 border-2 border-[#A51C30] border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-gray-400 font-medium">Loading users…</p>
+          </div>
+        ) : users.length === 0 ? (
+          <div className="bg-white rounded-2xl border border-gray-100 py-20 flex flex-col items-center justify-center gap-3">
+            <div className="w-14 h-14 rounded-2xl bg-gray-50 flex items-center justify-center">
+              <UserCircleIcon className="w-7 h-7 text-gray-300" />
             </div>
-            <p className="text-gray-400 font-black text-xl tracking-tight">No identities found</p>
+            <p className="text-sm font-semibold text-gray-400">No users found</p>
+            <p className="text-xs text-gray-300">Try adjusting your search or filter</p>
           </div>
         ) : (
-          filteredUsers.map((user) => (
-            <div
-              key={user.id}
-              className={`group relative bg-white rounded-[32px] p-6 md:p-8 border border-gray-100 shadow-sm transition-all duration-500 hover:shadow-2xl hover:border-indigo-500/10 ${!user.isActive && 'grayscale opacity-70'}`}
-            >
-              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
-                <div className="flex items-center gap-6">
-                  <div className="relative">
-                    <div className="w-20 h-20 rounded-[28px] bg-gradient-to-br from-[#1a1b3b] to-indigo-600 flex items-center justify-center shadow-indigo-500/20 shadow-xl ring-4 ring-white">
-                      <span className="text-2xl font-black text-white">
-                        {user.firstName[0]}{user.lastName[0]}
-                      </span>
-                    </div>
-                    {user.isVerified && (
-                      <div className="absolute -bottom-1 -right-1 p-1.5 bg-indigo-500 rounded-full border-2 border-white shadow-sm">
-                        <CheckIcon className="h-3 w-3 text-white stroke-[4]" />
-                      </div>
-                    )}
-                  </div>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            {/* Table header */}
+            <div className="hidden md:grid grid-cols-[2fr_2fr_1fr_auto] gap-4 px-6 py-3 border-b border-gray-100 bg-gray-50">
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Name</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Email / Username</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Role</span>
+              <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Actions</span>
+            </div>
 
-                  <div className="space-y-1">
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight group-hover:text-indigo-600 transition-colors">
-                      {user.firstName} {user.lastName}
-                    </h3>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-500 font-bold uppercase tracking-tight">
-                      <span className="truncate max-w-[200px]">{user.email || user.username}</span>
+            {/* Rows */}
+            <div className="divide-y divide-gray-50">
+              {users.map((user) => (
+                <div
+                  key={user.id}
+                  className={`flex flex-col md:grid md:grid-cols-[2fr_2fr_1fr_auto] gap-4 items-start md:items-center px-6 py-4 hover:bg-gray-50/60 transition-colors group ${!user.isActive ? 'opacity-50' : ''}`}
+                >
+                  {/* Name + avatar */}
+                  <div className="flex items-center gap-3 min-w-0">
+                    <UserAvatar user={user} />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-[#1a2744] transition-colors">
+                        {user.firstName} {user.lastName}
+                      </p>
                       {user.university && (
-                        <div className="flex items-center gap-1.5 bg-gray-50 px-3 py-1 rounded-lg">
-                          <AcademicCapIcon className="h-3.5 w-3.5 text-indigo-400" />
-                          <span className="text-[10px] text-gray-600 truncate max-w-[150px]">{user.university.name}</span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <AcademicCapIcon className="w-3 h-3 text-gray-300 flex-shrink-0" />
+                          <span className="text-[11px] text-gray-400 truncate">{user.university.name}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                </div>
 
-                <div className="flex flex-wrap items-center gap-6">
-                  <div className="flex flex-wrap gap-2">
-                    {user.roles.map((role) => (
-                      <span
-                        key={role.id}
-                        className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest bg-indigo-50 text-indigo-600 border border-indigo-100 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-300"
-                      >
-                        {role.name === 'SUPER_ADMIN' ? 'PRO ADMIN' : role.name.replace('_', ' ')}
+                  {/* Email */}
+                  <div className="min-w-0 md:block pl-14 md:pl-0">
+                    <p className="text-sm text-gray-500 truncate">{user.email || user.username || '—'}</p>
+                    {!user.isActive && (
+                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-rose-500 mt-0.5">
+                        <XMarkIcon className="w-3 h-3" /> Disabled
                       </span>
-                    ))}
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-[1px] bg-gray-100 hidden lg:block mx-2" />
+                  {/* Roles */}
+                  <div className="flex flex-wrap gap-1.5 pl-14 md:pl-0">
+                    {user.roles.length === 0 ? (
+                      <span className="text-xs text-gray-300 italic">No role</span>
+                    ) : user.roles.map((role) => {
+                      const s = getRoleStyle(role.name);
+                      return (
+                        <span
+                          key={role.id}
+                          className="inline-flex items-center px-2.5 py-1 rounded-lg text-[11px] font-semibold border"
+                          style={{ background: s.bg, color: s.text, borderColor: s.border }}
+                        >
+                          {s.label}
+                        </span>
+                      );
+                    })}
+                  </div>
 
+                  {/* Action buttons */}
+                  <div className="flex items-center gap-1.5 pl-14 md:pl-0 flex-shrink-0">
+                    {/* Edit role */}
                     <button
-                      onClick={() => handleAssignRole(user)}
-                      className="p-3.5 rounded-2xl bg-gray-50 text-gray-400 hover:bg-indigo-50 hover:text-indigo-600 transition-all active:scale-95"
-                      title="Adjust Permissions"
+                      onClick={() => { setSelectedUser(user); setShowRoleModal(true); }}
+                      className="p-2 rounded-lg text-gray-400 hover:bg-[#1a2744]/5 hover:text-[#1a2744] transition-colors"
+                      title="Edit roles"
                     >
-                      <PencilIcon className="h-5 w-5" />
+                      <PencilIcon className="w-4 h-4" />
                     </button>
 
+                    {/* Reset password */}
                     <button
                       onClick={() => handleResetPassword(user.id, user.email || user.username)}
-                      className="p-3.5 rounded-2xl bg-gray-50 text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-all active:scale-95"
-                      title="Reset Access Key"
+                      className="p-2 rounded-lg text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                      title="Reset password"
                     >
-                      <KeyIcon className="h-5 w-5" />
+                      <KeyIcon className="w-4 h-4" />
                     </button>
 
+                    {/* Toggle active */}
                     <button
                       onClick={() => handleToggleActive(user.id, user.isActive)}
-                      className={`p-3.5 rounded-2xl transition-all active:scale-95 ${user.isActive
-                        ? 'bg-emerald-50 text-emerald-600 hover:bg-emerald-500 hover:text-white'
-                        : 'bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white'
-                        }`}
-                      title={user.isActive ? 'Deactivate Account' : 'Reactivate Account'}
+                      className={`p-2 rounded-lg transition-colors ${user.isActive
+                        ? 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600'
+                        : 'text-rose-400 hover:bg-rose-50 hover:text-rose-600'}`}
+                      title={user.isActive ? 'Deactivate' : 'Activate'}
                     >
-                      {user.isActive ? <CheckIcon className="h-5 w-5 stroke-[3]" /> : <XMarkIcon className="h-5 w-5 stroke-[3]" />}
+                      {user.isActive
+                        ? <CheckIcon className="w-4 h-4" strokeWidth={2.5} />
+                        : <XMarkIcon className="w-4 h-4" strokeWidth={2.5} />}
                     </button>
 
+                    {/* Delete */}
                     <button
                       onClick={() => handleDeleteUser(user.id, user.email || user.username)}
-                      className="p-3.5 rounded-2xl bg-gray-50 text-gray-400 hover:bg-rose-500 hover:text-white transition-all active:scale-95"
-                      title="Remove Identity"
+                      className="p-2 rounded-lg text-gray-300 hover:bg-rose-50 hover:text-rose-500 transition-colors"
+                      title="Delete user"
                     >
-                      <TrashIcon className="h-5 w-5" />
+                      <TrashIcon className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-              </div>
-
-              {!user.isActive && (
-                <div className="absolute top-0 right-10 flex">
-                  <div className="px-4 py-1.5 bg-rose-500 rounded-b-2xl shadow-lg border border-rose-600 border-t-0">
-                    <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">Access Restricted</span>
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
-          ))
+          </div>
         )}
       </div>
 
-      {/* Role Assignment Modal */}
+      {/* ── MODALS ──────────────────────────────────────────────────── */}
       {showRoleModal && selectedUser && (
         <RoleAssignmentModal
           user={selectedUser}
-          availableRoles={availableRoles.filter(r => r.name !== 'SUPER_ADMIN')}
-          onClose={() => {
-            setShowRoleModal(false);
-            setSelectedUser(null);
-          }}
+          availableRoles={availableRoles.filter((r) => r.name !== 'SUPER_ADMIN')}
+          onClose={() => { setShowRoleModal(false); setSelectedUser(null); }}
           onSave={fetchUsers}
         />
       )}
 
-      {/* Create User Modal */}
       {showCreateModal && (
         <CreateUserModal
           universities={universities}
-          availableRoles={availableRoles.filter(r => r.name !== 'UNIVERSITY_ADMIN')}
+          availableRoles={availableRoles.filter((r) => r.name !== 'UNIVERSITY_ADMIN')}
           onClose={() => setShowCreateModal(false)}
           onSave={fetchUsers}
         />
@@ -350,11 +371,9 @@ export default function AdminUsersPage() {
   );
 }
 
+/* ─── Role Assignment Modal ───────────────────────────────────────────── */
 function RoleAssignmentModal({
-  user,
-  availableRoles,
-  onClose,
-  onSave,
+  user, availableRoles, onClose, onSave,
 }: {
   user: User;
   availableRoles: Array<{ id: string; name: string }>;
@@ -364,13 +383,10 @@ function RoleAssignmentModal({
   const [selectedRoleId, setSelectedRoleId] = useState('');
 
   const handleAssign = async () => {
-    if (!selectedRoleId) {
-      toast.error('Identity tier required');
-      return;
-    }
+    if (!selectedRoleId) return toast.error('Please select a role');
     try {
       await adminService.assignRole(user.id, selectedRoleId);
-      toast.success('Permissions updated');
+      toast.success('Role assigned');
       onSave();
       setSelectedRoleId('');
     } catch (error: any) {
@@ -379,104 +395,107 @@ function RoleAssignmentModal({
   };
 
   const handleRemoveRole = async (roleId: string, roleName: string) => {
-    if (!confirm(`Revoke ${roleName} from ${user.firstName}?`)) return;
+    if (!confirm(`Remove ${roleName.replace(/_/g, ' ')} from ${user.firstName}?`)) return;
     try {
       await adminService.removeRole(user.id, roleId);
-      toast.success('Permission revoked');
+      toast.success('Role removed');
       onSave();
     } catch (error: any) {
-      toast.error(error.message || 'Failed to revoke');
+      toast.error(error.message || 'Failed to remove');
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 py-8">
-        <div className="fixed inset-0 bg-[#1a1b3b]/80 backdrop-blur-md" onClick={onClose} />
-        <div className="relative bg-white rounded-[40px] shadow-2xl max-w-md w-full p-8 border border-white/20 overflow-hidden">
-          <div className="absolute top-0 right-0 -m-8 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl"></div>
-
-          <div className="relative z-10 space-y-8">
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mb-4">
-                <KeyIcon className="h-8 w-8 text-indigo-500" />
-              </div>
-              <h2 className="text-2xl font-black text-gray-900 tracking-tight leading-tight">
-                Manage Access: <br /><span className="text-indigo-600">{user.firstName} {user.lastName}</span>
-              </h2>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md border border-gray-100 overflow-hidden">
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#1a2744] flex items-center justify-center">
+              <KeyIcon className="w-4 h-4 text-white" />
             </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Assign New Tier</label>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedRoleId}
-                    onChange={(e) => setSelectedRoleId(e.target.value)}
-                    className="flex-1 px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-black text-gray-900 focus:ring-4 focus:ring-indigo-500/10 appearance-none outline-none"
-                  >
-                    <option value="">CHOOSE PERMISSION...</option>
-                    {availableRoles
-                      .filter(role => !user.roles.some(r => r.id === role.id))
-                      .map((role) => (
-                        <option key={role.id} value={role.id}>
-                          {role.name.replace('_', ' ')}
-                        </option>
-                      ))}
-                  </select>
-                  <button
-                    onClick={handleAssign}
-                    disabled={!selectedRoleId}
-                    className="p-4 bg-indigo-500 text-white rounded-2xl disabled:opacity-20 transition-all active:scale-95 shadow-lg shadow-indigo-500/20"
-                  >
-                    <PlusIcon className="h-6 w-6 stroke-[3]" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4 text-gray-900">Active Permissions</label>
-                <div className="space-y-2">
-                  {user.roles.length === 0 ? (
-                    <div className="p-4 bg-gray-50 rounded-2xl text-center italic text-gray-400 text-sm font-medium">No tiers assigned</div>
-                  ) : (
-                    user.roles.map((role) => (
-                      <div key={role.id} className="flex items-center justify-between p-4 bg-white border border-gray-100 rounded-2xl hover:border-rose-200 transition-colors group/row">
-                        <span className="text-sm font-black text-gray-700 tracking-tight uppercase">
-                          {role.name.replace('_', ' ')}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveRole(role.id, role.name)}
-                          className="p-2 text-gray-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                          title="Revoke Permission"
-                        >
-                          <XMarkIcon className="h-5 w-5 stroke-[3]" />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">Manage Roles</p>
+              <p className="text-xs text-gray-400">{user.firstName} {user.lastName}</p>
             </div>
-
-            <button
-              onClick={onClose}
-              className="w-full py-4 bg-gray-900 text-white rounded-2xl font-black transition-all hover:bg-black"
-            >
-              Update Directory
-            </button>
           </div>
+          <button onClick={onClose} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-5">
+          {/* Current roles */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Current Roles</p>
+            {user.roles.length === 0 ? (
+              <p className="text-sm text-gray-300 italic">No roles assigned</p>
+            ) : (
+              <div className="space-y-2">
+                {user.roles.map((role) => {
+                  const s = getRoleStyle(role.name);
+                  return (
+                    <div key={role.id} className="flex items-center justify-between px-4 py-2.5 rounded-xl border" style={{ borderColor: s.border, background: s.bg }}>
+                      <span className="text-sm font-semibold" style={{ color: s.text }}>{s.label}</span>
+                      <button
+                        onClick={() => handleRemoveRole(role.id, role.name)}
+                        className="p-1 rounded-lg text-gray-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Add role */}
+          <div>
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Add Role</p>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <select
+                  value={selectedRoleId}
+                  onChange={(e) => setSelectedRoleId(e.target.value)}
+                  className="w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/10 bg-white appearance-none cursor-pointer"
+                >
+                  <option value="">Select role…</option>
+                  {availableRoles
+                    .filter((role) => !user.roles.some((r) => r.id === role.id))
+                    .map((role) => (
+                      <option key={role.id} value={role.id}>{role.name.replace(/_/g, ' ')}</option>
+                    ))}
+                </select>
+                <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+              <button
+                onClick={handleAssign}
+                disabled={!selectedRoleId}
+                className="px-4 py-2.5 rounded-xl bg-[#1a2744] text-white text-sm font-semibold disabled:opacity-30 hover:bg-[#243456] transition-colors"
+              >
+                Assign
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 pb-6">
+          <button
+            onClick={onClose}
+            className="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            Done
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
+/* ─── Create User Modal ───────────────────────────────────────────────── */
 function CreateUserModal({
-  universities,
-  availableRoles,
-  onClose,
-  onSave,
+  universities, availableRoles, onClose, onSave,
 }: {
   universities: Array<{ id: string; name: string }>;
   availableRoles: Array<{ id: string; name: string }>;
@@ -484,22 +503,16 @@ function CreateUserModal({
   onSave: () => void;
 }) {
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    universityId: '',
-    year: '',
-    roleId: '',
-    studentId: '',
+    firstName: '', lastName: '', email: '', password: '',
+    universityId: '', year: '', roleId: '', studentId: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.roleId) return toast.error('Role selection is mandatory');
+    if (!formData.roleId) return toast.error('Role is required');
     try {
       await adminService.createUser(formData);
-      toast.success('Identity established');
+      toast.success('User created successfully');
       onSave();
       onClose();
     } catch (error: any) {
@@ -507,138 +520,156 @@ function CreateUserModal({
     }
   };
 
+  const inputClass = "w-full px-4 py-2.5 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#1a2744]/10 focus:border-[#1a2744]/30 bg-white";
+  const labelClass = "block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5";
+
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto">
-      <div className="flex items-center justify-center min-h-screen px-4 py-8">
-        <div className="fixed inset-0 bg-[#1a1b3b]/80 backdrop-blur-md" onClick={onClose} />
-        <div className="relative bg-white rounded-[40px] shadow-2xl max-w-2xl w-full p-8 border border-white/20 overflow-hidden">
-          <div className="absolute top-0 right-0 -m-12 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl"></div>
-
-          <div className="relative z-10 space-y-8 text-gray-900">
-            <div className="flex justify-between items-center">
-              <div>
-                <h2 className="text-3xl font-black text-gray-900 tracking-tight">Onboard Member</h2>
-                <p className="text-gray-400 font-medium italic">Create a new platform identity</p>
-              </div>
-              <button onClick={onClose} className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-gray-900 transition-all">
-                <XMarkIcon className="h-6 w-6" />
-              </button>
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/30 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg border border-gray-100 overflow-hidden my-4">
+        {/* Modal header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-[#A51C30] flex items-center justify-center">
+              <PlusIcon className="w-4 h-4 text-white" strokeWidth={2.5} />
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Full Identity</label>
-                  <div className="flex gap-4">
-                    <input
-                      type="text"
-                      required
-                      placeholder="First Name"
-                      value={formData.firstName}
-                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none"
-                    />
-                    <input
-                      type="text"
-                      required
-                      placeholder="Last Name"
-                      value={formData.lastName}
-                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Credential Access</label>
-                  <input
-                    type="email"
-                    required
-                    placeholder="official@email.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4 text-gray-900">Temporary Password</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Secret Key"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-black text-indigo-600 focus:ring-4 focus:ring-indigo-500/10 outline-none"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Department Tier</label>
-                  <select
-                    required
-                    value={formData.roleId}
-                    onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
-                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-black text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none appearance-none"
-                  >
-                    <option value="">SELECT ROLE...</option>
-                    {availableRoles.map((role) => (
-                      <option key={role.id} value={role.id}>
-                        {role.name.replace('_', ' ')}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">Academic Origin</label>
-                  <select
-                    value={formData.universityId}
-                    onChange={(e) => setFormData({ ...formData, universityId: e.target.value })}
-                    className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-black text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none appearance-none"
-                  >
-                    <option value="">GLOBAL (NO ORG)</option>
-                    {universities.map((u) => (
-                      <option key={u.id} value={u.id}>{u.name.toUpperCase()}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-4">System ID / Semester</label>
-                  <div className="flex gap-4">
-                    <input
-                      type="text"
-                      placeholder="Student ID"
-                      value={formData.studentId}
-                      onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
-                      className="w-full px-5 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-bold text-gray-900 focus:ring-4 focus:ring-indigo-500/10 outline-none"
-                    />
-                    <select
-                      value={formData.year}
-                      onChange={(e) => setFormData({ ...formData, year: e.target.value })}
-                      className="w-1/3 px-4 py-4 bg-gray-50 border border-gray-100 rounded-2xl font-black text-gray-900 outline-none appearance-none"
-                    >
-                      <option value="">SEM</option>
-                      {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="pt-6">
-                <button
-                  type="submit"
-                  className="w-full py-5 bg-gradient-to-r from-[#1a1b3b] to-indigo-700 text-white rounded-[24px] font-black shadow-2xl shadow-indigo-900/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
-                >
-                  Finalize Onboarding
-                </button>
-              </div>
-            </form>
+            <div>
+              <p className="text-sm font-bold text-gray-900">Add New User</p>
+              <p className="text-xs text-gray-400">Create a new account on the portal</p>
+            </div>
           </div>
+          <button onClick={onClose} className="p-2 rounded-lg text-gray-400 hover:bg-gray-100 transition-colors">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
         </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+          {/* Name row */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>First Name</label>
+              <input
+                type="text" required placeholder="First name"
+                value={formData.firstName}
+                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Last Name</label>
+              <input
+                type="text" required placeholder="Last name"
+                value={formData.lastName}
+                onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className={labelClass}>Email Address</label>
+            <input
+              type="email" required placeholder="student@university.edu"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className={labelClass}>Temporary Password</label>
+            <input
+              type="text" required placeholder="Set an initial password"
+              value={formData.password}
+              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+              className={inputClass}
+            />
+          </div>
+
+          {/* Role + University */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Role</label>
+              <div className="relative">
+                <select
+                  required value={formData.roleId}
+                  onChange={(e) => setFormData({ ...formData, roleId: e.target.value })}
+                  className={inputClass + ' appearance-none cursor-pointer'}
+                >
+                  <option value="">Select role…</option>
+                  {availableRoles.map((role) => (
+                    <option key={role.id} value={role.id}>{role.name.replace(/_/g, ' ')}</option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+            <div>
+              <label className={labelClass}>University</label>
+              <div className="relative">
+                <select
+                  value={formData.universityId}
+                  onChange={(e) => setFormData({ ...formData, universityId: e.target.value })}
+                  className={inputClass + ' appearance-none cursor-pointer'}
+                >
+                  <option value="">None</option>
+                  {universities.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Student ID + Semester */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className={labelClass}>Student ID (optional)</label>
+              <input
+                type="text" placeholder="e.g. 2023-CS-001"
+                value={formData.studentId}
+                onChange={(e) => setFormData({ ...formData, studentId: e.target.value })}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Semester (optional)</label>
+              <div className="relative">
+                <select
+                  value={formData.year}
+                  onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+                  className={inputClass + ' appearance-none cursor-pointer'}
+                >
+                  <option value="">—</option>
+                  {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
+                    <option key={s} value={s}>Semester {s}</option>
+                  ))}
+                </select>
+                <ChevronDownIcon className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
+          {/* Submit */}
+          <div className="pt-2 flex gap-3">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="flex-1 py-2.5 rounded-xl bg-[#A51C30] text-white text-sm font-semibold hover:bg-[#8b1526] transition-colors shadow-sm"
+            >
+              Create User
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
 }
-

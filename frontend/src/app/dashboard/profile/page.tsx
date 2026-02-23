@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { userService } from '@/services/userService';
 import { postService } from '@/services/postService';
+import { getImageUrl, getUiAvatarUrl } from '@/utils/url';
 import { User, Post } from '@/types';
 import {
     ArrowLeftIcon,
@@ -11,6 +12,7 @@ import {
     AcademicCapIcon,
     ChatBubbleBottomCenterTextIcon,
     UserPlusIcon,
+    HeartIcon,
 } from '@heroicons/react/24/outline';
 import { useRouter, useSearchParams } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -22,31 +24,33 @@ interface PostCardProps {
     currentUserId?: string;
 }
 
-function ProfilePostCard({ post, onLike, currentUserId }: PostCardProps) {
-    const getImageUrl = (path: string) => path.startsWith('http') ? path : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${path}`;
-
+function ProfilePostCard({ post, onLike }: PostCardProps) {
     return (
-        <div className="bg-white border border-gray-100 rounded-[32px] overflow-hidden shadow-sm">
-            <div className="p-6">
-                <div className="flex items-center gap-3 mb-4">
-                    <span className="text-[10px] font-black text-primary/50 uppercase tracking-[0.2em]">
+        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+            {(post.imageUrl || post.videoUrl) && (
+                <div className="h-44 bg-gray-100 overflow-hidden">
+                    {post.imageUrl && (
+                        <img
+                            src={getImageUrl(post.imageUrl)}
+                            className="w-full h-full object-cover"
+                            alt=""
+                        />
+                    )}
+                </div>
+            )}
+            <div className="p-4">
+                <p className="text-gray-700 text-sm leading-relaxed mb-3">{post.content}</p>
+                <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">
                         {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
                     </span>
-                </div>
-                <p className="text-gray-700 font-medium leading-relaxed mb-4">{post.content}</p>
-                {(post.imageUrl || post.videoUrl) && (
-                    <div className="rounded-[24px] overflow-hidden border border-gray-100 mb-4">
-                        {post.imageUrl && (
-                            <img src={getImageUrl(post.imageUrl)} className="w-full h-auto max-h-[400px] object-cover" alt="" />
-                        )}
-                    </div>
-                )}
-                <div className="flex items-center gap-6">
-                    <button onClick={onLike} className="flex items-center gap-2 text-gray-400 hover:text-red-500 transition-colors">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${post.isLiked ? 'bg-red-50 text-red-500' : 'bg-gray-50'}`}>
-                            <ChatBubbleBottomCenterTextIcon className="w-5 h-5" />
-                        </div>
-                        <span className="text-xs font-black">{post.likes}</span>
+                    <button
+                        onClick={onLike}
+                        className={`flex items-center gap-1.5 text-xs font-semibold transition-colors ${post.isLiked ? 'text-[#A51C30]' : 'text-gray-400 hover:text-[#A51C30]'
+                            }`}
+                    >
+                        <HeartIcon className={`w-4 h-4 ${post.isLiked ? 'fill-current' : ''}`} />
+                        {post.likes}
                     </button>
                 </div>
             </div>
@@ -65,9 +69,7 @@ function UserProfileContent() {
     const [followLoading, setFollowLoading] = useState(false);
 
     useEffect(() => {
-        if (id) {
-            fetchData();
-        }
+        if (id) fetchData();
     }, [id]);
 
     const fetchData = async () => {
@@ -118,111 +120,137 @@ function UserProfileContent() {
 
     if (loading) {
         return (
-            <div className="max-w-4xl mx-auto p-8 animate-pulse text-primary">
-                <div className="h-48 bg-gray-100 rounded-b-[40px] mb-8" />
-                <div className="flex gap-8">
-                    <div className="w-32 h-32 bg-gray-100 rounded-[32px] -mt-20 ml-8 border-8 border-white" />
-                    <div className="flex-1 pt-4 space-y-4">
-                        <div className="h-8 bg-gray-100 rounded-full w-48" />
-                        <div className="h-4 bg-gray-100 rounded-full w-32" />
+            <div className="min-h-screen bg-[#F8F7F4]">
+                <div className="h-40 bg-[#1a2744] animate-pulse" />
+                <div className="max-w-4xl mx-auto px-4 md:px-8 -mt-12 animate-pulse">
+                    <div className="flex gap-5 items-end">
+                        <div className="w-24 h-24 rounded-2xl bg-gray-200 border-4 border-white flex-shrink-0" />
+                        <div className="pb-2 space-y-2 flex-1">
+                            <div className="h-6 bg-gray-200 rounded-full w-48" />
+                            <div className="h-3 bg-gray-200 rounded-full w-32" />
+                        </div>
                     </div>
                 </div>
             </div>
         );
     }
 
-    if (!user) return <div className="p-20 text-center font-black uppercase text-gray-400">User not found</div>;
+    if (!user) return (
+        <div className="flex items-center justify-center min-h-screen bg-[#F8F7F4]">
+            <p className="text-gray-400 font-semibold">User not found</p>
+        </div>
+    );
 
     return (
-        <div className="max-w-4xl mx-auto pb-20">
-            {/* Header / Cover */}
-            <div className="relative h-48 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-b-[60px] shadow-lg">
+        <div className="min-h-screen bg-[#F8F7F4]">
+            {/* Cover Banner */}
+            <div className="relative h-40 bg-[#1a2744] overflow-hidden">
+                {/* Subtle pattern */}
+                <div className="absolute inset-0 opacity-[0.08]"
+                    style={{
+                        backgroundImage: `repeating-linear-gradient(45deg, #fff 0px, #fff 1px, transparent 1px, transparent 24px)`,
+                    }}
+                />
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#A51C30]" />
                 <button
                     onClick={() => router.back()}
-                    className="absolute top-8 left-8 w-12 h-12 bg-white/20 backdrop-blur-md text-white rounded-[20px] flex items-center justify-center hover:bg-white/30 transition-all active:scale-90"
+                    className="absolute top-4 left-4 w-9 h-9 bg-white/10 backdrop-blur-sm text-white rounded-xl flex items-center justify-center hover:bg-white/20 transition-colors"
                 >
-                    <ArrowLeftIcon className="w-6 h-6" />
+                    <ArrowLeftIcon className="w-5 h-5" />
                 </button>
             </div>
 
             {/* Profile Info */}
-            <div className="px-8 flex flex-col md:flex-row gap-8 items-start">
-                <div className="relative -mt-20">
-                    <div className="w-40 h-40 rounded-[48px] bg-white p-2 shadow-2xl">
-                        <div className="w-full h-full rounded-[40px] bg-secondary/50 flex items-center justify-center overflow-hidden border-2 border-primary/5">
-                            {user.profileImage ? (
-                                <img src={user.profileImage} className="w-full h-full object-cover" alt="" />
-                            ) : (
-                                <span className="text-5xl font-black text-primary/20">{user.firstName[0]}</span>
-                            )}
-                        </div>
+            <div className="max-w-4xl mx-auto px-4 md:px-8">
+                <div className="flex flex-col sm:flex-row gap-5 items-start sm:items-end -mt-12 mb-6">
+                    {/* Avatar */}
+                    <div className="w-24 h-24 rounded-2xl bg-white border-4 border-white shadow-lg flex-shrink-0 overflow-hidden">
+                        {user.profileImage ? (
+                            <img
+                                src={getImageUrl(user.profileImage) || ''}
+                                className="w-full h-full object-cover"
+                                alt=""
+                                onError={(e) => { (e.target as HTMLImageElement).src = getUiAvatarUrl(user.firstName, user.lastName); }}
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-[#F0F3FA] flex items-center justify-center text-3xl font-bold text-[#1a2744]/30">
+                                {user.firstName[0]}
+                            </div>
+                        )}
                     </div>
-                </div>
 
-                <div className="flex-1 pt-4">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="space-y-1">
-                            <h1 className="text-4xl font-black tracking-tighter text-gray-900 leading-none">
+                    {/* Name + actions */}
+                    <div className="flex-1 flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-1">
+                        <div>
+                            <h1 className="text-2xl font-bold text-[#1a2744] leading-tight">
                                 {user.firstName} {user.lastName}
                             </h1>
-                            <div className="flex items-center gap-3 text-gray-400 font-bold text-sm tracking-tight">
-                                <span className="flex items-center gap-1"><AcademicCapIcon className="w-4 h-4" /> {user.university?.name}</span>
-                                <span className="text-gray-200">|</span>
-                                <span className="flex items-center gap-1"><MapPinIcon className="w-4 h-4" /> {user.university?.city}</span>
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 font-medium mt-1.5">
+                                {user.university?.name && (
+                                    <span className="flex items-center gap-1">
+                                        <AcademicCapIcon className="w-3.5 h-3.5" />
+                                        {user.university.name}
+                                    </span>
+                                )}
+                                {user.university?.city && (
+                                    <span className="flex items-center gap-1">
+                                        <MapPinIcon className="w-3.5 h-3.5" />
+                                        {user.university.city}
+                                    </span>
+                                )}
                             </div>
                         </div>
 
                         {currentUser?.id !== user.id && (
-                            <div className="flex gap-3">
+                            <div className="flex gap-2">
                                 <button
                                     onClick={() => router.push(`/dashboard/messages?userId=${user.id}`)}
-                                    className="px-6 py-4 bg-gray-100 text-gray-700 rounded-[22px] font-black text-sm hover:bg-gray-200 transition-all active:scale-90"
+                                    className="px-4 py-2 rounded-xl text-sm font-semibold text-gray-600 bg-white border border-gray-200 hover:bg-gray-50 transition-colors"
                                 >
                                     Message
                                 </button>
                                 <button
                                     onClick={handleFollowToggle}
                                     disabled={followLoading}
-                                    className="px-8 py-4 bg-primary text-white rounded-[22px] font-black text-sm shadow-xl shadow-primary/20 hover:scale-105 active:scale-90 transition-all flex items-center gap-2"
+                                    className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-[#A51C30] hover:bg-[#8b1526] disabled:opacity-50 transition-colors flex items-center gap-1.5"
                                 >
-                                    <UserPlusIcon className="w-5 h-5" />
+                                    <UserPlusIcon className="w-4 h-4" />
                                     Follow
                                 </button>
                             </div>
                         )}
                     </div>
-
-                    <div className="flex gap-8 mt-8 border-y border-gray-100 py-6">
-                        <div className="text-center">
-                            <div className="text-xl font-black text-gray-900 leading-none">{user._count?.posts || 0}</div>
-                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Posts</div>
-                        </div>
-                        <div className="text-center border-x border-gray-100 px-8">
-                            <div className="text-xl font-black text-gray-900 leading-none">{user._count?.followers || 0}</div>
-                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Followers</div>
-                        </div>
-                        <div className="text-center">
-                            <div className="text-xl font-black text-gray-900 leading-none">{user._count?.following || 0}</div>
-                            <div className="text-[10px] font-black text-gray-400 uppercase tracking-widest mt-1">Following</div>
-                        </div>
-                    </div>
                 </div>
-            </div>
 
-            {/* Posts Grid */}
-            <div className="px-8 mt-12">
-                <div className="flex items-center justify-between mb-8">
-                    <h2 className="text-2xl font-black tracking-tighter">Timeline<span className="text-primary italic">.</span></h2>
-                    <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Latest Activity</span>
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3 mb-8">
+                    {[
+                        { label: 'Posts', value: user._count?.posts || 0 },
+                        { label: 'Followers', value: user._count?.followers || 0 },
+                        { label: 'Following', value: user._count?.following || 0 },
+                    ].map(({ label, value }) => (
+                        <div key={label} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 text-center">
+                            <div className="text-2xl font-bold text-[#1a2744]">{value}</div>
+                            <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mt-0.5">{label}</div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Posts */}
+                <div className="mb-6 flex items-center justify-between">
+                    <h2 className="text-lg font-bold text-[#1a2744]">Timeline</h2>
+                    <span className="text-xs text-gray-400 font-medium">Latest activity</span>
                 </div>
 
                 {posts.length === 0 ? (
-                    <div className="bg-gray-50 rounded-[40px] py-32 text-center border-4 border-dashed border-gray-100">
-                        <ChatBubbleBottomCenterTextIcon className="w-16 h-16 text-gray-200 mx-auto mb-4" />
-                        <p className="font-black text-gray-300 uppercase tracking-widest text-sm">No contributions yet</p>
+                    <div className="flex flex-col items-center justify-center py-20 gap-4 bg-white rounded-2xl border border-dashed border-gray-200">
+                        <div className="w-14 h-14 bg-[#F0F3FA] rounded-2xl flex items-center justify-center">
+                            <ChatBubbleBottomCenterTextIcon className="w-7 h-7 text-[#1a2744]/20" strokeWidth={1.5} />
+                        </div>
+                        <p className="text-sm font-semibold text-gray-400">No posts yet</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pb-16">
                         {posts.map(post => (
                             <ProfilePostCard
                                 key={post.id}
@@ -241,11 +269,8 @@ function UserProfileContent() {
 export default function UserProfilePage() {
     return (
         <Suspense fallback={
-            <div className="max-w-4xl mx-auto p-8 animate-pulse text-primary">
-                <div className="h-48 bg-gray-100 rounded-b-[40px] mb-8" />
-                <div className="flex gap-8">
-                    <div className="w-32 h-32 bg-gray-100 rounded-[32px] -mt-20 ml-8 border-8 border-white" />
-                </div>
+            <div className="min-h-screen bg-[#F8F7F4]">
+                <div className="h-40 bg-[#1a2744] animate-pulse" />
             </div>
         }>
             <UserProfileContent />

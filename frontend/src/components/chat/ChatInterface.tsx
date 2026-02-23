@@ -17,6 +17,7 @@ import {
     EllipsisHorizontalIcon,
 } from '@heroicons/react/24/outline';
 import { userService } from '@/services/userService';
+import { getImageUrl, getUiAvatarUrl } from '@/utils/url';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -243,7 +244,12 @@ export default function ChatInterface() {
                                     >
                                         <div className="w-9 h-9 rounded-[14px] bg-primary/10 flex items-center justify-center overflow-hidden flex-shrink-0">
                                             {u.profileImage
-                                                ? <img src={u.profileImage} className="w-full h-full object-cover" alt="" />
+                                                ? <img
+                                                    src={getImageUrl(u.profileImage) || ''}
+                                                    className="w-full h-full object-cover"
+                                                    alt=""
+                                                    onError={(e) => { (e.target as HTMLImageElement).src = getUiAvatarUrl(u.firstName, u.lastName); }}
+                                                />
                                                 : <span className="text-xs font-black text-primary">{u.firstName[0]}</span>}
                                         </div>
                                         <div className="flex flex-col min-w-0">
@@ -295,7 +301,12 @@ export default function ChatInterface() {
                                     {conv.isGroup ? (
                                         <UserGroupIcon className="w-8 h-8 text-primary/40" />
                                     ) : conv.partner?.profileImage ? (
-                                        <img src={conv.partner.profileImage} className="w-full h-full object-cover" alt="" />
+                                        <img
+                                            src={getImageUrl(conv.partner.profileImage) || ''}
+                                            className="w-full h-full object-cover"
+                                            alt=""
+                                            onError={(e) => { (e.target as HTMLImageElement).src = getUiAvatarUrl(conv.partner?.firstName, conv.partner?.lastName); }}
+                                        />
                                     ) : (
                                         <span className="text-xl font-black text-primary/40">{conv.partner?.firstName[0]}</span>
                                     )}
@@ -342,7 +353,12 @@ export default function ChatInterface() {
                                     {selectedConv.isGroup ? (
                                         <UserGroupIcon className="w-6 h-6 text-primary" />
                                     ) : selectedConv.partner?.profileImage ? (
-                                        <img src={selectedConv.partner.profileImage} className="w-full h-full object-cover" alt="" />
+                                        <img
+                                            src={getImageUrl(selectedConv.partner.profileImage) || ''}
+                                            className="w-full h-full object-cover"
+                                            alt=""
+                                            onError={(e) => { (e.target as HTMLImageElement).src = getUiAvatarUrl(selectedConv.partner?.firstName, selectedConv.partner?.lastName); }}
+                                        />
                                     ) : (
                                         <span className="font-black text-primary">{selectedConv.partner?.firstName[0]}</span>
                                     )}
@@ -387,7 +403,12 @@ export default function ChatInterface() {
                                             <div className="w-8 h-8 rounded-[12px] bg-secondary/50 flex-shrink-0 flex items-center justify-center overflow-hidden">
                                                 {showAvatar && (
                                                     msg.sender?.profileImage ? (
-                                                        <img src={msg.sender.profileImage} className="w-full h-full object-cover" alt="" />
+                                                        <img
+                                                            src={getImageUrl(msg.sender.profileImage) || ''}
+                                                            className="w-full h-full object-cover"
+                                                            alt=""
+                                                            onError={(e) => { (e.target as HTMLImageElement).src = getUiAvatarUrl(msg.sender?.firstName, msg.sender?.lastName); }}
+                                                        />
                                                     ) : (
                                                         <span className="text-[10px] font-black">{msg.sender?.firstName[0]}</span>
                                                     )
@@ -494,7 +515,13 @@ export default function ChatInterface() {
                                                     className="w-full px-4 py-3 flex items-center gap-3 hover:bg-secondary/40 text-left"
                                                 >
                                                     <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center overflow-hidden">
-                                                        {user.profileImage ? <img src={user.profileImage} className="w-full h-full object-cover" /> : <span className="text-[10px] font-bold">{user.firstName[0]}</span>}
+                                                        {user.profileImage
+                                                            ? <img
+                                                                src={getImageUrl(user.profileImage) || ''}
+                                                                className="w-full h-full object-cover"
+                                                                onError={(e) => { (e.target as HTMLImageElement).src = getUiAvatarUrl(user.firstName, user.lastName); }}
+                                                            />
+                                                            : <span className="text-[10px] font-bold">{user.firstName[0]}</span>}
                                                     </div>
                                                     <span className="text-xs font-black uppercase tracking-tight">{user.firstName} {user.lastName}</span>
                                                 </button>

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { prisma } from '../lib/prisma';
 
@@ -13,6 +13,12 @@ export interface AuthRequest extends Request<any, any, any, any> {
     universityId?: string;
   };
 }
+
+
+// Simple in-memory cache for authenticated users to reduce DB load
+// Cache expires after 10 seconds
+const userCache = new Map<string, { data: any, timestamp: number }>();
+const CACHE_TTL = 10000; // 10 seconds
 
 export const authenticateToken = async (
   req: AuthRequest,
@@ -67,34 +73,45 @@ export const authenticateToken = async (
     }
 
     const userId = decoded.userId || decoded.id;
-
-    // Get user with roles - with fallback
     let user: any;
-    try {
-      user = await prisma.user.findUnique({
-        where: { id: userId },
-        include: {
-          roles: {
-            include: {
-              role: true
-            }
-          }
-        }
-      });
-    } catch (dbError: any) {
-      console.error('❌ Database error in auth middleware:', dbError.message);
-      // Try without roles
+
+    // Check cache first
+    const now = Date.now();
+    const cachedRecord = userCache.get(userId);
+    if (cachedRecord && (now - cachedRecord.timestamp < CACHE_TTL)) {
+      user = cachedRecord.data;
+    } else {
+      // Get user with roles - with fallback
       try {
         user = await prisma.user.findUnique({
-          where: { id: userId }
+          where: { id: userId },
+          include: {
+            roles: {
+              include: {
+                role: true
+              }
+            }
+          }
         });
-      } catch (userError: any) {
-        console.error('❌ Failed to fetch user:', userError.message);
-        res.status(500).json({
-          success: false,
-          message: 'Database error. Please try again.'
-        });
-        return;
+
+        if (user) {
+          userCache.set(userId, { data: user, timestamp: now });
+        }
+      } catch (dbError: any) {
+        console.error('❌ Database error in auth middleware:', dbError.message);
+        // Try without roles and don't cache on error
+        try {
+          user = await prisma.user.findUnique({
+            where: { id: userId }
+          });
+        } catch (userError: any) {
+          console.error('❌ Failed to fetch user:', userError.message);
+          res.status(500).json({
+            success: false,
+            message: 'Database error. Please try again.'
+          });
+          return;
+        }
       }
     }
 
@@ -156,7 +173,8 @@ export const requireRole = (roles: string[]) => {
 
     const hasRole = roles.some(role => req.user!.roles.includes(role));
     if (!hasRole) {
-      res.status(403).json({ message: 'Insufficient permissions' });
+      console.warn(`❌ 403 Forbidden: User ${req.user!.id} roles [${req.user!.roles}] do not match required [${roles}]`);
+      res.status(403).json({ message: 'Insufficient permissions', required: roles, actual: req.user!.roles });
       return;
     }
 

@@ -15,7 +15,7 @@ class VendorService {
     this.api.interceptors.request.use((config) => {
       const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        config.headers.Authorization = `Bearer ${token.trim()}`;
       }
       return config;
     });
@@ -26,6 +26,7 @@ class VendorService {
       (error) => {
         if (error.response?.status === 401) {
           // Token expired or invalid
+          localStorage.removeItem('cc_token');
           localStorage.removeItem('token');
           if (typeof window !== 'undefined') {
             window.location.href = '/auth/login';

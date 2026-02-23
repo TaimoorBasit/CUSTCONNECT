@@ -18,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { storyService, StoryFeedItem } from '@/services/storyService';
 import { CameraIcon } from '@heroicons/react/24/solid';
 import PostCard from '@/components/feed/PostCard';
+import { getImageUrl, getUiAvatarUrl } from '@/utils/url';
 
 export default function SocialFeedPage() {
   const { user } = useAuth();
@@ -157,23 +158,23 @@ export default function SocialFeedPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-full bg-background/50 animate-in fade-in duration-700">
-      {/* Instagram Style Header */}
-      <div className="sticky top-0 z-30 bg-background/80 backdrop-blur-xl border-b border-border/10 px-6 py-4">
+    <div className="flex flex-col min-h-full bg-[#F8F7F4]">
+      {/* Header */}
+      <div className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-gray-200 px-6 py-4">
         <div className="max-w-2xl mx-auto flex items-center justify-between">
-          <h1 className="text-2xl font-black tracking-tighter text-foreground">Campus<span className="text-primary italic">Feed</span></h1>
-          <div className="flex items-center gap-4">
+          <h1 className="text-2xl font-black tracking-tighter text-[#1a2744]">Campus<span className="text-[#A51C30] italic">Feed</span></h1>
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowStoryCreator(true)}
-              className="p-2 hover:bg-secondary/50 rounded-xl transition-all active:scale-90"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-all active:scale-90"
             >
-              <CameraIcon className="w-6 h-6 text-foreground" />
+              <CameraIcon className="w-6 h-6 text-gray-600" />
             </button>
             <button
               onClick={() => router.push('/dashboard/messages')}
-              className="p-2 hover:bg-secondary/50 rounded-xl transition-all active:scale-90"
+              className="p-2 hover:bg-gray-100 rounded-xl transition-all active:scale-90"
             >
-              <PaperAirplaneIcon className="w-6 h-6 text-foreground -rotate-45" />
+              <PaperAirplaneIcon className="w-6 h-6 text-gray-600 -rotate-45" />
             </button>
           </div>
         </div>
@@ -186,18 +187,18 @@ export default function SocialFeedPage() {
           <div className="flex flex-col items-center gap-2 flex-shrink-0">
             <button
               onClick={() => setShowStoryCreator(true)}
-              className="w-16 h-16 rounded-full p-[2px] border-2 border-dashed border-primary/30 flex items-center justify-center text-primary hover:bg-primary hover:text-white transition-all active:scale-90"
+              className="w-16 h-16 rounded-full p-[2px] border-2 border-dashed border-[#A51C30]/30 flex items-center justify-center text-[#A51C30] hover:bg-[#A51C30] hover:text-white transition-all active:scale-90"
             >
               <PlusIcon className="w-8 h-8" />
             </button>
-            <span className="text-[10px] font-black uppercase text-primary tracking-widest">You</span>
+            <span className="text-[10px] font-black uppercase text-[#A51C30] tracking-widest">You</span>
           </div>
 
           {loadingStories ? (
             Array(5).fill(0).map((_, i) => (
               <div key={i} className="flex flex-col items-center gap-2 animate-pulse">
-                <div className="w-16 h-16 rounded-full bg-secondary" />
-                <div className="w-10 h-2 bg-secondary rounded-full" />
+                <div className="w-16 h-16 rounded-full bg-gray-200" />
+                <div className="w-10 h-2 bg-gray-200 rounded-full" />
               </div>
             ))
           ) : stories.map((item) => (
@@ -207,8 +208,8 @@ export default function SocialFeedPage() {
                   onClick={() => setSelectedStoryAuthor(item)}
                   className="w-16 h-16 rounded-full p-[2.5px] bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600 shadow-md active:scale-95 transition-all overflow-hidden"
                 >
-                  <div className="w-full h-full rounded-full bg-background p-0.5">
-                    <div className="w-full h-full rounded-full bg-secondary/30 flex items-center justify-center font-black text-primary overflow-hidden">
+                  <div className="w-full h-full rounded-full bg-white p-0.5">
+                    <div className="w-full h-full rounded-full bg-gray-100 flex items-center justify-center font-black text-[#1a2744] overflow-hidden">
                       {item.author.profileImage ? (
                         <img src={item.author.profileImage} className="w-full h-full object-cover" alt="" />
                       ) : item.author.firstName[0]}
@@ -216,10 +217,10 @@ export default function SocialFeedPage() {
                   </div>
                 </button>
                 {onlineUsers.includes(item.author.id) && (
-                  <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-4 border-background" />
+                  <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-4 border-white" />
                 )}
               </div>
-              <span className="text-[10px] font-black uppercase text-foreground/60 tracking-tighter truncate w-16 text-center">
+              <span className="text-[10px] font-black uppercase text-gray-500 tracking-tighter truncate w-16 text-center">
                 {item.author.firstName}
               </span>
             </div>
@@ -230,18 +231,18 @@ export default function SocialFeedPage() {
       <div className="flex-1 px-4 py-6 space-y-8 max-w-2xl mx-auto w-full">
         {loading ? (
           Array(4).fill(0).map((_, i) => (
-            <div key={i} className="bg-card/40 border border-border/10 rounded-[32px] p-6 space-y-4 animate-pulse">
-              <div className="flex gap-4"><div className="w-12 h-12 bg-secondary rounded-full" /><div className="space-y-3 py-2 flex-1"><div className="w-24 h-2.5 bg-secondary rounded-full" /><div className="w-32 h-2 bg-secondary rounded-full" /></div></div>
-              <div className="h-64 bg-secondary rounded-[24px]" />
+            <div key={i} className="bg-white border border-gray-100 rounded-[32px] p-6 space-y-4 animate-pulse">
+              <div className="flex gap-4"><div className="w-12 h-12 bg-gray-100 rounded-full" /><div className="space-y-3 py-2 flex-1"><div className="w-24 h-2.5 bg-gray-100 rounded-full" /><div className="w-32 h-2 bg-gray-100 rounded-full" /></div></div>
+              <div className="h-64 bg-gray-100 rounded-[24px]" />
             </div>
           ))
         ) : posts.length === 0 ? (
           <div className="text-center py-20 px-6">
-            <div className="w-20 h-20 bg-secondary/30 rounded-[30px] flex items-center justify-center mx-auto mb-6">
-              <PlusIcon className="w-10 h-10 text-muted-foreground/20" />
+            <div className="w-20 h-20 bg-gray-100 rounded-[30px] flex items-center justify-center mx-auto mb-6">
+              <PlusIcon className="w-10 h-10 text-gray-300" />
             </div>
-            <h3 className="text-xl font-black text-foreground mb-2">Feed is quiet...</h3>
-            <p className="text-muted-foreground font-medium mb-8">Start following your friends or cafes to see what's happening!</p>
+            <h3 className="text-xl font-black text-gray-800 mb-2">Feed is quiet...</h3>
+            <p className="text-gray-400 font-medium mb-8">Start following your friends or cafes to see what's happening!</p>
           </div>
         ) : (
           posts.map((post) => (
@@ -258,10 +259,10 @@ export default function SocialFeedPage() {
         )}
       </div>
 
-      {/* Modern App FAB */}
+      {/* FAB */}
       <button
         onClick={() => setShowCreateModal(true)}
-        className="fixed bottom-28 right-6 w-16 h-16 bg-primary text-primary-foreground rounded-[24px] shadow-2xl shadow-primary/40 flex items-center justify-center transform active:scale-90 transition-all z-40 hover:rotate-3 border-4 border-background"
+        className="fixed bottom-28 right-6 w-16 h-16 bg-[#A51C30] text-white rounded-[24px] shadow-2xl shadow-[#A51C30]/40 flex items-center justify-center transform active:scale-90 transition-all z-40 hover:rotate-3 border-4 border-white"
       >
         <PlusIcon className="w-8 h-8 stroke-[3]" />
       </button>
@@ -285,7 +286,7 @@ export default function SocialFeedPage() {
               <div>
                 <label className="block text-[13px] font-black text-gray-400 uppercase tracking-widest mb-2 ml-1">Content</label>
                 <textarea
-                  className="w-full bg-gray-50 border-2 border-transparent focus:border-primary/10 focus:ring-0 rounded-[20px] p-5 text-[16px] font-medium text-gray-700 placeholder-gray-300 resize-none min-h-[140px] transition-all"
+                  className="w-full bg-gray-50 border-2 border-transparent focus:border-[#1a2744]/10 focus:ring-0 rounded-[20px] p-5 text-[16px] font-medium text-gray-700 placeholder-gray-300 resize-none min-h-[140px] transition-all"
                   placeholder="What's on your mind?"
                   autoFocus
                   value={postContent}
@@ -298,7 +299,7 @@ export default function SocialFeedPage() {
                 <div className="bg-gray-50 rounded-[20px] p-2 flex items-center gap-4 border-2 border-transparent">
                   <button
                     onClick={() => fileInputRef.current?.click()}
-                    className="bg-primary text-primary-foreground px-6 py-3 rounded-[15px] text-sm font-black shadow-lg shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
+                    className="bg-[#1a2744] text-white px-6 py-3 rounded-[15px] text-sm font-black shadow-lg shadow-[#1a2744]/20 active:scale-95 transition-all whitespace-nowrap"
                   >
                     Choose File
                   </button>
@@ -326,7 +327,7 @@ export default function SocialFeedPage() {
                   <select
                     value={privacy}
                     onChange={(e) => setPrivacy(e.target.value as any)}
-                    className="w-full bg-gray-50 border-2 border-transparent focus:border-primary/10 focus:ring-0 rounded-[20px] p-5 text-[16px] font-bold text-gray-700 appearance-none transition-all cursor-pointer"
+                    className="w-full bg-gray-50 border-2 border-transparent focus:border-[#1a2744]/10 focus:ring-0 rounded-[20px] p-5 text-[16px] font-bold text-gray-700 appearance-none transition-all cursor-pointer"
                   >
                     <option value="PUBLIC">Public</option>
                     <option value="UNIVERSITY_ONLY">University Only</option>
@@ -343,7 +344,7 @@ export default function SocialFeedPage() {
               <button
                 onClick={handleCreatePost}
                 disabled={creating || (!postContent.trim() && !selectedFile)}
-                className="flex-[2] bg-primary text-primary-foreground py-5 rounded-[22px] font-black shadow-xl shadow-primary/25 disabled:opacity-30 active:scale-95 transition-all"
+                className="flex-[2] bg-[#A51C30] text-white py-5 rounded-[22px] font-black shadow-xl shadow-[#A51C30]/25 disabled:opacity-30 active:scale-95 transition-all"
               >
                 {creating ? 'Creating...' : 'Create Post'}
               </button>
@@ -377,8 +378,8 @@ export default function SocialFeedPage() {
                   <img src={filePreview} className="w-full h-full object-cover" alt="" />
                 ) : (
                   <>
-                    <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
-                      <CameraIcon className="w-10 h-10 text-primary" />
+                    <div className="w-20 h-20 bg-[#A51C30]/10 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                      <CameraIcon className="w-10 h-10 text-[#A51C30]" />
                     </div>
                     <span className="font-black text-gray-400 uppercase tracking-widest text-xs">Choose Photo</span>
                   </>
@@ -405,7 +406,7 @@ export default function SocialFeedPage() {
                     setCreating(false);
                   }
                 }}
-                className="w-full py-5 bg-primary text-primary-foreground rounded-[24px] font-black shadow-xl shadow-primary/25 disabled:opacity-30 active:scale-90 transition-all"
+                className="w-full py-5 bg-[#A51C30] text-white rounded-[24px] font-black shadow-xl shadow-[#A51C30]/25 disabled:opacity-30 active:scale-90 transition-all"
               >
                 {creating ? 'Posting...' : 'Share Story'}
               </button>
@@ -456,7 +457,6 @@ function StoryViewer({ item, onClose, onView }: { item: StoryFeedItem, onClose: 
     return () => clearInterval(timer);
   }, [currentIndex]);
 
-  const getImageUrl = (path: string) => path.startsWith('http') ? path : `${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '')}${path}`;
 
   return (
     <div className="fixed inset-0 z-[200] bg-black flex flex-col items-center justify-center animate-in fade-in duration-500">
@@ -475,7 +475,12 @@ function StoryViewer({ item, onClose, onView }: { item: StoryFeedItem, onClose: 
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full border-2 border-white overflow-hidden bg-white/20">
             {item.author.profileImage ? (
-              <img src={item.author.profileImage} className="w-full h-full object-cover" alt="" />
+              <img
+                src={getImageUrl(item.author.profileImage) || ''}
+                className="w-full h-full object-cover"
+                alt=""
+                onError={(e) => { (e.target as HTMLImageElement).src = getUiAvatarUrl(item.author.firstName, item.author.lastName); }}
+              />
             ) : <div className="w-full h-full flex items-center justify-center font-black text-white">{item.author.firstName[0]}</div>}
           </div>
           <span className="text-white font-black text-sm uppercase tracking-widest">{item.author.firstName}</span>

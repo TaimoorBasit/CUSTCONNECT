@@ -3,161 +3,369 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { adminService } from '@/services/adminService';
+import Link from 'next/link';
 import {
   UserGroupIcon,
   BuildingStorefrontIcon,
   BookOpenIcon,
   CalculatorIcon,
   CalendarIcon,
-  BellIcon,
   MapIcon,
+  PrinterIcon,
+  MagnifyingGlassIcon,
+  ChatBubbleLeftRightIcon,
+  BellIcon,
+  DocumentTextIcon,
+  Cog6ToothIcon,
+  ArrowRightIcon,
+  AcademicCapIcon,
+  ClockIcon,
+  MapPinIcon,
 } from '@heroicons/react/24/outline';
-import Link from 'next/link';
 
-const quickActions = [
-  { name: 'Campus Feed', href: '/dashboard/feed', icon: UserGroupIcon, description: 'Connect with your university community.', color: 'text-blue-500', bg: 'bg-blue-50' },
-  { name: 'Bus Tracking', href: '/dashboard/bus', icon: MapIcon, description: 'Live transit updates and schedules.', color: 'text-emerald-500', bg: 'bg-emerald-50' },
-  { name: 'Gastro Hub', href: '/dashboard/cafes', icon: BuildingStorefrontIcon, description: 'Explore menus and claim student deals.', color: 'text-amber-500', bg: 'bg-amber-50' },
-  { name: 'Resource Lab', href: '/dashboard/resources', icon: BookOpenIcon, description: 'Access academic materials and notes.', color: 'text-violet-500', bg: 'bg-violet-50' },
-  { name: 'GPA Master', href: '/dashboard/gpa', icon: CalculatorIcon, description: 'Calibrate your academic performance.', color: 'text-indigo-500', bg: 'bg-indigo-50' },
-  { name: 'Campus Events', href: '/dashboard/events', icon: CalendarIcon, description: 'Discover what is happening on campus.', color: 'text-pink-500', bg: 'bg-pink-50' },
+const services = [
+  {
+    name: 'Campus Feed',
+    href: '/dashboard/feed',
+    icon: UserGroupIcon,
+    description: 'Connect with your university community',
+    color: '#A51C30',      // Harvard crimson
+    bgLight: '#FFF5F5',
+  },
+  {
+    name: 'Bus Tracking',
+    href: '/dashboard/bus',
+    icon: MapIcon,
+    description: 'Live transit updates and schedules',
+    color: '#1a2744',      // Oxford navy
+    bgLight: '#F0F3FA',
+  },
+  {
+    name: 'Campus Cafes',
+    href: '/dashboard/cafes',
+    icon: BuildingStorefrontIcon,
+    description: 'Explore menus and student deals',
+    color: '#D97706',      // Amber
+    bgLight: '#FFFBEB',
+  },
+  {
+    name: 'Resource Bank',
+    href: '/dashboard/resources',
+    icon: BookOpenIcon,
+    description: 'Academic materials and notes',
+    color: '#1a2744',
+    bgLight: '#F0F3FA',
+  },
+  {
+    name: 'GPA Calculator',
+    href: '/dashboard/gpa',
+    icon: AcademicCapIcon,
+    description: 'Track your academic performance',
+    color: '#A51C30',
+    bgLight: '#FFF5F5',
+  },
+  {
+    name: 'Campus Events',
+    href: '/dashboard/events',
+    icon: CalendarIcon,
+    description: 'Discover what\'s happening on campus',
+    color: '#059669',      // Emerald
+    bgLight: '#ECFDF5',
+  },
+  {
+    name: 'Print Centre',
+    href: '/dashboard/print',
+    icon: PrinterIcon,
+    description: 'Submit and manage print requests',
+    color: '#7C3AED',      // Violet
+    bgLight: '#F5F3FF',
+  },
+  {
+    name: 'Lost & Found',
+    href: '/dashboard/lost-found',
+    icon: MagnifyingGlassIcon,
+    description: 'Report or find lost items on campus',
+    color: '#0369A1',      // Sky blue
+    bgLight: '#F0F9FF',
+  },
+  {
+    name: 'Direct Messages',
+    href: '/dashboard/messages',
+    icon: ChatBubbleLeftRightIcon,
+    description: 'Chat with peers and faculty',
+    color: '#A51C30',
+    bgLight: '#FFF5F5',
+  },
+  {
+    name: 'Social Hub',
+    href: '/dashboard/connections',
+    icon: UserGroupIcon,
+    description: 'Expand your campus network',
+    color: '#1a2744',
+    bgLight: '#F0F3FA',
+  },
+  {
+    name: 'Tools & Docs',
+    href: '/dashboard/tools',
+    icon: DocumentTextIcon,
+    description: 'Useful academic tools and documents',
+    color: '#D97706',
+    bgLight: '#FFFBEB',
+  },
+  {
+    name: 'Notifications',
+    href: '/dashboard/notifications',
+    icon: BellIcon,
+    description: 'Stay updated with campus alerts',
+    color: '#059669',
+    bgLight: '#ECFDF5',
+  },
 ];
+
+function getGreeting() {
+  const h = new Date().getHours();
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+}
+
+function getDayInfo() {
+  return new Date().toLocaleDateString('en-US', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const [realStats, setRealStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     if (user) {
-      const userRoles = user.roles?.map(r => r.name) || [];
-      const isSuperAdmin = userRoles.includes('SUPER_ADMIN');
-
-      const isCafeOwner = userRoles.includes('CAFE_OWNER');
-      const isBusOperator = userRoles.includes('BUS_OPERATOR');
-      const isVendor = isCafeOwner || isBusOperator;
-
-      // Only fetch admin stats for super admins
-      if (isSuperAdmin) {
-        router.push('/admin');
-        return;
-      }
-
-      // For students and vendors, we don't fetch admin analytics to avoid 403
-      // We could fetch public stats here if we had a non-admin route for them
-      setLoading(false);
+      const roles = user.roles?.map((r) => r.name) || [];
+      if (roles.includes('SUPER_ADMIN')) router.push('/admin');
     }
   }, [user, router]);
 
-  const fetchStats = async () => {
-    try {
-      setLoading(true);
-      const data = await adminService.getAnalytics();
-      setRealStats(data);
-    } catch (error) {
-      console.error('Failed to fetch dashboard stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const dashboardStats = [
-    { name: 'Global Feed', value: realStats?.totalPosts || 0, icon: UserGroupIcon, color: 'text-blue-500', bg: 'bg-blue-50' },
-    { name: 'Bus Lines', value: realStats?.totalBusRoutes || 0, icon: MapIcon, color: 'text-emerald-500', bg: 'bg-emerald-50' },
-    { name: 'Campus Dining', value: realStats?.totalCafes || 0, icon: BuildingStorefrontIcon, color: 'text-amber-500', bg: 'bg-amber-50' },
-    { name: 'Academic Docs', value: realStats?.totalResources || 0, icon: BookOpenIcon, color: 'text-violet-500', bg: 'bg-violet-50' },
-  ];
-
-  if (loading && !realStats) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] space-y-4">
-        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-        <p className="text-gray-500 font-black animate-pulse text-[10px] uppercase tracking-[0.2em]">Synchronizing Campus Pulse...</p>
-      </div>
-    );
-  }
+  // highlighted tiles (first 4 shown as featured)
+  const featured = services.slice(0, 4);
+  const rest = services.slice(4);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10 pb-12 px-4 font-sans animate-in fade-in duration-700">
-      {/* Premium Welcome Header */}
-      <div className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-[#0f172a] to-[#1e293b] p-8 md:p-12 shadow-2xl border border-white/5">
-        <div className="absolute top-0 right-0 -m-12 w-80 h-80 bg-primary/10 rounded-full blur-[100px]"></div>
-        <div className="absolute bottom-0 left-0 -m-12 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px]"></div>
+    <div className="min-h-screen bg-[#F8F7F4] pb-20">
 
-        <div className="relative z-10 space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-primary-foreground/60 text-[10px] font-black uppercase tracking-[0.2em]">
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-            Campus Pulse Active
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white">
-              Welcome back, <span className="text-primary">{user?.firstName}</span>! 👋
-            </h1>
-            <p className="text-lg text-slate-400 font-medium">
-              Everything happening at <span className="text-white font-bold">{user?.university?.name}</span> today.
-            </p>
-          </div>
-        </div>
-      </div>
+      {/* ── TOP HERO BANNER ──────────────────────────────────────────── */}
+      <div className="relative overflow-hidden bg-[#1a2744] px-6 pt-10 pb-14 md:px-12 md:pt-14 md:pb-20">
+        {/* decorative pattern */}
+        <div className="absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage: `repeating-linear-gradient(
+              45deg,
+              #fff 0px,
+              #fff 1px,
+              transparent 1px,
+              transparent 24px
+            )`,
+          }}
+        />
+        {/* crimson accent bar */}
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[#A51C30]" />
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {dashboardStats.map((stat) => (
-          <div key={stat.name} className="group bg-white rounded-[32px] p-6 border border-gray-100 shadow-sm transition-all hover:shadow-xl hover:border-black/5">
-            <div className={`p-4 rounded-[20px] ${stat.bg} ${stat.color} mb-4 transition-transform group-hover:scale-110 shadow-sm inline-block`}>
-              <stat.icon className="w-6 h-6 stroke-[2]" />
-            </div>
+        <div className="relative z-10 max-w-4xl mx-auto">
+          {/* date pill */}
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 text-white/50 text-xs font-semibold tracking-wide mb-6">
+            <ClockIcon className="w-3.5 h-3.5" />
+            {mounted ? getDayInfo() : ''}
+          </div>
+
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6">
             <div>
-              <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-0.5">{stat.name}</p>
-              <h3 className="text-2xl font-black tracking-tighter text-gray-900 group-hover:text-primary transition-colors">
-                {stat.value.toLocaleString()}
-              </h3>
+              <p className="text-white/50 text-sm font-medium mb-1">
+                {getGreeting()},
+              </p>
+              <h1 className="text-3xl md:text-5xl font-bold text-white tracking-tight">
+                {user?.firstName} {user?.lastName}
+              </h1>
+              {user?.university?.name && (
+                <div className="flex items-center gap-2 mt-3 text-white/40 text-sm font-medium">
+                  <MapPinIcon className="w-4 h-4" />
+                  {user.university.name}
+                  {user.university.city && ` · ${user.university.city}`}
+                </div>
+              )}
             </div>
+
+            <Link
+              href="/dashboard/settings"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#A51C30] text-white text-sm font-semibold hover:bg-[#8b1526] transition-colors shadow-lg shadow-[#A51C30]/30"
+            >
+              <Cog6ToothIcon className="w-4 h-4" />
+              My Profile
+            </Link>
           </div>
-        ))}
+        </div>
       </div>
 
-      {/* Quick Actions */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between px-4 border-l-4 border-primary">
-          <h3 className="text-xl font-black tracking-tight text-gray-900 uppercase">
-            Quick <span className="text-gray-400">Actions</span>
-          </h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {quickActions.map((action) => (
+      {/* ── FEATURE STRIP (4 key services pulled up over banner) ──────── */}
+      <div className="max-w-4xl mx-auto px-4 md:px-8 -mt-8 relative z-10">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {featured.map((s) => (
             <Link
-              key={action.name}
-              href={action.href}
-              className="group flex items-center gap-6 bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm transition-all hover:shadow-xl hover:border-black/5 hover:-translate-y-1"
+              key={s.name}
+              href={s.href}
+              className="group bg-white rounded-2xl p-5 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 border border-white/80 flex flex-col gap-3"
             >
-              <div className={`p-5 rounded-[24px] ${action.bg} ${action.color} group-hover:bg-primary group-hover:text-white transition-all duration-500 shadow-sm`}>
-                <action.icon className="w-8 h-8 stroke-[1.5]" />
+              <div
+                className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110"
+                style={{ background: s.bgLight, color: s.color }}
+              >
+                <s.icon className="w-6 h-6" strokeWidth={1.8} />
               </div>
-              <div className="flex-1">
-                <h4 className="text-lg font-black text-gray-900 group-hover:text-primary transition-colors leading-none mb-1">{action.name}</h4>
-                <p className="text-xs text-gray-400 font-medium">{action.description}</p>
-              </div>
-              <div className="p-3 text-gray-200 group-hover:text-primary transition-all group-hover:translate-x-1">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M9 5l7 7-7 7" />
-                </svg>
+              <div>
+                <p className="text-sm font-semibold text-gray-900 leading-tight">{s.name}</p>
+                <p className="text-xs text-gray-400 mt-0.5 leading-snug line-clamp-2">{s.description}</p>
               </div>
             </Link>
           ))}
         </div>
       </div>
 
-      {/* Activity Section */}
-      <div className="relative group bg-white rounded-[40px] border border-gray-100 shadow-sm overflow-hidden p-12 text-center transition-all hover:shadow-xl">
-        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-primary/20 to-transparent"></div>
-        <div className="inline-flex p-6 rounded-[32px] bg-secondary/30 mb-6 group-hover:scale-110 transition-transform">
-          <BellIcon className="h-10 w-10 text-gray-300 group-hover:text-primary transition-colors" />
+      {/* ── MAIN CONTENT ──────────────────────────────────────────────── */}
+      <div className="max-w-4xl mx-auto px-4 md:px-8 mt-10 space-y-10">
+
+        {/* Section: All Campus Services */}
+        <section>
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-xl font-bold text-[#1a2744] tracking-tight">All Services</h2>
+              <p className="text-sm text-gray-400 mt-0.5">Everything available on your CustConnect portal</p>
+            </div>
+            <span className="text-xs font-semibold text-[#A51C30] bg-[#FFF5F5] px-3 py-1 rounded-full border border-[#A51C30]/10">
+              {services.length} available
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {rest.map((s) => (
+              <Link
+                key={s.name}
+                href={s.href}
+                className="group flex items-center gap-4 bg-white rounded-2xl px-5 py-4 border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all hover:-translate-y-0.5"
+              >
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110"
+                  style={{ background: s.bgLight, color: s.color }}
+                >
+                  <s.icon className="w-5 h-5" strokeWidth={1.8} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 leading-none">{s.name}</p>
+                  <p className="text-[11px] text-gray-400 mt-1 leading-snug truncate">{s.description}</p>
+                </div>
+                <ArrowRightIcon className="w-4 h-4 text-gray-300 group-hover:text-[#A51C30] group-hover:translate-x-0.5 transition-all flex-shrink-0" />
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        {/* Section: Quick Tips / Announcements */}
+        <section>
+          <div className="mb-5">
+            <h2 className="text-xl font-bold text-[#1a2744] tracking-tight">Campus Notice</h2>
+            <p className="text-sm text-gray-400 mt-0.5">Important updates and reminders</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Tip 1 */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-[#FFF5F5] flex items-center justify-center flex-shrink-0">
+                  <AcademicCapIcon className="w-5 h-5 text-[#A51C30]" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Track Your Academic Progress</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Use the GPA Calculator to monitor your semester performance and plan your upcoming courses.
+                  </p>
+                  <Link href="/dashboard/gpa" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#A51C30] hover:underline">
+                    Open GPA Calculator <ArrowRightIcon className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Tip 2 */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-[#F0F3FA] flex items-center justify-center flex-shrink-0">
+                  <CalendarIcon className="w-5 h-5 text-[#1a2744]" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Upcoming Campus Events</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Don't miss out on seminars, fairs, and social events happening across campus this week.
+                  </p>
+                  <Link href="/dashboard/events" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#1a2744] hover:underline">
+                    Browse Events <ArrowRightIcon className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Tip 3 */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-[#ECFDF5] flex items-center justify-center flex-shrink-0">
+                  <BookOpenIcon className="w-5 h-5 text-[#059669]" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Share Study Resources</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Upload your notes and past papers to the Resource Bank and help your fellow students succeed.
+                  </p>
+                  <Link href="/dashboard/resources" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#059669] hover:underline">
+                    Go to Resource Bank <ArrowRightIcon className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Tip 4 */}
+            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+              <div className="flex items-start gap-4">
+                <div className="w-10 h-10 rounded-xl bg-[#FFF5F5] flex items-center justify-center flex-shrink-0">
+                  <BellIcon className="w-5 h-5 text-[#A51C30]" strokeWidth={1.8} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">Stay in the Loop</p>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">
+                    Enable notifications so you never miss a campus announcement, event update, or message.
+                  </p>
+                  <Link href="/dashboard/notifications" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[#A51C30] hover:underline">
+                    View Activity Log <ArrowRightIcon className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Footer badge */}
+        <div className="flex items-center justify-center gap-3 py-6 border-t border-gray-200">
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-[#A51C30] animate-pulse" />
+            <span className="text-xs text-gray-400 font-medium">Campus Pulse Active</span>
+          </div>
+          <span className="text-gray-200">·</span>
+          <span className="text-xs text-gray-400 font-medium">
+            {user?.university?.name || 'CustConnect University Portal'}
+          </span>
         </div>
-        <h4 className="text-xl font-black text-gray-900 uppercase tracking-tight mb-2">No Recent Alerts</h4>
-        <p className="text-gray-400 font-medium max-w-xs mx-auto text-sm leading-relaxed">Your campus timeline is currently peaceful. New notifications will arrive here.</p>
+
       </div>
     </div>
   );

@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,122 +7,113 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Management
 model User {
-  id            String   @id @default(cuid())
-  email         String?  @unique
-  username      String?  @unique
-  password      String
-  firstName     String
-  lastName      String
-  profileImage  String?
-  isVerified    Boolean  @default(false)
-  isActive      Boolean  @default(true)
-  verificationCode String?
+  id                        String               @id @default(cuid())
+  email                     String?              @unique
+  username                  String?              @unique
+  password                  String
+  firstName                 String
+  lastName                  String
+  profileImage              String?
+  isVerified                Boolean              @default(false)
+  isActive                  Boolean              @default(true)
+  verificationCode          String?
   verificationCodeExpiresAt DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt                 DateTime             @default(now())
+  updatedAt                 DateTime             @updatedAt
+  universityId              String?
+  departmentId              String?
+  year                      Int?
+  studentId                 String?
+  uploadedResources         AcademicResource[]
+  resolvedEmergencies       BusEmergency[]       @relation("ResolvedEmergencies")
+  busEmergencies            BusEmergency[]       @relation("ReportedEmergencies")
+  operatedBusRoutes         BusRoute[]           @relation("BusOperator")
+  busSubscriptions          BusSubscription[]
+  cafeOrders                CafeOrder[]
+  cafeRatings               CafeRating[]
+  ownedCafes                Cafe[]
+  comments                  Comment[]
+  conversations             ConversationMember[]
+  eventRSVPs                EventRSVP[]
+  organizedEvents           Event[]
+  followers                 Follow[]             @relation("UserFollowers")
+  following                 Follow[]             @relation("UserFollowing")
+  gpaRecords                GPARecord[]
+  likes                     Like[]
+  lostFoundItems            LostFound[]
+  sentMessages              Message[]            @relation("SentMessages")
+  notifications             Notification[]
+  reportedPosts             PostReport[]
+  posts                     Post[]
+  printRequests             PrintRequest[]
+  ownedPrinterShops         PrinterShop[]
+  stories                   Story[]
+  storyViews                StoryView[]
+  roles                     UserRole[]
+  department                Department?          @relation(fields: [departmentId], references: [id])
+  university                University?          @relation(fields: [universityId], references: [id])
 
-  // University Information
-  universityId  String?
-  university    University? @relation(fields: [universityId], references: [id])
-  departmentId  String?
-  department    Department? @relation(fields: [departmentId], references: [id])
-  year          Int? // 1, 2, 3, 4 for undergraduate
-  studentId     String? // University student ID
-
-  // Social Features
-  posts         Post[]
-  comments      Comment[]
-  likes         Like[]
-  followers     Follow[] @relation("UserFollowers")
-  following     Follow[] @relation("UserFollowing")
-  notifications Notification[]
-  eventRSVPs    EventRSVP[]
-  reportedPosts PostReport[]
-
-  // Academic
-  gpaRecords    GPARecord[]
-  uploadedResources AcademicResource[]
-
-  // Admin Roles
-  roles         UserRole[]
-
-  // Service Relations
-  busSubscriptions BusSubscription[]
-  busEmergencies  BusEmergency[] @relation("ReportedEmergencies")
-  resolvedEmergencies BusEmergency[] @relation("ResolvedEmergencies")
-  ownedCafes    Cafe[]
-  ownedPrinterShops PrinterShop[]
-  operatedBusRoutes BusRoute[] @relation("BusOperator")
-  organizedEvents Event[]
-  cafeOrders    CafeOrder[]
-  cafeRatings   CafeRating[]
-  printRequests PrintRequest[]
-  lostFoundItems LostFound[]
-  sentMessages  Message[] @relation("SentMessages")
-  stories       Story[]
-  storyViews    StoryView[]
-  conversations ConversationMember[]
-
+  @@index([departmentId], map: "users_departmentId_fkey")
+  @@index([universityId], map: "users_universityId_fkey")
+  @@index([createdAt])
   @@map("users")
 }
 
 model University {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  domain      String   @unique // e.g., "edu.pk"
-  country     String
-  city        String
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users       User[]
-  departments Department[]
-  busRoutes   BusRoute[]
+  id             String       @id @default(cuid())
+  name           String       @unique
+  domain         String       @unique
+  country        String
+  city           String
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  busRoutes      BusRoute[]
+  cafes          Cafe[]
+  courses        Course[]
+  departments    Department[]
+  events         Event[]
   lostFoundItems LostFound[]
-  cafes       Cafe[]
-  events      Event[]
-  courses     Course[]
-  semesters   Semester[]
+  semesters      Semester[]
+  users          User[]
 
   @@map("universities")
 }
 
 model Department {
-  id           String   @id @default(cuid())
+  id           String     @id @default(cuid())
   name         String
   code         String
   universityId String
+  isActive     Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
   university   University @relation(fields: [universityId], references: [id])
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
   users        User[]
 
   @@unique([name, universityId])
+  @@index([universityId], map: "departments_universityId_fkey")
   @@map("departments")
 }
 
-// Social Feed
 model Post {
-  id          String   @id @default(cuid())
-  content     String   @db.Text
-  imageUrl    String?  @db.Text
-  videoUrl    String?  @db.Text
-  privacy     PostPrivacy @default(PUBLIC)
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String       @id @default(cuid())
+  content   String       @db.Text
+  imageUrl  String?      @db.Text
+  videoUrl  String?      @db.Text
+  privacy   PostPrivacy  @default(PUBLIC)
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  authorId  String
+  comments  Comment[]
+  likes     Like[]
+  reports   PostReport[]
+  author    User         @relation(fields: [authorId], references: [id])
 
-  authorId    String
-  author      User @relation(fields: [authorId], references: [id])
-  comments    Comment[]
-  likes       Like[]
-  reports     PostReport[]
-
+  @@index([authorId], map: "posts_authorId_fkey")
+  @@index([createdAt])
   @@map("posts")
 }
 
@@ -134,145 +122,595 @@ model Comment {
   content   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   authorId  String
-  author    User @relation(fields: [authorId], references: [id])
   postId    String
-  post      Post @relation(fields: [postId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
 
+  @@index([authorId], map: "comments_authorId_fkey")
+  @@index([postId], map: "comments_postId_fkey")
   @@map("comments")
 }
 
 model Like {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-
   userId    String
-  user      User @relation(fields: [userId], references: [id])
   postId    String
-  post      Post @relation(fields: [postId], references: [id])
+  post      Post     @relation(fields: [postId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, postId])
+  @@index([postId], map: "likes_postId_fkey")
   @@map("likes")
 }
 
 model Follow {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
   followerId  String
-  follower    User @relation("UserFollowers", fields: [followerId], references: [id])
   followingId String
-  following   User @relation("UserFollowing", fields: [followingId], references: [id])
+  follower    User     @relation("UserFollowers", fields: [followerId], references: [id])
+  following   User     @relation("UserFollowing", fields: [followingId], references: [id])
 
   @@unique([followerId, followingId])
+  @@index([followingId], map: "follows_followingId_fkey")
   @@map("follows")
 }
 
 model PostReport {
-  id        String   @id @default(cuid())
-  reason    String?  // Optional reason for reporting
-  status    ReportStatus @default(PENDING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  postId    String
-  post      Post @relation(fields: [postId], references: [id])
+  id         String       @id @default(cuid())
+  reason     String?
+  status     ReportStatus @default(PENDING)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  postId     String
   reporterId String
-  reporter  User @relation(fields: [reporterId], references: [id])
+  post       Post         @relation(fields: [postId], references: [id])
+  reporter   User         @relation(fields: [reporterId], references: [id])
 
-  @@unique([postId, reporterId]) // Prevent duplicate reports from same user
+  @@unique([postId, reporterId])
+  @@index([reporterId], map: "post_reports_reporterId_fkey")
   @@map("post_reports")
 }
 
-// Bus Service
 model BusRoute {
-  id                String   @id @default(cuid())
-  name              String
-  number            String
-  busNumber         String?  // Physical bus number/plate
-  driverContactNumber String? // Driver's contact number
-  description       String?
-  isActive          Boolean  @default(true)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  universityId String
-  university   University @relation(fields: [universityId], references: [id])
-  operatorId   String?  // The primary operator to receive messages
-  operator     User?    @relation("BusOperator", fields: [operatorId], references: [id])
-  schedules   BusSchedule[]
-  notifications BusNotification[]
-  subscriptions BusSubscription[]
-  emergencies BusEmergency[]
+  id                  String            @id @default(cuid())
+  name                String
+  number              String
+  busNumber           String?
+  driverContactNumber String?
+  description         String?
+  isActive            Boolean           @default(true)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  universityId        String
+  operatorId          String?
+  emergencies         BusEmergency[]
+  notifications       BusNotification[]
+  operator            User?             @relation("BusOperator", fields: [operatorId], references: [id])
+  university          University        @relation(fields: [universityId], references: [id])
+  schedules           BusSchedule[]
+  subscriptions       BusSubscription[]
 
   @@unique([name, universityId])
+  @@index([operatorId], map: "bus_routes_operatorId_fkey")
+  @@index([universityId], map: "bus_routes_universityId_fkey")
   @@map("bus_routes")
 }
 
 model BusSchedule {
   id        String   @id @default(cuid())
-  dayOfWeek Int      // 0-6 (Sunday-Saturday)
-  startTime String   // HH:MM format
-  endTime   String   // HH:MM format
+  dayOfWeek Int
+  startTime String
+  endTime   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
   routeId   String
   route     BusRoute @relation(fields: [routeId], references: [id])
 
+  @@index([routeId], map: "bus_schedules_routeId_fkey")
   @@map("bus_schedules")
 }
 
 model BusNotification {
-  id        String   @id @default(cuid())
+  id        String           @id @default(cuid())
   title     String
   message   String
   type      NotificationType @default(INFO)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
+  isActive  Boolean          @default(true)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
   routeId   String
-  route     BusRoute @relation(fields: [routeId], references: [id])
+  route     BusRoute         @relation(fields: [routeId], references: [id])
 
+  @@index([routeId], map: "bus_notifications_routeId_fkey")
   @@map("bus_notifications")
 }
 
 model BusSubscription {
   id        String   @id @default(cuid())
   createdAt DateTime @default(now())
-
   userId    String
-  user      User @relation(fields: [userId], references: [id])
   routeId   String
   route     BusRoute @relation(fields: [routeId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, routeId])
+  @@index([routeId], map: "bus_subscriptions_routeId_fkey")
   @@map("bus_subscriptions")
 }
 
 model BusEmergency {
+  id             String            @id @default(cuid())
+  type           EmergencyType
+  title          String
+  description    String            @db.Text
+  location       String?
+  status         EmergencyStatus   @default(PENDING)
+  priority       EmergencyPriority @default(MEDIUM)
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  notes          String?           @db.Text
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+  userId         String
+  routeId        String
+  resolvedByUser User?             @relation("ResolvedEmergencies", fields: [resolvedBy], references: [id])
+  route          BusRoute          @relation(fields: [routeId], references: [id])
+  user           User              @relation("ReportedEmergencies", fields: [userId], references: [id])
+
+  @@index([resolvedBy], map: "bus_emergencies_resolvedBy_fkey")
+  @@index([routeId], map: "bus_emergencies_routeId_fkey")
+  @@index([userId], map: "bus_emergencies_userId_fkey")
+  @@map("bus_emergencies")
+}
+
+model PrinterShop {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  location      String?
+  phone         String?
+  email         String?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  ownerId       String?
+  printRequests PrintRequest[]
+  owner         User?          @relation(fields: [ownerId], references: [id])
+
+  @@index([ownerId], map: "printer_shops_ownerId_fkey")
+  @@map("printer_shops")
+}
+
+model PrintRequest {
+  id            String      @id @default(cuid())
+  fileName      String
+  fileUrl       String      @db.Text
+  printType     PrintType   @default(BLACK_WHITE)
+  copies        Int         @default(1)
+  pages         Int?
+  notes         String?     @db.Text
+  status        PrintStatus @default(PENDING)
+  price         Decimal?
+  printedAt     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  userId        String
+  printerShopId String
+  printerShop   PrinterShop @relation(fields: [printerShopId], references: [id])
+  user          User        @relation(fields: [userId], references: [id])
+
+  @@index([printerShopId], map: "print_requests_printerShopId_fkey")
+  @@index([userId], map: "print_requests_userId_fkey")
+  @@map("print_requests")
+}
+
+model Cafe {
+  id           String       @id @default(cuid())
+  name         String
+  description  String?
+  location     String
+  phone        String?
+  email        String?
+  imageUrl     String?
+  openingHours String?
+  isActive     Boolean      @default(true)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  universityId String
+  ownerId      String?
+  deals        CafeDeal[]
+  menus        CafeMenu[]
+  orders       CafeOrder[]
+  ratings      CafeRating[]
+  owner        User?        @relation(fields: [ownerId], references: [id])
+  university   University   @relation(fields: [universityId], references: [id])
+
+  @@index([ownerId], map: "cafes_ownerId_fkey")
+  @@index([universityId], map: "cafes_universityId_fkey")
+  @@map("cafes")
+}
+
+model CafeMenu {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  price       Decimal
+  category    String
+  imageUrl    String?
+  isAvailable Boolean         @default(true)
+  isFeatured  Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  cafeId      String
+  cafe        Cafe            @relation(fields: [cafeId], references: [id])
+  orderItems  CafeOrderItem[]
+
+  @@index([cafeId], map: "cafe_menus_cafeId_fkey")
+  @@map("cafe_menus")
+}
+
+model CafeDeal {
   id          String   @id @default(cuid())
-  type        EmergencyType
   title       String
-  description String   @db.Text
-  location    String?  // Current location if available
-  status      EmergencyStatus @default(PENDING)
-  priority    EmergencyPriority @default(MEDIUM)
-  resolvedAt  DateTime?
-  resolvedBy  String?  // Admin/Bus operator who resolved it
-  resolvedByUser User?  @relation("ResolvedEmergencies", fields: [resolvedBy], references: [id])
-  notes       String?  @db.Text // Admin notes
+  description String?
+  discount    Decimal?
+  menuItemIds String?
+  validFrom   DateTime
+  validUntil  DateTime
+  isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+  cafeId      String
+  cafe        Cafe     @relation(fields: [cafeId], references: [id])
 
+  @@index([cafeId], map: "cafe_deals_cafeId_fkey")
+  @@map("cafe_deals")
+}
+
+model CafeOrder {
+  id          String          @id @default(cuid())
+  status      OrderStatus     @default(PENDING)
+  totalAmount Decimal
+  notes       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  cafeId      String
   userId      String
-  user        User @relation("ReportedEmergencies", fields: [userId], references: [id])
-  routeId     String
-  route       BusRoute @relation(fields: [routeId], references: [id])
+  items       CafeOrderItem[]
+  cafe        Cafe            @relation(fields: [cafeId], references: [id])
+  user        User            @relation(fields: [userId], references: [id])
 
-  @@map("bus_emergencies")
+  @@index([cafeId], map: "cafe_orders_cafeId_fkey")
+  @@index([userId], map: "cafe_orders_userId_fkey")
+  @@map("cafe_orders")
+}
+
+model CafeOrderItem {
+  id        String    @id @default(cuid())
+  quantity  Int
+  price     Decimal
+  notes     String?
+  createdAt DateTime  @default(now())
+  orderId   String
+  menuId    String
+  menu      CafeMenu  @relation(fields: [menuId], references: [id])
+  order     CafeOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([menuId], map: "cafe_order_items_menuId_fkey")
+  @@index([orderId], map: "cafe_order_items_orderId_fkey")
+  @@map("cafe_order_items")
+}
+
+model CafeRating {
+  id        String   @id @default(cuid())
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  cafeId    String
+  userId    String
+  cafe      Cafe     @relation(fields: [cafeId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([cafeId, userId])
+  @@index([userId], map: "cafe_ratings_userId_fkey")
+  @@map("cafe_ratings")
+}
+
+model LostFound {
+  id           String          @id @default(cuid())
+  title        String
+  description  String?
+  category     String
+  itemType     String?
+  location     String?
+  contactInfo  String?
+  imageUrl     String?
+  status       LostFoundStatus @default(ACTIVE)
+  isResolved   Boolean         @default(false)
+  resolvedAt   DateTime?
+  resolvedBy   String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  userId       String
+  universityId String?
+  university   University?     @relation(fields: [universityId], references: [id])
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([universityId], map: "lost_found_universityId_fkey")
+  @@index([userId], map: "lost_found_userId_fkey")
+  @@map("lost_found")
+}
+
+model AcademicResource {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  fileUrl     String
+  fileType    String
+  fileSize    Int
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  uploaderId  String
+  courseId    String?
+  semesterId  String?
+  course      Course?   @relation(fields: [courseId], references: [id])
+  semester    Semester? @relation(fields: [semesterId], references: [id])
+  uploader    User      @relation(fields: [uploaderId], references: [id])
+
+  @@index([courseId], map: "academic_resources_courseId_fkey")
+  @@index([semesterId], map: "academic_resources_semesterId_fkey")
+  @@index([uploaderId], map: "academic_resources_uploaderId_fkey")
+  @@map("academic_resources")
+}
+
+model Course {
+  id           String             @id @default(cuid())
+  name         String
+  code         String
+  credits      Int
+  description  String?
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  universityId String
+  resources    AcademicResource[]
+  university   University         @relation(fields: [universityId], references: [id])
+
+  @@unique([code, universityId])
+  @@index([universityId], map: "courses_universityId_fkey")
+  @@map("courses")
+}
+
+model Semester {
+  id           String             @id @default(cuid())
+  name         String
+  year         Int
+  isActive     Boolean            @default(true)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  universityId String
+  resources    AcademicResource[]
+  university   University         @relation(fields: [universityId], references: [id])
+
+  @@unique([name, year, universityId])
+  @@index([universityId], map: "semesters_universityId_fkey")
+  @@map("semesters")
+}
+
+model GPARecord {
+  id        String       @id @default(cuid())
+  semester  String
+  year      Int
+  gpa       Decimal
+  cgpa      Decimal
+  credits   Int
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  userId    String
+  user      User         @relation(fields: [userId], references: [id])
+  subjects  GPASubject[]
+
+  @@index([userId], map: "gpa_records_userId_fkey")
+  @@map("gpa_records")
+}
+
+model GPASubject {
+  id          String    @id @default(cuid())
+  name        String
+  code        String
+  credits     Int
+  grade       String
+  gpa         Decimal
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  gpaRecordId String
+  gpaRecord   GPARecord @relation(fields: [gpaRecordId], references: [id])
+
+  @@index([gpaRecordId], map: "gpa_subjects_gpaRecordId_fkey")
+  @@map("gpa_subjects")
+}
+
+model Event {
+  id           String      @id @default(cuid())
+  title        String
+  description  String?
+  location     String?
+  startDate    DateTime
+  endDate      DateTime?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  organizerId  String
+  universityId String
+  rsvps        EventRSVP[]
+  organizer    User        @relation(fields: [organizerId], references: [id])
+  university   University  @relation(fields: [universityId], references: [id])
+
+  @@index([organizerId], map: "events_organizerId_fkey")
+  @@index([universityId], map: "events_universityId_fkey")
+  @@index([startDate])
+  @@map("events")
+}
+
+model EventRSVP {
+  id        String     @id @default(cuid())
+  status    RSVPStatus @default(GOING)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  eventId   String
+  userId    String
+  event     Event      @relation(fields: [eventId], references: [id])
+  user      User       @relation(fields: [userId], references: [id])
+
+  @@unique([eventId, userId])
+  @@index([userId], map: "event_rsvps_userId_fkey")
+  @@map("event_rsvps")
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  title     String
+  message   String
+  type      NotificationType @default(INFO)
+  isRead    Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "notifications_userId_fkey")
+  @@index([userId, isRead])
+  @@map("notifications")
+}
+
+model Role {
+  id          String     @id @default(cuid())
+  name        String     @unique
+  description String?
+  permissions Json?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  users       UserRole[]
+
+  @@map("roles")
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  roleId    String
+  role      Role     @relation(fields: [roleId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, roleId])
+  @@index([roleId], map: "user_roles_roleId_fkey")
+  @@map("user_roles")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  action     String
+  entityType String
+  entityId   String
+  userId     String
+  userEmail  String
+  details    String
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Analytics {
+  id        String   @id @default(cuid())
+  metric    String
+  value     Decimal
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  @@map("analytics")
+}
+
+model Conversation {
+  id        String               @id @default(cuid())
+  name      String?
+  imageUrl  String?
+  isGroup   Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+  members   ConversationMember[]
+  messages  Message[]
+
+  @@map("conversations")
+}
+
+model ConversationMember {
+  id             String       @id @default(cuid())
+  joinedAt       DateTime     @default(now())
+  role           MemberRole   @default(MEMBER)
+  lastReadAt     DateTime     @default(now())
+  userId         String
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, conversationId])
+  @@index([conversationId], map: "conversation_members_conversationId_fkey")
+  @@map("conversation_members")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  senderId       String
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+
+  @@index([senderId])
+  @@index([conversationId])
+  @@map("messages")
+}
+
+model Story {
+  id        String         @id @default(cuid())
+  mediaUrl  String         @db.Text
+  mediaType StoryMediaType @default(IMAGE)
+  content   String?        @db.Text
+  createdAt DateTime       @default(now())
+  expiresAt DateTime
+  isActive  Boolean        @default(true)
+  authorId  String
+  author    User           @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  views     StoryView[]
+
+  @@index([authorId])
+  @@index([expiresAt])
+  @@map("stories")
+}
+
+model StoryView {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  userId    String
+  storyId   String
+  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, storyId])
+  @@index([storyId], map: "story_views_storyId_fkey")
+  @@map("story_views")
 }
 
 enum EmergencyType {
@@ -299,47 +737,6 @@ enum EmergencyPriority {
   CRITICAL
 }
 
-// Printer Shops
-model PrinterShop {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  location    String?
-  phone       String?
-  email       String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  ownerId     String?
-  owner       User? @relation(fields: [ownerId], references: [id])
-  printRequests PrintRequest[]
-
-  @@map("printer_shops")
-}
-
-model PrintRequest {
-  id          String   @id @default(cuid())
-  fileName    String
-  fileUrl     String   @db.Text
-  printType   PrintType @default(BLACK_WHITE)
-  copies      Int      @default(1)
-  pages       Int?     // Number of pages if known
-  notes       String?  @db.Text
-  status      PrintStatus @default(PENDING)
-  price       Decimal? // Calculated price
-  printedAt   DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User @relation(fields: [userId], references: [id])
-  printerShopId String
-  printerShop PrinterShop @relation(fields: [printerShopId], references: [id])
-
-  @@map("print_requests")
-}
-
 enum PrintType {
   BLACK_WHITE
   COLOR
@@ -353,335 +750,12 @@ enum PrintStatus {
   CANCELLED
 }
 
-// Cafés
-model Cafe {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  location    String
-  phone       String?
-  email       String?
-  imageUrl    String? // Cafe image
-  openingHours String? // JSON string with hours
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  universityId String
-  university   University @relation(fields: [universityId], references: [id])
-  ownerId      String?
-  owner        User? @relation(fields: [ownerId], references: [id])
-  menus        CafeMenu[]
-  deals        CafeDeal[]
-  orders       CafeOrder[]
-  ratings      CafeRating[]
-
-  @@map("cafes")
-}
-
-model CafeMenu {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal
-  category    String
-  imageUrl    String? // Food item image
-  isAvailable Boolean  @default(true)
-  isFeatured  Boolean  @default(false) // Highlight as most liked/popular
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  cafeId      String
-  cafe        Cafe @relation(fields: [cafeId], references: [id])
-  orderItems  CafeOrderItem[]
-
-  @@map("cafe_menus")
-}
-
-model CafeDeal {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  discount    Decimal? // Percentage discount
-  menuItemIds String?  // JSON array of menu item IDs this deal applies to
-  validFrom   DateTime
-  validUntil  DateTime
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  cafeId      String
-  cafe        Cafe @relation(fields: [cafeId], references: [id])
-
-  @@map("cafe_deals")
-}
-
-model CafeOrder {
-  id          String      @id @default(cuid())
-  status      OrderStatus @default(PENDING)
-  totalAmount Decimal
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-
-  cafeId      String
-  cafe        Cafe @relation(fields: [cafeId], references: [id])
-  userId      String
-  user        User @relation(fields: [userId], references: [id])
-  items       CafeOrderItem[]
-
-  @@map("cafe_orders")
-}
-
-model CafeOrderItem {
-  id          String     @id @default(cuid())
-  quantity    Int
-  price       Decimal
-  notes       String?
-  createdAt   DateTime   @default(now())
-
-  orderId     String
-  order       CafeOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  menuId      String
-  menu        CafeMenu  @relation(fields: [menuId], references: [id])
-
-  @@map("cafe_order_items")
-}
-
-model CafeRating {
-  id          String   @id @default(cuid())
-  rating      Int      // 1-5
-  comment     String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  cafeId      String
-  cafe        Cafe @relation(fields: [cafeId], references: [id])
-  userId      String
-  user        User @relation(fields: [userId], references: [id])
-
-  @@unique([cafeId, userId])
-  @@map("cafe_ratings")
-}
-
-model LostFound {
-  id          String         @id @default(cuid())
-  title       String
-  description String?
-  category    String         // "Lost" or "Found"
-  itemType    String?        // "Phone", "Wallet", "Keys", "Bag", "Other"
-  location    String?        // Where it was lost/found
-  contactInfo String?        // Phone/email for contact
-  imageUrl    String?        // Photo of the item
-  status      LostFoundStatus @default(ACTIVE)
-  isResolved  Boolean        @default(false)
-  resolvedAt  DateTime?
-  resolvedBy  String?        // User ID who marked as resolved
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-
-  userId      String
-  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  universityId String?
-  university  University?    @relation(fields: [universityId], references: [id])
-
-  @@map("lost_found")
-}
-
 enum LostFoundStatus {
   ACTIVE
   RESOLVED
   CLOSED
 }
 
-// Academic Resources
-model AcademicResource {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  fileUrl     String
-  fileType    String
-  fileSize    Int
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  uploaderId  String
-  uploader    User @relation(fields: [uploaderId], references: [id])
-  courseId    String?
-  course      Course? @relation(fields: [courseId], references: [id])
-  semesterId  String?
-  semester    Semester? @relation(fields: [semesterId], references: [id])
-
-  @@map("academic_resources")
-}
-
-model Course {
-  id          String   @id @default(cuid())
-  name        String
-  code        String
-  credits     Int
-  description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  universityId String
-  university   University @relation(fields: [universityId], references: [id])
-  resources    AcademicResource[]
-
-  @@unique([code, universityId])
-  @@map("courses")
-}
-
-model Semester {
-  id          String   @id @default(cuid())
-  name        String
-  year        Int
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  universityId String
-  university   University @relation(fields: [universityId], references: [id])
-  resources    AcademicResource[]
-
-  @@unique([name, year, universityId])
-  @@map("semesters")
-}
-
-// GPA Calculator
-model GPARecord {
-  id          String   @id @default(cuid())
-  semester    String
-  year        Int
-  gpa         Decimal
-  cgpa        Decimal
-  credits     Int
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  userId      String
-  user        User @relation(fields: [userId], references: [id])
-  subjects    GPASubject[]
-
-  @@map("gpa_records")
-}
-
-model GPASubject {
-  id          String   @id @default(cuid())
-  name        String
-  code        String
-  credits     Int
-  grade       String
-  gpa         Decimal
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  gpaRecordId String
-  gpaRecord   GPARecord @relation(fields: [gpaRecordId], references: [id])
-
-  @@map("gpa_subjects")
-}
-
-// Events
-model Event {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  location    String?
-  startDate   DateTime
-  endDate     DateTime?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  organizerId String
-  organizer   User @relation(fields: [organizerId], references: [id])
-  universityId String
-  university   University @relation(fields: [universityId], references: [id])
-  rsvps       EventRSVP[]
-
-  @@map("events")
-}
-
-model EventRSVP {
-  id        String   @id @default(cuid())
-  status    RSVPStatus @default(GOING)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  eventId   String
-  event     Event @relation(fields: [eventId], references: [id])
-  userId    String
-  user      User @relation(fields: [userId], references: [id])
-
-  @@unique([eventId, userId])
-  @@map("event_rsvps")
-}
-
-// Notifications
-model Notification {
-  id        String   @id @default(cuid())
-  title     String
-  message   String
-  type      NotificationType @default(INFO)
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  userId    String
-  user      User @relation(fields: [userId], references: [id])
-
-  @@map("notifications")
-}
-
-// Admin Roles
-model Role {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  permissions Json? // Array of permission strings
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  users       UserRole[]
-
-  @@map("roles")
-}
-
-model UserRole {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-
-  userId    String
-  user      User @relation(fields: [userId], references: [id])
-  roleId    String
-  role      Role @relation(fields: [roleId], references: [id])
-
-  @@unique([userId, roleId])
-  @@map("user_roles")
-}
-
-// Audit Logs
-model AuditLog {
-  id         String   @id @default(cuid())
-  action     String   // CREATE, UPDATE, DELETE, ROLE_ASSIGN, etc.
-  entityType String   // USER, CAFE, BUS_ROUTE, etc.
-  entityId   String
-  userId     String
-  userEmail  String
-  details    String   // JSON string with action details
-  createdAt  DateTime @default(now())
-
-  @@map("audit_logs")
-  @@index([userId])
-  @@index([entityType, entityId])
-  @@index([createdAt])
-}
-
-// Enums
 enum PostPrivacy {
   PUBLIC
   UNIVERSITY_ONLY
@@ -720,99 +794,9 @@ enum OrderStatus {
   CANCELLED
 }
 
-// Analytics (for future use)
-model Analytics {
-  id        String   @id @default(cuid())
-  metric    String
-  value     Decimal
-  metadata  Json?
-  createdAt DateTime @default(now())
-
-  @@map("analytics")
-}
-
-// Messaging System
-model Conversation {
-  id          String   @id @default(cuid())
-  name        String?  // Group name
-  imageUrl    String?  // Group image
-  isGroup     Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  members     ConversationMember[]
-  messages    Message[]
-
-  @@map("conversations")
-}
-
-model ConversationMember {
-  id             String   @id @default(cuid())
-  joinedAt       DateTime @default(now())
-  role           MemberRole @default(MEMBER)
-  lastReadAt     DateTime @default(now())
-
-  userId         String
-  user           User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, conversationId])
-  @@map("conversation_members")
-}
-
 enum MemberRole {
   ADMIN
   MEMBER
-}
-
-model Message {
-  id            String   @id @default(cuid())
-  content       String   @db.Text
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
-  senderId      String
-  sender        User @relation("SentMessages", fields: [senderId], references: [id])
-  
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-
-  @@map("messages")
-  @@index([senderId])
-  @@index([conversationId])
-}
-
-// Social Stories
-model Story {
-  id          String   @id @default(cuid())
-  mediaUrl    String   @db.Text
-  mediaType   StoryMediaType @default(IMAGE)
-  content     String?  @db.Text
-  createdAt   DateTime @default(now())
-  expiresAt   DateTime
-  isActive    Boolean  @default(true)
-
-  authorId    String
-  author      User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  views       StoryView[]
-
-  @@map("stories")
-  @@index([authorId])
-  @@index([expiresAt])
-}
-
-model StoryView {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  storyId   String
-  story     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, storyId])
-  @@map("story_views")
 }
 
 enum StoryMediaType {

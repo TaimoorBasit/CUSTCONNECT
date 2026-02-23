@@ -72,8 +72,20 @@ router.get('/lost-found/:filename', (req, res) => {
 
   console.log(`✅ Serving lost-found image: ${filePath}`);
 
+  // Get file extension for content type
+  const ext = path.extname(filename).toLowerCase();
+  const contentTypes: Record<string, string> = {
+    '.jpg': 'image/jpeg',
+    '.jpeg': 'image/jpeg',
+    '.png': 'image/png',
+    '.gif': 'image/gif',
+    '.webp': 'image/webp'
+  };
+
+  const contentType = contentTypes[ext] || 'image/jpeg';
+
   // Set appropriate headers
-  res.setHeader('Content-Type', 'image/jpeg');
+  res.setHeader('Content-Type', contentType);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET');
   res.setHeader('Cache-Control', 'public, max-age=31536000'); // Cache for 1 year

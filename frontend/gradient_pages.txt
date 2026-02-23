@@ -1,0 +1,12 @@
+﻿E:\CustConnect\frontend\src\app\admin\analytics\page.tsx
+E:\CustConnect\frontend\src\app\admin\audit\page.tsx
+E:\CustConnect\frontend\src\app\admin\emergencies\page.tsx
+E:\CustConnect\frontend\src\app\admin\events\page.tsx
+E:\CustConnect\frontend\src\app\admin\grading\page.tsx
+E:\CustConnect\frontend\src\app\admin\lost-found\page.tsx
+E:\CustConnect\frontend\src\app\admin\notifications\page.tsx
+E:\CustConnect\frontend\src\app\admin\posts\page.tsx
+E:\CustConnect\frontend\src\app\admin\printer-shops\page.tsx
+E:\CustConnect\frontend\src\app\admin\resources\page.tsx
+E:\CustConnect\frontend\src\app\admin\settings\page.tsx
+E:\CustConnect\frontend\src\app\admin\vendors\page.tsx

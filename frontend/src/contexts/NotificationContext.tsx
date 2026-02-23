@@ -33,7 +33,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   // Fetch notifications from API - memoized with useCallback
   const fetchNotifications = useCallback(async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (!token || !user) return;
 
       setIsLoading(true);
@@ -132,7 +132,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const markAsRead = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (!token) return;
 
       await axios.put(`${API_URL}/notifications/${id}/read`, {}, {
@@ -141,9 +141,9 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       });
 
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification.id === id 
+      setNotifications(prev =>
+        prev.map(notification =>
+          notification.id === id
             ? { ...notification, isRead: true }
             : notification
         )
@@ -155,7 +155,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const markAllAsRead = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (!token) return;
 
       await axios.put(`${API_URL}/notifications/read-all`, {}, {
@@ -164,7 +164,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       });
 
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.map(notification => ({ ...notification, isRead: true }))
       );
     } catch (error) {
@@ -174,7 +174,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
 
   const deleteNotification = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('cc_token') || localStorage.getItem('token');
       if (!token) return;
 
       await axios.delete(`${API_URL}/notifications/${id}`, {
@@ -183,7 +183,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
         }
       });
 
-      setNotifications(prev => 
+      setNotifications(prev =>
         prev.filter(notification => notification.id !== id)
       );
     } catch (error) {
@@ -198,7 +198,7 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       if (exists) return prev;
       return [notification, ...prev];
     });
-    
+
     // Show toast notification
     toast(notification.message, {
       icon: getNotificationIcon(notification.type),
