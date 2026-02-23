@@ -18,7 +18,7 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://custconnect-backend-production.up.railway.app/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 export default function AdminLostFoundPage() {
   const [items, setItems] = useState<LostFoundItem[]>([]);
@@ -158,8 +158,8 @@ export default function AdminLostFoundPage() {
                 key={cat}
                 onClick={() => setSelectedCategory(cat as any)}
                 className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedCategory === cat
-                    ? 'bg-black text-white shadow-lg'
-                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                  ? 'bg-black text-white shadow-lg'
+                  : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
                   }`}
               >
                 {cat === 'all' ? 'All Units' : cat}
@@ -173,8 +173,8 @@ export default function AdminLostFoundPage() {
                 key={status}
                 onClick={() => setSelectedStatus(status as any)}
                 className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all ${selectedStatus === status
-                    ? 'bg-indigo-600 text-white shadow-lg'
-                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
                   }`}
               >
                 {status}
@@ -224,8 +224,8 @@ export default function AdminLostFoundPage() {
                     </td>
                     <td className="px-8 py-6">
                       <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border ${item.category === 'Lost'
-                          ? 'bg-rose-50 text-rose-600 border-rose-100'
-                          : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        ? 'bg-rose-50 text-rose-600 border-rose-100'
+                        : 'bg-emerald-50 text-emerald-600 border-emerald-100'
                         }`}>
                         {item.category}
                       </span>
@@ -236,8 +236,8 @@ export default function AdminLostFoundPage() {
                     </td>
                     <td className="px-8 py-6">
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-black uppercase tracking-widest ${item.isResolved
-                          ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
-                          : 'bg-amber-50 text-amber-600 border border-amber-100 animate-pulse'
+                        ? 'bg-indigo-50 text-indigo-600 border border-indigo-100'
+                        : 'bg-amber-50 text-amber-600 border border-amber-100 animate-pulse'
                         }`}>
                         {item.isResolved ? 'Recovered' : 'Active'}
                       </span>

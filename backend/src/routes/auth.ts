@@ -226,10 +226,10 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
   const { email, password } = req.body;
 
   // Validate input
-  if (!email || !password) {
+  if (!email || !password || typeof email !== 'string' || typeof password !== 'string') {
     return res.status(400).json({
       success: false,
-      message: 'Email and password are required'
+      message: 'Email and password are required and must be strings'
     });
   }
 

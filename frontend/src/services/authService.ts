@@ -6,9 +6,9 @@ class AuthService {
   private api: AxiosInstance;
 
   constructor() {
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
     this.api = axios.create({
-      // We are forcing the production URL here to ensure connection
-      baseURL: 'https://custconnect-backend-production.up.railway.app/api',
+      baseURL: API_URL,
       headers: {
         'Content-Type': 'application/json',
       },

@@ -15,7 +15,7 @@ import UserIcon from '@heroicons/react/24/outline/UserIcon';
 import CheckCircleIcon from '@heroicons/react/24/solid/CheckCircleIcon';
 import DocumentTextIcon from '@heroicons/react/24/outline/DocumentTextIcon';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://custconnect-backend-production.up.railway.app/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 interface PrinterShop {
   id: string;

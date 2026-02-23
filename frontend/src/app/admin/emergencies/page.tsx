@@ -13,7 +13,7 @@ import UserIcon from '@heroicons/react/24/outline/UserIcon';
 import TruckIcon from '@heroicons/react/24/outline/TruckIcon';
 import InformationCircleIcon from '@heroicons/react/24/outline/InformationCircleIcon';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://custconnect-backend-production.up.railway.app/api';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api';
 
 interface Emergency {
   id: string;
