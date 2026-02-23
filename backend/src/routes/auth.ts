@@ -265,10 +265,9 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
           }
         });
       } else {
-        // Search by username using raw query to bypass client validation if not regenerated
-        // Note: We use raw query because the Prisma Client might not be updated yet
+        // Search by username - check both exactly as typed and lowercased for flexibility
         const users: any[] = await prisma.$queryRaw`
-          SELECT * FROM users WHERE username = ${normalizedEmail} LIMIT 1
+          SELECT * FROM users WHERE username = ${email.trim()} OR username = ${normalizedEmail} LIMIT 1
         `;
 
         if (users && users.length > 0) {
@@ -367,7 +366,7 @@ router.post('/login', asyncHandler(async (req: Request, res: Response) => {
         email: user.email
       },
       jwtSecret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
     );
 
     // Get user roles safely - format as array of objects with id and name

@@ -34,8 +34,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 // We also cache the user object so the app shows content immediately
 // while the network call to verify the token is in-flight.
 // ---------------------------------------------------------------------------
-const TOKEN_KEY = 'cc_token';
-const USER_KEY = 'cc_user';
+const TOKEN_KEY = 'token';
+const USER_KEY = 'user';
 
 function saveToken(token: string) {
   try { localStorage.setItem(TOKEN_KEY, token); } catch { }

@@ -1,12 +1,20 @@
 import { Providers } from '@/components/layout/Providers';
 import { Inter } from 'next/font/google';
 import './globals.css';
-import { Metadata } from 'next';
+import { Metadata, Viewport } from 'next';
 
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
 });
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+};
 
 export const metadata: Metadata = {
   title: 'CustConnect | Your Student Hub',
@@ -22,13 +30,6 @@ export const metadata: Metadata = {
     ],
   },
   manifest: '/favicon_io/site.webmanifest',
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    userScalable: false,
-    viewportFit: 'cover',
-  },
 };
 
 export default function RootLayout({
