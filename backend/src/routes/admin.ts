@@ -239,68 +239,71 @@ router.delete('/users/:id', requireRole(['SUPER_ADMIN']), auditLog, asyncHandler
 
   // Delete related data first to avoid foreign key constraints
   await prisma.$transaction(async (tx) => {
-    // Delete user roles
-    await tx.userRole.deleteMany({
-      where: { userId: id }
-    });
+    // 1. Roles
+    await tx.userRole.deleteMany({ where: { userId: id } });
 
-    // Delete user posts, comments, likes (or set to inactive)
-    await tx.post.updateMany({
-      where: { authorId: id },
-      data: { isActive: false }
-    });
+    // 2. Social follows / notifications
+    await tx.follow.deleteMany({ where: { OR: [{ followerId: id }, { followingId: id }] } });
+    await tx.notification.deleteMany({ where: { userId: id } });
 
-    // Delete user subscriptions
-    await tx.busSubscription.deleteMany({
-      where: { userId: id }
-    });
+    // 3. Likes, comments, post reports
+    await tx.like.deleteMany({ where: { userId: id } });
+    await tx.comment.deleteMany({ where: { authorId: id } });
+    await tx.postReport.deleteMany({ where: { reporterId: id } });
 
-    // Delete user notifications
-    await tx.notification.deleteMany({
-      where: { userId: id }
-    });
-
-    // Delete user GPA records
-    const gpaRecords = await tx.gPARecord.findMany({
-      where: { userId: id },
-      select: { id: true }
-    });
-    for (const record of gpaRecords) {
-      await tx.gPASubject.deleteMany({
-        where: { gpaRecordId: record.id }
-      });
+    // 4. Posts (delete posts authored by user, cleaning up their children first)
+    const userPosts = await tx.post.findMany({ where: { authorId: id }, select: { id: true } });
+    const postIds = userPosts.map((p: any) => p.id);
+    if (postIds.length > 0) {
+      await tx.comment.deleteMany({ where: { postId: { in: postIds } } });
+      await tx.like.deleteMany({ where: { postId: { in: postIds } } });
+      await tx.postReport.deleteMany({ where: { postId: { in: postIds } } });
+      await tx.post.deleteMany({ where: { id: { in: postIds } } });
     }
-    await tx.gPARecord.deleteMany({
-      where: { userId: id }
-    });
 
-    // Delete user resources
-    await tx.academicResource.deleteMany({
-      where: { uploaderId: id }
-    });
+    // 5. Academic
+    await tx.academicResource.deleteMany({ where: { uploaderId: id } });
+    const gpaRecords = await tx.gPARecord.findMany({ where: { userId: id }, select: { id: true } });
+    const gpaIds = gpaRecords.map((r: any) => r.id);
+    if (gpaIds.length > 0) {
+      await tx.gPASubject.deleteMany({ where: { gpaRecordId: { in: gpaIds } } });
+      await tx.gPARecord.deleteMany({ where: { id: { in: gpaIds } } });
+    }
 
-    // Delete user event RSVPs
-    await tx.eventRSVP.deleteMany({
-      where: { userId: id }
-    });
+    // 6. Events - organizerId is required, so delete events (and their RSVPs) owned by this user
+    const userEvents = await tx.event.findMany({ where: { organizerId: id }, select: { id: true } });
+    const eventIds = userEvents.map((e: any) => e.id);
+    if (eventIds.length > 0) {
+      await tx.eventRSVP.deleteMany({ where: { eventId: { in: eventIds } } });
+      await tx.event.deleteMany({ where: { id: { in: eventIds } } });
+    }
+    await tx.eventRSVP.deleteMany({ where: { userId: id } });
 
-    // Delete follows
-    await tx.follow.deleteMany({
-      where: { OR: [{ followerId: id }, { followingId: id }] }
-    });
+    // 7. Bus / Transport
+    await tx.busSubscription.deleteMany({ where: { userId: id } });
+    // Null out resolvedBy reference using raw SQL (field is optional in DB but Prisma types are strict)
+    await tx.$executeRawUnsafe(`UPDATE bus_emergencies SET resolvedBy = NULL WHERE resolvedBy = '${id}'`);
+    await tx.busEmergency.deleteMany({ where: { userId: id } });
+    await tx.busRoute.updateMany({ where: { operatorId: id }, data: { operatorId: null } });
 
-    // Delete comments and likes
-    await tx.comment.deleteMany({
-      where: { authorId: id }
-    });
-    await tx.like.deleteMany({
-      where: { userId: id }
-    });
+    // 8. Cafes & Printers
+    await tx.cafeRating.deleteMany({ where: { userId: id } });
+    await tx.cafeOrder.deleteMany({ where: { userId: id } });
+    await tx.cafe.updateMany({ where: { ownerId: id }, data: { ownerId: null } });
+    await tx.printRequest.deleteMany({ where: { userId: id } });
+    await tx.printerShop.updateMany({ where: { ownerId: id }, data: { ownerId: null } });
 
-    // Finally delete the user
-    await tx.user.delete({
-      where: { id }
-    });
+    // 9. Lost & Found
+    await tx.lostFound.deleteMany({ where: { userId: id } });
+
+    // 10. Stories & Messaging
+    await tx.storyView.deleteMany({ where: { userId: id } });
+    await tx.story.deleteMany({ where: { authorId: id } });
+    await tx.message.deleteMany({ where: { senderId: id } });
+    await tx.conversationMember.deleteMany({ where: { userId: id } });
+
+    // 11. Finally delete the user
+    await tx.user.delete({ where: { id } });
   });
 
   res.json({
