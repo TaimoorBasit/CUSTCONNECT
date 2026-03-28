@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 class NewsTab extends StatelessWidget {
-  const NewsTab({Key? key}) : super(key: key);
+  const NewsTab({super.key});
 
   @override
   Widget build(BuildContext context) {

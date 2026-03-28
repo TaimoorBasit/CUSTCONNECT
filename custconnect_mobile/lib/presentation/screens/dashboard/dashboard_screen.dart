@@ -4,7 +4,7 @@ import 'tabs/news_tab.dart';
 import 'tabs/profile_tab.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({Key? key}) : super(key: key);
+  const DashboardScreen({super.key});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();

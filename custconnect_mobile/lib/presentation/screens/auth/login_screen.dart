@@ -5,9 +5,8 @@ import '../../providers/auth_provider.dart';
 import '../../../core/constants/api_constants.dart';
 import '../../../core/utils/validators.dart';
 
-
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -32,11 +31,13 @@ class _LoginScreenState extends State<LoginScreen> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${provider.error ?? 'Login Failed'} (Target: ${ApiConstants.baseUrl})'),
+            content: Text(
+                '${provider.error ?? 'Login Failed'} (Target: ${ApiConstants.baseUrl})'),
             backgroundColor: Colors.red[600],
             duration: const Duration(seconds: 10),
             behavior: SnackBarBehavior.floating,
-            action: SnackBarAction(label: 'OK', textColor: Colors.white, onPressed: () {}),
+            action: SnackBarAction(
+                label: 'OK', textColor: Colors.white, onPressed: () {}),
           ),
         );
       }
@@ -52,7 +53,8 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 24.0, vertical: 48.0),
             child: Form(
               key: _formKey,
               child: Column(
@@ -89,7 +91,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 32),
-                  
+
                   // Stacked Input Fields with connecting borders
                   Container(
                     decoration: BoxDecoration(
@@ -110,28 +112,37 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           decoration: const InputDecoration(
                             hintText: 'Email address or Username',
-                            hintStyle: TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                            hintStyle: TextStyle(
+                                color: Color(0xFF9CA3AF), fontSize: 14),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
-                            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                            contentPadding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 14),
                           ),
                           validator: (v) => v!.isEmpty ? 'Required' : null,
                         ),
-                        Divider(height: 1, thickness: 1, color: Colors.grey.shade300),
+                        Divider(
+                            height: 1,
+                            thickness: 1,
+                            color: Colors.grey.shade300),
                         TextFormField(
                           controller: _passwordController,
                           obscureText: !_showPassword,
                           decoration: InputDecoration(
                             hintText: 'Password',
-                            hintStyle: const TextStyle(color: Color(0xFF9CA3AF), fontSize: 14),
+                            hintStyle: const TextStyle(
+                                color: Color(0xFF9CA3AF), fontSize: 14),
                             border: InputBorder.none,
                             enabledBorder: InputBorder.none,
                             focusedBorder: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 14),
                             suffixIcon: IconButton(
                               icon: Icon(
-                                _showPassword ? Icons.visibility_off : Icons.visibility,
+                                _showPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
                                 color: const Color(0xFF9CA3AF),
                               ),
                               onPressed: () {
@@ -148,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
 
                   const SizedBox(height: 16),
-                  
+
                   Align(
                     alignment: Alignment.centerLeft,
                     child: TextButton(
@@ -170,7 +181,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  
+
                   ElevatedButton(
                     onPressed: isLoading ? null : _submit,
                     style: ElevatedButton.styleFrom(
@@ -201,7 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
 
                   const SizedBox(height: 24),
-                  
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -231,9 +242,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ],
                   ),
                   const SizedBox(height: 32),
-                  Text(
+                  const Text(
                     'API Target: ${ApiConstants.baseUrl}',
-                    style: const TextStyle(fontSize: 10, color: Colors.grey),
+                    style: TextStyle(fontSize: 10, color: Colors.grey),
                     textAlign: TextAlign.center,
                   ),
                 ],

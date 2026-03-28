@@ -10,20 +10,21 @@ import 'core/constants/supabase_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Supabase
   await Supabase.initialize(
     url: SupabaseConstants.url,
     anonKey: SupabaseConstants.anonKey,
   );
-  
+
   final storageService = StorageService();
   final authRepository = AuthRepository(storageService);
 
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthProvider(authRepository, storageService)),
+        ChangeNotifierProvider(
+            create: (_) => AuthProvider(authRepository, storageService)),
       ],
       child: const CustConnectApp(),
     ),
@@ -31,7 +32,7 @@ void main() async {
 }
 
 class CustConnectApp extends StatelessWidget {
-  const CustConnectApp({Key? key}) : super(key: key);
+  const CustConnectApp({super.key});
 
   @override
   Widget build(BuildContext context) {
