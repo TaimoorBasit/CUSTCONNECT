@@ -1,5 +1,5 @@
 class ApiConstants {
-  static const String baseUrl = 'https://custconnect-backend-production.up.railway.app/api';
+  static const String baseUrl = 'https://custconnect.onrender.com/api';
   static const String loginEndpoint = '/auth/login';
   static const String registerEndpoint = '/auth/register';
   static const String currentUserEndpoint = '/auth/me';
