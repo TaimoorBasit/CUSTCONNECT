@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -54,8 +55,8 @@ model User {
   department                Department?          @relation(fields: [departmentId], references: [id])
   university                University?          @relation(fields: [universityId], references: [id])
 
-  @@index([departmentId], map: "users_departmentId_fkey")
-  @@index([universityId], map: "users_universityId_fkey")
+  @@index([departmentId])
+  @@index([universityId])
   @@index([createdAt])
   @@map("users")
 }
@@ -93,7 +94,7 @@ model Department {
   users        User[]
 
   @@unique([name, universityId])
-  @@index([universityId], map: "departments_universityId_fkey")
+  @@index([universityId])
   @@map("departments")
 }
 
@@ -112,7 +113,7 @@ model Post {
   reports   PostReport[]
   author    User         @relation(fields: [authorId], references: [id])
 
-  @@index([authorId], map: "posts_authorId_fkey")
+  @@index([authorId])
   @@index([createdAt])
   @@map("posts")
 }
@@ -127,8 +128,8 @@ model Comment {
   author    User     @relation(fields: [authorId], references: [id])
   post      Post     @relation(fields: [postId], references: [id])
 
-  @@index([authorId], map: "comments_authorId_fkey")
-  @@index([postId], map: "comments_postId_fkey")
+  @@index([authorId])
+  @@index([postId])
   @@map("comments")
 }
 
@@ -141,7 +142,7 @@ model Like {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, postId])
-  @@index([postId], map: "likes_postId_fkey")
+  @@index([postId])
   @@map("likes")
 }
 
@@ -154,7 +155,7 @@ model Follow {
   following   User     @relation("UserFollowing", fields: [followingId], references: [id])
 
   @@unique([followerId, followingId])
-  @@index([followingId], map: "follows_followingId_fkey")
+  @@index([followingId])
   @@map("follows")
 }
 
@@ -170,7 +171,7 @@ model PostReport {
   reporter   User         @relation(fields: [reporterId], references: [id])
 
   @@unique([postId, reporterId])
-  @@index([reporterId], map: "post_reports_reporterId_fkey")
+  @@index([reporterId])
   @@map("post_reports")
 }
 
@@ -194,8 +195,8 @@ model BusRoute {
   subscriptions       BusSubscription[]
 
   @@unique([name, universityId])
-  @@index([operatorId], map: "bus_routes_operatorId_fkey")
-  @@index([universityId], map: "bus_routes_universityId_fkey")
+  @@index([operatorId])
+  @@index([universityId])
   @@map("bus_routes")
 }
 
@@ -209,7 +210,7 @@ model BusSchedule {
   routeId   String
   route     BusRoute @relation(fields: [routeId], references: [id])
 
-  @@index([routeId], map: "bus_schedules_routeId_fkey")
+  @@index([routeId])
   @@map("bus_schedules")
 }
 
@@ -224,7 +225,7 @@ model BusNotification {
   routeId   String
   route     BusRoute         @relation(fields: [routeId], references: [id])
 
-  @@index([routeId], map: "bus_notifications_routeId_fkey")
+  @@index([routeId])
   @@map("bus_notifications")
 }
 
@@ -237,7 +238,7 @@ model BusSubscription {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, routeId])
-  @@index([routeId], map: "bus_subscriptions_routeId_fkey")
+  @@index([routeId])
   @@map("bus_subscriptions")
 }
 
@@ -260,9 +261,9 @@ model BusEmergency {
   route          BusRoute          @relation(fields: [routeId], references: [id])
   user           User              @relation("ReportedEmergencies", fields: [userId], references: [id])
 
-  @@index([resolvedBy], map: "bus_emergencies_resolvedBy_fkey")
-  @@index([routeId], map: "bus_emergencies_routeId_fkey")
-  @@index([userId], map: "bus_emergencies_userId_fkey")
+  @@index([resolvedBy])
+  @@index([routeId])
+  @@index([userId])
   @@map("bus_emergencies")
 }
 
@@ -280,7 +281,7 @@ model PrinterShop {
   printRequests PrintRequest[]
   owner         User?          @relation(fields: [ownerId], references: [id])
 
-  @@index([ownerId], map: "printer_shops_ownerId_fkey")
+  @@index([ownerId])
   @@map("printer_shops")
 }
 
@@ -302,8 +303,8 @@ model PrintRequest {
   printerShop   PrinterShop @relation(fields: [printerShopId], references: [id])
   user          User        @relation(fields: [userId], references: [id])
 
-  @@index([printerShopId], map: "print_requests_printerShopId_fkey")
-  @@index([userId], map: "print_requests_userId_fkey")
+  @@index([printerShopId])
+  @@index([userId])
   @@map("print_requests")
 }
 
@@ -328,8 +329,8 @@ model Cafe {
   owner        User?        @relation(fields: [ownerId], references: [id])
   university   University   @relation(fields: [universityId], references: [id])
 
-  @@index([ownerId], map: "cafes_ownerId_fkey")
-  @@index([universityId], map: "cafes_universityId_fkey")
+  @@index([ownerId])
+  @@index([universityId])
   @@map("cafes")
 }
 
@@ -348,7 +349,7 @@ model CafeMenu {
   cafe        Cafe            @relation(fields: [cafeId], references: [id])
   orderItems  CafeOrderItem[]
 
-  @@index([cafeId], map: "cafe_menus_cafeId_fkey")
+  @@index([cafeId])
   @@map("cafe_menus")
 }
 
@@ -366,7 +367,7 @@ model CafeDeal {
   cafeId      String
   cafe        Cafe     @relation(fields: [cafeId], references: [id])
 
-  @@index([cafeId], map: "cafe_deals_cafeId_fkey")
+  @@index([cafeId])
   @@map("cafe_deals")
 }
 
@@ -383,8 +384,8 @@ model CafeOrder {
   cafe        Cafe            @relation(fields: [cafeId], references: [id])
   user        User            @relation(fields: [userId], references: [id])
 
-  @@index([cafeId], map: "cafe_orders_cafeId_fkey")
-  @@index([userId], map: "cafe_orders_userId_fkey")
+  @@index([cafeId])
+  @@index([userId])
   @@map("cafe_orders")
 }
 
@@ -399,8 +400,8 @@ model CafeOrderItem {
   menu      CafeMenu  @relation(fields: [menuId], references: [id])
   order     CafeOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
-  @@index([menuId], map: "cafe_order_items_menuId_fkey")
-  @@index([orderId], map: "cafe_order_items_orderId_fkey")
+  @@index([menuId])
+  @@index([orderId])
   @@map("cafe_order_items")
 }
 
@@ -416,7 +417,7 @@ model CafeRating {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([cafeId, userId])
-  @@index([userId], map: "cafe_ratings_userId_fkey")
+  @@index([userId])
   @@map("cafe_ratings")
 }
 
@@ -440,8 +441,8 @@ model LostFound {
   university   University?     @relation(fields: [universityId], references: [id])
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([universityId], map: "lost_found_universityId_fkey")
-  @@index([userId], map: "lost_found_userId_fkey")
+  @@index([universityId])
+  @@index([userId])
   @@map("lost_found")
 }
 
@@ -462,9 +463,9 @@ model AcademicResource {
   semester    Semester? @relation(fields: [semesterId], references: [id])
   uploader    User      @relation(fields: [uploaderId], references: [id])
 
-  @@index([courseId], map: "academic_resources_courseId_fkey")
-  @@index([semesterId], map: "academic_resources_semesterId_fkey")
-  @@index([uploaderId], map: "academic_resources_uploaderId_fkey")
+  @@index([courseId])
+  @@index([semesterId])
+  @@index([uploaderId])
   @@map("academic_resources")
 }
 
@@ -482,7 +483,7 @@ model Course {
   university   University         @relation(fields: [universityId], references: [id])
 
   @@unique([code, universityId])
-  @@index([universityId], map: "courses_universityId_fkey")
+  @@index([universityId])
   @@map("courses")
 }
 
@@ -498,7 +499,7 @@ model Semester {
   university   University         @relation(fields: [universityId], references: [id])
 
   @@unique([name, year, universityId])
-  @@index([universityId], map: "semesters_universityId_fkey")
+  @@index([universityId])
   @@map("semesters")
 }
 
@@ -515,7 +516,7 @@ model GPARecord {
   user      User         @relation(fields: [userId], references: [id])
   subjects  GPASubject[]
 
-  @@index([userId], map: "gpa_records_userId_fkey")
+  @@index([userId])
   @@map("gpa_records")
 }
 
@@ -531,7 +532,7 @@ model GPASubject {
   gpaRecordId String
   gpaRecord   GPARecord @relation(fields: [gpaRecordId], references: [id])
 
-  @@index([gpaRecordId], map: "gpa_subjects_gpaRecordId_fkey")
+  @@index([gpaRecordId])
   @@map("gpa_subjects")
 }
 
@@ -551,8 +552,8 @@ model Event {
   organizer    User        @relation(fields: [organizerId], references: [id])
   university   University  @relation(fields: [universityId], references: [id])
 
-  @@index([organizerId], map: "events_organizerId_fkey")
-  @@index([universityId], map: "events_universityId_fkey")
+  @@index([organizerId])
+  @@index([universityId])
   @@index([startDate])
   @@map("events")
 }
@@ -568,7 +569,7 @@ model EventRSVP {
   user      User       @relation(fields: [userId], references: [id])
 
   @@unique([eventId, userId])
-  @@index([userId], map: "event_rsvps_userId_fkey")
+  @@index([userId])
   @@map("event_rsvps")
 }
 
@@ -583,7 +584,7 @@ model Notification {
   userId    String
   user      User             @relation(fields: [userId], references: [id])
 
-  @@index([userId], map: "notifications_userId_fkey")
+  @@index([userId])
   @@index([userId, isRead])
   @@map("notifications")
 }
@@ -610,7 +611,7 @@ model UserRole {
   user      User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, roleId])
-  @@index([roleId], map: "user_roles_roleId_fkey")
+  @@index([roleId])
   @@map("user_roles")
 }
 
@@ -664,7 +665,7 @@ model ConversationMember {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, conversationId])
-  @@index([conversationId], map: "conversation_members_conversationId_fkey")
+  @@index([conversationId])
   @@map("conversation_members")
 }
 
@@ -709,7 +710,7 @@ model StoryView {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, storyId])
-  @@index([storyId], map: "story_views_storyId_fkey")
+  @@index([storyId])
   @@map("story_views")
 }
 

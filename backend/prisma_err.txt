@@ -1,0 +1,325 @@
+Environment variables loaded from .env
+Prisma schema loaded from prisma\schema.prisma
+
+Error: Prisma schema validation - (validate wasm)
+Error code: P1012
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `users_departmentId_fkey` has to be unique in the following namespace: on model `User` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:55[0m
+[1;94m   | [0m
+[1;94m54 | [0m  roles                     UserRole[]
+[1;94m55 | [0m  [1;91mdepartment                Department?          @relation(fields: [departmentId], references: [id])[0m
+[1;94m56 | [0m  university                University?          @relation(fields: [universityId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `users_universityId_fkey` has to be unique in the following namespace: on model `User` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:56[0m
+[1;94m   | [0m
+[1;94m55 | [0m  department                Department?          @relation(fields: [departmentId], references: [id])
+[1;94m56 | [0m  [1;91muniversity                University?          @relation(fields: [universityId], references: [id])[0m
+[1;94m57 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `departments_universityId_fkey` has to be unique in the following namespace: on model `Department` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:93[0m
+[1;94m   | [0m
+[1;94m92 | [0m  updatedAt    DateTime   @updatedAt
+[1;94m93 | [0m  [1;91muniversity   University @relation(fields: [universityId], references: [id])[0m
+[1;94m94 | [0m  users        User[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `posts_authorId_fkey` has to be unique in the following namespace: on model `Post` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:114[0m
+[1;94m   | [0m
+[1;94m113 | [0m  reports   PostReport[]
+[1;94m114 | [0m  [1;91mauthor    User         @relation(fields: [authorId], references: [id])[0m
+[1;94m115 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `comments_authorId_fkey` has to be unique in the following namespace: on model `Comment` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:128[0m
+[1;94m   | [0m
+[1;94m127 | [0m  postId    String
+[1;94m128 | [0m  [1;91mauthor    User     @relation(fields: [authorId], references: [id])[0m
+[1;94m129 | [0m  post      Post     @relation(fields: [postId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `comments_postId_fkey` has to be unique in the following namespace: on model `Comment` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:129[0m
+[1;94m   | [0m
+[1;94m128 | [0m  author    User     @relation(fields: [authorId], references: [id])
+[1;94m129 | [0m  [1;91mpost      Post     @relation(fields: [postId], references: [id])[0m
+[1;94m130 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `likes_postId_fkey` has to be unique in the following namespace: on model `Like` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:141[0m
+[1;94m   | [0m
+[1;94m140 | [0m  postId    String
+[1;94m141 | [0m  [1;91mpost      Post     @relation(fields: [postId], references: [id])[0m
+[1;94m142 | [0m  user      User     @relation(fields: [userId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `follows_followingId_fkey` has to be unique in the following namespace: on model `Follow` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:155[0m
+[1;94m   | [0m
+[1;94m154 | [0m  follower    User     @relation("UserFollowers", fields: [followerId], references: [id])
+[1;94m155 | [0m  [1;91mfollowing   User     @relation("UserFollowing", fields: [followingId], references: [id])[0m
+[1;94m156 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `post_reports_reporterId_fkey` has to be unique in the following namespace: on model `PostReport` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:171[0m
+[1;94m   | [0m
+[1;94m170 | [0m  post       Post         @relation(fields: [postId], references: [id])
+[1;94m171 | [0m  [1;91mreporter   User         @relation(fields: [reporterId], references: [id])[0m
+[1;94m172 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `bus_routes_operatorId_fkey` has to be unique in the following namespace: on model `BusRoute` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:192[0m
+[1;94m   | [0m
+[1;94m191 | [0m  notifications       BusNotification[]
+[1;94m192 | [0m  [1;91moperator            User?             @relation("BusOperator", fields: [operatorId], references: [id])[0m
+[1;94m193 | [0m  university          University        @relation(fields: [universityId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `bus_routes_universityId_fkey` has to be unique in the following namespace: on model `BusRoute` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:193[0m
+[1;94m   | [0m
+[1;94m192 | [0m  operator            User?             @relation("BusOperator", fields: [operatorId], references: [id])
+[1;94m193 | [0m  [1;91muniversity          University        @relation(fields: [universityId], references: [id])[0m
+[1;94m194 | [0m  schedules           BusSchedule[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `bus_schedules_routeId_fkey` has to be unique in the following namespace: on model `BusSchedule` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:211[0m
+[1;94m   | [0m
+[1;94m210 | [0m  routeId   String
+[1;94m211 | [0m  [1;91mroute     BusRoute @relation(fields: [routeId], references: [id])[0m
+[1;94m212 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `bus_notifications_routeId_fkey` has to be unique in the following namespace: on model `BusNotification` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:226[0m
+[1;94m   | [0m
+[1;94m225 | [0m  routeId   String
+[1;94m226 | [0m  [1;91mroute     BusRoute         @relation(fields: [routeId], references: [id])[0m
+[1;94m227 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `bus_subscriptions_routeId_fkey` has to be unique in the following namespace: on model `BusSubscription` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:237[0m
+[1;94m   | [0m
+[1;94m236 | [0m  routeId   String
+[1;94m237 | [0m  [1;91mroute     BusRoute @relation(fields: [routeId], references: [id])[0m
+[1;94m238 | [0m  user      User     @relation(fields: [userId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `bus_emergencies_resolvedBy_fkey` has to be unique in the following namespace: on model `BusEmergency` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:260[0m
+[1;94m   | [0m
+[1;94m259 | [0m  routeId        String
+[1;94m260 | [0m  [1;91mresolvedByUser User?             @relation("ResolvedEmergencies", fields: [resolvedBy], references: [id])[0m
+[1;94m261 | [0m  route          BusRoute          @relation(fields: [routeId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `bus_emergencies_routeId_fkey` has to be unique in the following namespace: on model `BusEmergency` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:261[0m
+[1;94m   | [0m
+[1;94m260 | [0m  resolvedByUser User?             @relation("ResolvedEmergencies", fields: [resolvedBy], references: [id])
+[1;94m261 | [0m  [1;91mroute          BusRoute          @relation(fields: [routeId], references: [id])[0m
+[1;94m262 | [0m  user           User              @relation("ReportedEmergencies", fields: [userId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `bus_emergencies_userId_fkey` has to be unique in the following namespace: on model `BusEmergency` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:262[0m
+[1;94m   | [0m
+[1;94m261 | [0m  route          BusRoute          @relation(fields: [routeId], references: [id])
+[1;94m262 | [0m  [1;91muser           User              @relation("ReportedEmergencies", fields: [userId], references: [id])[0m
+[1;94m263 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `printer_shops_ownerId_fkey` has to be unique in the following namespace: on model `PrinterShop` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:282[0m
+[1;94m   | [0m
+[1;94m281 | [0m  printRequests PrintRequest[]
+[1;94m282 | [0m  [1;91mowner         User?          @relation(fields: [ownerId], references: [id])[0m
+[1;94m283 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `print_requests_printerShopId_fkey` has to be unique in the following namespace: on model `PrintRequest` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:303[0m
+[1;94m   | [0m
+[1;94m302 | [0m  printerShopId String
+[1;94m303 | [0m  [1;91mprinterShop   PrinterShop @relation(fields: [printerShopId], references: [id])[0m
+[1;94m304 | [0m  user          User        @relation(fields: [userId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `print_requests_userId_fkey` has to be unique in the following namespace: on model `PrintRequest` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:304[0m
+[1;94m   | [0m
+[1;94m303 | [0m  printerShop   PrinterShop @relation(fields: [printerShopId], references: [id])
+[1;94m304 | [0m  [1;91muser          User        @relation(fields: [userId], references: [id])[0m
+[1;94m305 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafes_ownerId_fkey` has to be unique in the following namespace: on model `Cafe` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:329[0m
+[1;94m   | [0m
+[1;94m328 | [0m  ratings      CafeRating[]
+[1;94m329 | [0m  [1;91mowner        User?        @relation(fields: [ownerId], references: [id])[0m
+[1;94m330 | [0m  university   University   @relation(fields: [universityId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafes_universityId_fkey` has to be unique in the following namespace: on model `Cafe` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:330[0m
+[1;94m   | [0m
+[1;94m329 | [0m  owner        User?        @relation(fields: [ownerId], references: [id])
+[1;94m330 | [0m  [1;91muniversity   University   @relation(fields: [universityId], references: [id])[0m
+[1;94m331 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafe_menus_cafeId_fkey` has to be unique in the following namespace: on model `CafeMenu` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:349[0m
+[1;94m   | [0m
+[1;94m348 | [0m  cafeId      String
+[1;94m349 | [0m  [1;91mcafe        Cafe            @relation(fields: [cafeId], references: [id])[0m
+[1;94m350 | [0m  orderItems  CafeOrderItem[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafe_deals_cafeId_fkey` has to be unique in the following namespace: on model `CafeDeal` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:368[0m
+[1;94m   | [0m
+[1;94m367 | [0m  cafeId      String
+[1;94m368 | [0m  [1;91mcafe        Cafe     @relation(fields: [cafeId], references: [id])[0m
+[1;94m369 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafe_orders_cafeId_fkey` has to be unique in the following namespace: on model `CafeOrder` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:384[0m
+[1;94m   | [0m
+[1;94m383 | [0m  items       CafeOrderItem[]
+[1;94m384 | [0m  [1;91mcafe        Cafe            @relation(fields: [cafeId], references: [id])[0m
+[1;94m385 | [0m  user        User            @relation(fields: [userId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafe_orders_userId_fkey` has to be unique in the following namespace: on model `CafeOrder` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:385[0m
+[1;94m   | [0m
+[1;94m384 | [0m  cafe        Cafe            @relation(fields: [cafeId], references: [id])
+[1;94m385 | [0m  [1;91muser        User            @relation(fields: [userId], references: [id])[0m
+[1;94m386 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafe_order_items_menuId_fkey` has to be unique in the following namespace: on model `CafeOrderItem` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:400[0m
+[1;94m   | [0m
+[1;94m399 | [0m  menuId    String
+[1;94m400 | [0m  [1;91mmenu      CafeMenu  @relation(fields: [menuId], references: [id])[0m
+[1;94m401 | [0m  order     CafeOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafe_order_items_orderId_fkey` has to be unique in the following namespace: on model `CafeOrderItem` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:401[0m
+[1;94m   | [0m
+[1;94m400 | [0m  menu      CafeMenu  @relation(fields: [menuId], references: [id])
+[1;94m401 | [0m  [1;91morder     CafeOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)[0m
+[1;94m402 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `cafe_ratings_userId_fkey` has to be unique in the following namespace: on model `CafeRating` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:417[0m
+[1;94m   | [0m
+[1;94m416 | [0m  cafe      Cafe     @relation(fields: [cafeId], references: [id])
+[1;94m417 | [0m  [1;91muser      User     @relation(fields: [userId], references: [id])[0m
+[1;94m418 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `lost_found_universityId_fkey` has to be unique in the following namespace: on model `LostFound` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:441[0m
+[1;94m   | [0m
+[1;94m440 | [0m  universityId String?
+[1;94m441 | [0m  [1;91muniversity   University?     @relation(fields: [universityId], references: [id])[0m
+[1;94m442 | [0m  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `lost_found_userId_fkey` has to be unique in the following namespace: on model `LostFound` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:442[0m
+[1;94m   | [0m
+[1;94m441 | [0m  university   University?     @relation(fields: [universityId], references: [id])
+[1;94m442 | [0m  [1;91muser         User            @relation(fields: [userId], references: [id], onDelete: Cascade)[0m
+[1;94m443 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `academic_resources_courseId_fkey` has to be unique in the following namespace: on model `AcademicResource` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:462[0m
+[1;94m   | [0m
+[1;94m461 | [0m  semesterId  String?
+[1;94m462 | [0m  [1;91mcourse      Course?   @relation(fields: [courseId], references: [id])[0m
+[1;94m463 | [0m  semester    Semester? @relation(fields: [semesterId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `academic_resources_semesterId_fkey` has to be unique in the following namespace: on model `AcademicResource` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:463[0m
+[1;94m   | [0m
+[1;94m462 | [0m  course      Course?   @relation(fields: [courseId], references: [id])
+[1;94m463 | [0m  [1;91msemester    Semester? @relation(fields: [semesterId], references: [id])[0m
+[1;94m464 | [0m  uploader    User      @relation(fields: [uploaderId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `academic_resources_uploaderId_fkey` has to be unique in the following namespace: on model `AcademicResource` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:464[0m
+[1;94m   | [0m
+[1;94m463 | [0m  semester    Semester? @relation(fields: [semesterId], references: [id])
+[1;94m464 | [0m  [1;91muploader    User      @relation(fields: [uploaderId], references: [id])[0m
+[1;94m465 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `courses_universityId_fkey` has to be unique in the following namespace: on model `Course` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:483[0m
+[1;94m   | [0m
+[1;94m482 | [0m  resources    AcademicResource[]
+[1;94m483 | [0m  [1;91muniversity   University         @relation(fields: [universityId], references: [id])[0m
+[1;94m484 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `semesters_universityId_fkey` has to be unique in the following namespace: on model `Semester` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:499[0m
+[1;94m   | [0m
+[1;94m498 | [0m  resources    AcademicResource[]
+[1;94m499 | [0m  [1;91muniversity   University         @relation(fields: [universityId], references: [id])[0m
+[1;94m500 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `gpa_records_userId_fkey` has to be unique in the following namespace: on model `GPARecord` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:516[0m
+[1;94m   | [0m
+[1;94m515 | [0m  userId    String
+[1;94m516 | [0m  [1;91muser      User         @relation(fields: [userId], references: [id])[0m
+[1;94m517 | [0m  subjects  GPASubject[]
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `gpa_subjects_gpaRecordId_fkey` has to be unique in the following namespace: on model `GPASubject` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:533[0m
+[1;94m   | [0m
+[1;94m532 | [0m  gpaRecordId String
+[1;94m533 | [0m  [1;91mgpaRecord   GPARecord @relation(fields: [gpaRecordId], references: [id])[0m
+[1;94m534 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `events_organizerId_fkey` has to be unique in the following namespace: on model `Event` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:552[0m
+[1;94m   | [0m
+[1;94m551 | [0m  rsvps        EventRSVP[]
+[1;94m552 | [0m  [1;91morganizer    User        @relation(fields: [organizerId], references: [id])[0m
+[1;94m553 | [0m  university   University  @relation(fields: [universityId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `events_universityId_fkey` has to be unique in the following namespace: on model `Event` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:553[0m
+[1;94m   | [0m
+[1;94m552 | [0m  organizer    User        @relation(fields: [organizerId], references: [id])
+[1;94m553 | [0m  [1;91muniversity   University  @relation(fields: [universityId], references: [id])[0m
+[1;94m554 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `event_rsvps_userId_fkey` has to be unique in the following namespace: on model `EventRSVP` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:569[0m
+[1;94m   | [0m
+[1;94m568 | [0m  event     Event      @relation(fields: [eventId], references: [id])
+[1;94m569 | [0m  [1;91muser      User       @relation(fields: [userId], references: [id])[0m
+[1;94m570 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `notifications_userId_fkey` has to be unique in the following namespace: on model `Notification` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:585[0m
+[1;94m   | [0m
+[1;94m584 | [0m  userId    String
+[1;94m585 | [0m  [1;91muser      User             @relation(fields: [userId], references: [id])[0m
+[1;94m586 | [0m
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `user_roles_roleId_fkey` has to be unique in the following namespace: on model `UserRole` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:610[0m
+[1;94m   | [0m
+[1;94m609 | [0m  roleId    String
+[1;94m610 | [0m  [1;91mrole      Role     @relation(fields: [roleId], references: [id])[0m
+[1;94m611 | [0m  user      User     @relation(fields: [userId], references: [id])
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `conversation_members_conversationId_fkey` has to be unique in the following namespace: on model `ConversationMember` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:664[0m
+[1;94m   | [0m
+[1;94m663 | [0m  conversationId String
+[1;94m664 | [0m  [1;91mconversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)[0m
+[1;94m665 | [0m  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+[1;94m   | [0m
+[1;91merror[0m: [1mError parsing attribute "@relation": The given constraint name `story_views_storyId_fkey` has to be unique in the following namespace: on model `StoryView` for primary key, indexes, unique constraints and foreign keys. Please provide a different name using the `map` argument.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:709[0m
+[1;94m   | [0m
+[1;94m708 | [0m  storyId   String
+[1;94m709 | [0m  [1;91mstory     Story    @relation(fields: [storyId], references: [id], onDelete: Cascade)[0m
+[1;94m710 | [0m  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+[1;94m   | [0m
+
+Validation Error Count: 45
+[Context: validate]
+
+Prisma CLI Version : 6.19.2

@@ -64,7 +64,7 @@ export default function RegisterPage() {
           />
         </video>
         {/* Deep Professional Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/90 via-slate-900/80 to-slate-950/90" />
+        <div className="absolute inset-0 bg-gradient-to-br from-crimson-950/90 via-slate-900/80 to-slate-950/90" />
 
         <div className="relative z-10 w-full max-w-sm text-white text-left">
           <div className="bg-white p-4 rounded-2xl shadow-xl inline-block mb-10">
@@ -98,32 +98,32 @@ export default function RegisterPage() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label htmlFor="firstName" className="block text-sm font-bold text-slate-700 ml-1">First Name</label>
-                <input id="firstName" name="firstName" type="text" required value={formData.firstName} onChange={handleChange} placeholder="Ali" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600" />
+                <input id="firstName" name="firstName" type="text" required value={formData.firstName} onChange={handleChange} placeholder="Ali" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary" />
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="lastName" className="block text-sm font-bold text-slate-700 ml-1">Last Name</label>
-                <input id="lastName" name="lastName" type="text" required value={formData.lastName} onChange={handleChange} placeholder="Khan" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600" />
+                <input id="lastName" name="lastName" type="text" required value={formData.lastName} onChange={handleChange} placeholder="Khan" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary" />
               </div>
             </div>
 
             {/* Email */}
             <div className="space-y-1.5">
               <label htmlFor="email" className="block text-sm font-bold text-slate-700 ml-1">University Email</label>
-              <input id="email" name="email" type="email" autoComplete="email" required value={formData.email} onChange={handleChange} placeholder="you@university.edu" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600" />
+              <input id="email" name="email" type="email" autoComplete="email" required value={formData.email} onChange={handleChange} placeholder="you@university.edu" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary" />
             </div>
 
             {/* Semester + Student ID */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <label htmlFor="year" className="block text-sm font-bold text-slate-700 ml-1">Semester</label>
-                <select id="year" name="year" value={formData.year} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600 cursor-pointer">
+                <select id="year" name="year" value={formData.year} onChange={handleChange} className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary cursor-pointer">
                   <option value="">Select</option>
                   {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>Semester {s}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="studentId" className="block text-sm font-bold text-slate-700 ml-1">Student ID</label>
-                <input id="studentId" name="studentId" type="text" value={formData.studentId} onChange={handleChange} placeholder="F22-001" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600" />
+                <input id="studentId" name="studentId" type="text" value={formData.studentId} onChange={handleChange} placeholder="F22-001" className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary" />
               </div>
             </div>
 
@@ -131,7 +131,7 @@ export default function RegisterPage() {
             <div className="space-y-1.5 text-left">
               <label htmlFor="password" className="block text-sm font-bold text-slate-700 ml-1">Password</label>
               <div className="relative">
-                <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required value={formData.password} onChange={handleChange} placeholder="••••••••" className="w-full px-4 py-3 pr-11 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600" />
+                <input id="password" name="password" type={showPassword ? 'text' : 'password'} autoComplete="new-password" required value={formData.password} onChange={handleChange} placeholder="••••••••" className="w-full px-4 py-3 pr-11 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary" />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 px-3.5 flex items-center text-slate-400 hover:text-slate-600 transition">
                   {showPassword ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                 </button>
@@ -142,7 +142,7 @@ export default function RegisterPage() {
             <div className="space-y-1.5 text-left">
               <label htmlFor="confirmPassword" className="block text-sm font-bold text-slate-700 ml-1">Confirm Password</label>
               <div className="relative">
-                <input id="confirmPassword" name="confirmPassword" type={showConfirm ? 'text' : 'password'} autoComplete="new-password" required value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" className="w-full px-4 py-3 pr-11 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-600/10 focus:border-blue-600" />
+                <input id="confirmPassword" name="confirmPassword" type={showConfirm ? 'text' : 'password'} autoComplete="new-password" required value={formData.confirmPassword} onChange={handleChange} placeholder="••••••••" className="w-full px-4 py-3 pr-11 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-primary/10 focus:border-primary" />
                 <button type="button" onClick={() => setShowConfirm(!showConfirm)} className="absolute inset-y-0 right-0 px-3.5 flex items-center text-slate-400 hover:text-slate-600 transition">
                   {showConfirm ? <EyeSlashIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                 </button>
@@ -150,7 +150,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Submit */}
-            <button type="submit" disabled={loading} className="w-full py-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-blue-500/20 hover:shadow-blue-500/30 transition-all active:scale-[0.98] mt-6">
+            <button type="submit" disabled={loading} className="w-full py-4 bg-primary hover:bg-primary/90 disabled:opacity-50 text-white font-black rounded-2xl shadow-xl shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-[0.98] mt-6">
               {loading ? (
                 <span className="flex items-center justify-center gap-3">
                   <div className="w-5 h-5 border-[3px] border-white/30 border-t-white rounded-full animate-spin" />
@@ -159,10 +159,9 @@ export default function RegisterPage() {
               ) : 'Register'}
             </button>
           </form>
-
           <div className="mt-8 text-center text-slate-500 font-medium">
             Already have an account?{' '}
-            <Link href="/auth/login" className="text-blue-600 font-black hover:text-blue-700 transition ml-1">Sign in</Link>
+            <Link href="/auth/login" className="text-primary font-black hover:text-primary transition ml-1">Sign in</Link>
           </div>
         </div>
       </div>

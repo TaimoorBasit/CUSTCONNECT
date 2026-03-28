@@ -110,9 +110,10 @@ app.get('/health', async (req, res) => {
 
 // Simple ping endpoint for frontend to check if backend is alive
 app.get('/api/ping', (req, res) => {
+  console.log(`[PING] Request received from ${req.ip} at ${new Date().toISOString()}`);
   res.json({
     success: true,
-    message: 'Backend server is running - v5-checking-logs',
+    message: 'Backend server is running - v6-with-ip-logging',
     timestamp: new Date().toISOString()
   });
 });

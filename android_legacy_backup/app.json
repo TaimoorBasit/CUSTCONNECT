@@ -1,0 +1,40 @@
+{
+  "expo": {
+    "name": "CustConnect",
+    "slug": "custconnect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": false,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A2744"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.custconnect.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1A2744"
+      },
+      "package": "com.custconnect.app",
+      "edgeToEdgeEnabled": false,
+      "statusBar": {
+        "translucent": false,
+        "backgroundColor": "#1A2744",
+        "barStyle": "light-content"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-secure-store"
+    ]
+  }
+}
